@@ -5,9 +5,9 @@ from simple_history.models import HistoricalRecords
 
 class PregnancyOutcome(models.Model):
     uuid = models.UUIDField(
-        primary_key=True,
         default=uuid.uuid4,
-        editable=False
+        editable=False,
+        unique=True,
     )
     pregnancy = models.ForeignKey(
         Pregnancy,

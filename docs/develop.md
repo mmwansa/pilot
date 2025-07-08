@@ -66,6 +66,9 @@ CELERY_BROKER_URL=redis://localhost:6379/0
 ./manage.py migrate
 ```
 
+Models now rely on standard integer `id` primary keys. Each record also stores a
+unique `uuid` value as a secondary identifier.
+
 This will prepare your local development environment to run VA Explorer locally
 via the `runserver_plus` command (see [Development Commands](#development-commands)).
 Next you will want to seed VA Explorer with some example data so you can login

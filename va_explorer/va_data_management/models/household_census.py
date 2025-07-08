@@ -4,9 +4,9 @@ from simple_history.models import HistoricalRecords
 
 class Household(models.Model):
     uuid = models.UUIDField(
-        primary_key=True,
         default=uuid.uuid4,
-        editable=False
+        editable=False,
+        unique=True,
     )
 
     deviceid = models.TextField("nan", blank=True)
@@ -141,6 +141,12 @@ class HouseholdMember(models.Model):
         "va_data_management.Household",
         on_delete=models.CASCADE,
         related_name="members"
+    )
+
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
     )
         
     HH_03 = models.TextField("HH_03. Household Member Details", blank=True)    
