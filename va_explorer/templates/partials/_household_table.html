@@ -1,0 +1,56 @@
+{% load va_explorer_tags %}
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th><a href="?{% sort_url 'id' direction='-' %}">ID</a></th>
+      <th><a href="?{% sort_url 'enumerator' direction='-' %}">Enumerator</a></th>
+      <th><a href="?{% sort_url 'province' direction='-' %}">Province</a></th>
+      <th><a href="?{% sort_url 'district' direction='-' %}">District</a></th>
+      <th><a href="?{% sort_url 'ward' direction='-' %}">Ward</a></th>
+      <th><a href="?{% sort_url 'locality_name' direction='-' %}">Locality Name</a></th>
+      <th><a href="?{% sort_url 'respondent' direction='-' %}">Respondent</a></th>
+      <th></th>
+      {% if va_data_cleanup and perms.va_data_cleanup.download %}
+        <th>Download</th>
+      {% endif %}
+      {% if va_data_cleanup and perms.va_data_management.delete_household %}
+        <th>Delete</th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% if object_list|length != 0 %}
+      {% for h in object_list %}
+        <tr>
+          <td>{{ h.id }}</td>
+          <td>{{ h.enumerator|default:"Not Listed" }}</td>
+          <td>{{ h.province|default:"-" }}</td>
+          <td>{{ h.district|default:"-" }}</td>
+          <td>{{ h.ward|default:"-" }}</td>
+          <td>{{ h.locality_name|default:"-" }}</td>
+          <td>{{ h.respondent|default:"Unknown" }}</td>
+          <td><a class="btn btn-primary" href="{% url 'va_data_management:household_show' id=h.id %}">View</a></td>
+          {% if va_data_cleanup and perms.va_data_cleanup.download %}
+            <td>
+              <a class="btn btn-primary" href="{% url 'data_cleanup:household_download' h.id %}">
+                <i class="fas fa-download"></i>
+              </a>
+            </td>
+          {% endif %}
+          {% if va_data_cleanup and perms.va_data_management.delete_household %}
+            <td>
+              <a class="btn btn-danger" href="{% url 'va_data_management:household_delete' h.id %}">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="10">There are no results.</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>

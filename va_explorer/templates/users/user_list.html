@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Users{% endblock %}
+
+{% block heading %}Users{% endblock %}
+
+{% block content %}
+  <div class="row mt-4">
+    {% if perms.users.add_user %}
+      <a href="{% url 'users:create' %}" class="btn btn-success" role="button">Create User</a>
+    {% endif %}
+  </div>
+  <div class="row mt-4">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Active</th>
+          <th>Role</th>
+          <th>&nbsp;</th>
+          <th>&nbsp;</th>
+        </tr>
+      </thead>
+        <tbody>
+          {% for user in object_list %}
+          <tr>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.is_active }}</td>
+            <td>
+                {{ user.groups.first.name }}
+            </td>
+            <td>
+              {% if perms.users.change_user %}
+                <a href="{% url 'users:update' pk=user.pk %}" class="btn btn-primary" role="button">Edit</a>
+              {%  endif %}
+            </td>
+            <td>
+              {% if perms.users.view_user %}
+                <a href="{% url 'users:detail' pk=user.pk %}" class="btn btn-primary" role="button">Show</a>
+              {%  endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+    </table>
+    {% if is_paginated %}
+      {% include "partials/_pagination.html" %}
+    {% endif %}
+  </div>
+{% endblock %}

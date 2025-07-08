@@ -1,0 +1,106 @@
+[project]
+name = "va-explorer"
+version = "0.1.0"
+description = "A full service VA management prototype webapp"
+authors = [{ name = "MITRE", email = "verbal-autopsy@mitre.org" }]
+maintainers = [{ name = "MITRE", email = "verbal-autopsy@mitre.org" }]
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+keywords = ["verbal autopsy", "cause of death", "global health", "interva", "django"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Handhelds/PDA's",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 4.1",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Medical Science Apps."
+]
+[project.urls]
+"Source" = "https://github.com/VA-Explorer/va_explorer"
+"Documentation" = "https://va-explorer.github.io/va_explorer"
+"Bug Reports" = "https://github.com/VA-Explorer/va_explorer/issues"
+
+[tool.ruff]
+lint.select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "UP",   # modern syntax suggestions
+  "B",    # common bugs
+  "C4",   # comprehensions common issues
+#   "DTZ",  # datetime common issues
+#   "DJ",   # django common issues
+  "G",    # logging common issues
+  "PT",   # pytest common issues
+  "SIM",  # simplification suggestions
+]
+lint.ignore = [
+  "E501",  # line length, handled by black
+]
+extend-exclude = ["migrations"]
+
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+# Use force-exclude option due to way pre-commit parses files. See psf/black#438
+force-exclude = '''
+/(
+    # default exclude
+    \.direnv|\.eggs|\.git|\.hg|\.ipynb_checkpoints|\.mypy_cache|\.nox|\.pytest_cache|\.ruff_cache|\.tox|\.svn|\.venv|\.vscode|__pypackages__|_build|buck-out|build|dist|venv
+    # additional exclude
+    | docs
+    | migrations
+)/
+'''
+
+[tool.pytest.ini_options]
+addopts = "--ds=config.settings.test --reuse-db"
+python_files = ["test_*.py"]
+
+# coverage run -m pytest && coverage report
+[tool.coverage.run]
+branch = true
+include = ["va_explorer/*"]
+omit = ["*/migrations/*", "*/tests/*", "*/conftest.py"]
+plugins = ["django_coverage_plugin"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+# [tool.mypy]
+# python_version = "3.10"
+# plugins = ["mypy_django_plugin.main"]
+# settings from https://quantlane.com/blog/type-checking-large-codebase/
+# check_untyped_defs = true
+# disallow_any_generics = true
+# disallow_incomplete_defs = true
+# disallow_subclassing_any = true
+# disallow_untyped_calls = false
+# disallow_untyped_decorators = false
+# disallow_untyped_defs = true
+# follow_imports = "silent"
+# ignore_missing_imports = true
+# no_implicit_optional = true
+# show_error_codes = true
+# warn_redundant_casts = true
+# warn_return_any = true
+# warn_unreachable = true
+# warn_unused_configs = true
+# warn_unused_ignores = true
+
+# [tool.django-stubs]
+# django_settings_module = "config.settings.test"

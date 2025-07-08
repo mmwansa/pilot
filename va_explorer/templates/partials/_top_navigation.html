@@ -1,0 +1,189 @@
+{% load va_explorer_tags %}
+{% load static i18n %}
+
+<nav class="navbar navbar-expand-lg navbar-dark h-auto fixed-top">
+  <div class="container-fluid">
+    <!-- Brand -->
+    <a class="navbar-brand font-weight-bold" href="{% url 'home:index' %}">
+      {% comment %} <i class="fas fa-book-journal-whills mr-2"></i> VA CMS {% endcomment %}
+      <img class="auth-logo2 mx-2" src="{% static 'images/bg3.png' %}" /></span>  VA CMS 
+      
+    </a>
+    
+    <!-- Mobile menu button (for responsive behavior) -->
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topNavContent" 
+            aria-controls="topNavContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Top navigation content -->
+    <div class="collapse navbar-collapse" id="topNavContent">
+      <!-- Spacer to push items to the right -->
+      <div class="navbar-nav mr-auto">
+        <!-- Breadcrumb or current page indicator could go here -->
+        <span class="navbar-text">
+          {% block page_breadcrumb %}
+            <!-- This can be overridden in child templates -->
+          {% endblock %}
+        </span>
+      </div>
+      
+      <!-- Right side items -->
+      <ul class="navbar-nav ml-auto">
+        <!-- Current time display -->
+        {% comment %} <li class="nav-item d-none d-lg-block">
+          <span class="navbar-text text-light mr-3">
+            <i class="fas fa-clock mr-1"></i>
+            <span id="currentTime"></span>
+          </span>
+        </li> {% endcomment %}
+
+        
+        <!-- User Management Dropdown styled as nav link -->
+        <li class="nav-item dropdown">
+      {% if request.user.is_authenticated %}
+        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <i class="fas fa-user"></i> {{ request.user.name }}
+        </a>
+        
+        
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+          <a class="dropdown-item" href="{% url 'users:change_password' %}">{% trans "Change Password" %}</a>
+          <a class="dropdown-item" href="{% url 'users:detail' pk=request.user.pk %}">{% trans "Profile" %}</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="{% url 'account_logout' %}">{% trans "Sign Out" %}</a>
+        </div>
+      {% else %}
+        <a class="nav-link" href="{% url 'account_login' %}">
+          <i class="fas fa-sign-in-alt"></i> {% trans "Sign In" %}
+        </a>
+      {% endif %}
+    </li>
+        
+        <!-- Quick actions dropdown -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="quickActionsDropdown" role="button" 
+             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Quick Actions">
+            <i class="fas fa-bolt"></i>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right" aria-labelledby="quickActionsDropdown">
+            {% if perms.va_analytics.download_data %}
+            <a class="dropdown-item" href="{% url 'va_export:download_form' %}">
+              <i class="fas fa-download mr-2"></i>Quick Export
+            </a>
+            {% endif %}
+            {% if perms.va_analytics.view_dashboard %}
+            <a class="dropdown-item" href="{% url 'va_analytics:dashboard' %}">
+              <i class="fas fa-chart-line mr-2"></i>View Dashboard
+            </a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'home:about' %}">
+              <i class="fas fa-info-circle mr-2"></i>About System
+            </a>
+
+            <a class="dropdown-item" href="{% url 'account_logout' %}">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </a>
+
+          
+          </div>
+        </li>
+        
+        <!-- Notifications (placeholder for future implementation) -->
+        <li class="nav-item">
+          <a class="nav-link position-relative" href="#" title="Notifications">
+            <i class="fas fa-bell"></i>
+            <span class="badge badge-danger badge-pill position-absolute" 
+                  style="top: 5px; right: 5px; font-size: 0.6rem;"></span>
+          </a>
+        </li>
+        
+        <!-- Help/Support -->
+        {% comment %} <li class="nav-item">
+          <a class="nav-link" href="#" title="Help & Support" data-toggle="modal" data-target="#helpModal">
+            <i class="fas fa-question-circle"></i>
+          </a>
+        </li> {% endcomment %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Help Modal (optional) -->
+<div class="modal fade" id="helpModal" tabindex="-1" role="dialog" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="helpModalLabel">
+          <i class="fas fa-question-circle mr-2"></i>Help & Support
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h6><i class="fas fa-book mr-2"></i>Documentation</h6>
+        <p>Access the user guide and technical documentation for VA Explorer.</p>
+        
+        <h6><i class="fas fa-envelope mr-2"></i>Support</h6>
+        <p>For technical support, please contact your system administrator.</p>
+        
+        <h6><i class="fas fa-keyboard mr-2"></i>Keyboard Shortcuts</h6>
+        <ul class="list-unstyled">
+          <li><kbd>Ctrl</kbd> + <kbd>/</kbd> - Toggle sidebar</li>
+          <li><kbd>Ctrl</kbd> + <kbd>H</kbd> - Go to home</li>
+          <li><kbd>?</kbd> - Show this help</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for top navigation features -->
+<script>
+// Update time display
+function updateTime() {
+    const now = new Date();
+    const options = { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+    };
+    const timeString = now.toLocaleTimeString('en-US', options);
+    const timeElement = document.getElementById('currentTime');
+    if (timeElement) {
+        timeElement.textContent = timeString;
+    }
+}
+
+// Initialize time update
+$(document).ready(function() {
+    updateTime();
+    setInterval(updateTime, 60000); // Update every minute
+    
+    // Keyboard shortcuts
+    $(document).keydown(function(e) {
+        // Ctrl + / to toggle sidebar
+        if (e.ctrlKey && e.key === '/') {
+            e.preventDefault();
+            $('#sidebarToggle').click();
+        }
+        
+        // Ctrl + H to go home
+        if (e.ctrlKey && e.key === 'h') {
+            e.preventDefault();
+            window.location.href = "{% url 'home:index' %}";
+        }
+        
+        // ? key to show help
+        if (e.key === '?' && !$(e.target).is('input, textarea')) {
+            e.preventDefault();
+            $('#helpModal').modal('show');
+        }
+    });
+});
+</script>

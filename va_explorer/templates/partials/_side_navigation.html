@@ -1,0 +1,165 @@
+{% load va_explorer_tags %}
+{% load static i18n %}
+
+{% block css %}
+  <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+{% endblock %}
+
+<!-- Sidebar -->
+<div class="sidebar-container" id="sidebar">
+    <!-- Toggle Button for Mobile -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Main Navigation -->
+    <nav class="sidebar-nav" id="sidebarNav">
+        <ul class="nav flex-column">
+
+            <!-- Core Navigation (not collapsible) -->
+            <li class="nav-section-header">
+                <span class="section-title">Main</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'home' %}active{% endif %}" 
+                href="{% url 'home:index' %}" data-tooltip="Home">
+                    <i class="fas fa-home nav-icon"></i>
+                    <span class="nav-label">Home</span>
+                </a>
+            </li>
+
+            <!-- Personnel Management Section -->
+            <li class="nav-section-header collapsible-header" tabindex="0" data-target="personnel-section" aria-expanded="false">
+                <span class="section-title">Personnel Management</span>
+                <i class="fas fa-chevron-down collapse-caret"></i>
+            </li>
+            <ul class="collapse-section" id="personnel-section" style="display: none;">
+                <li class="nav-item">
+                    <a class="nav-link {% if 'users' in request.resolver_match.namespace %}active{% endif %}" 
+                    href="{% url 'users:index' %}" data-tooltip="Users">
+                        <i class="fas fa-users nav-icon"></i>
+                        <span class="nav-label">Users</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'supervision' %}active{% endif %}" 
+                    href="{% url 'va_analytics:supervision' %}" data-tooltip="Supervision">
+                        <i class="fas fa-eye nav-icon"></i>
+                        <span class="nav-label">Supervision</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Data Management Section -->
+            <li class="nav-section-header collapsible-header" tabindex="0" data-target="data-section" aria-expanded="false">
+                <span class="section-title">Data Management</span>
+                <i class="fas fa-chevron-down collapse-caret"></i>
+            </li>
+            <ul class="collapse-section" id="data-section" style="display: none;">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'households' %}active{% endif %}" 
+                    href="{% url 'va_data_management:households' %}" data-tooltip="Households">
+                        <i class="fas fa-home nav-icon"></i>
+                        <span class="nav-label">Households</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'pregnancies' %}active{% endif %}" 
+                    href="{% url 'va_data_management:pregnancies' %}" data-tooltip="Pregnancies">
+                        <i class="fas fa-female nav-icon"></i>
+                        <span class="nav-label">Pregnancies</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'pregnancy_outcomes' %}active{% endif %}" 
+                    href="{% url 'va_data_management:pregnancy_outcomes' %}" data-tooltip="Pregnancy Outcomes">
+                        <i class="fas fa-baby nav-icon"></i>
+                        <span class="nav-label">Pregnancy Outcomes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'deaths' %}active{% endif %}" 
+                    href="{% url 'va_data_management:deaths' %}" data-tooltip="Deaths">
+                        <i class="fas fa-skull-crossbones nav-icon"></i>
+                        <span class="nav-label">Deaths</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'va_data_management' %}active{% endif %}" 
+                    href="{% url 'va_data_management:index' %}" data-tooltip="Data Management">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span class="nav-label">Verbal Autopsies</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'va_data_cleanup' in request.resolver_match.namespace %}active{% endif %}" 
+                    href="{% url 'va_data_cleanup:index' %}" data-tooltip="Data Cleanup">
+                        <i class="fas fa-broom nav-icon"></i>
+                        <span class="nav-label">Data Cleanup</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'va_export' in request.resolver_match.namespace %}active{% endif %}" 
+                    href="{% url 'va_export:download_form' %}" data-tooltip="Export">
+                        <i class="fas fa-download nav-icon"></i>
+                        <span class="nav-label">Data Export</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Analytics Section -->
+            <li class="nav-section-header collapsible-header" tabindex="0" data-target="analytics-section" aria-expanded="false">
+                <span class="section-title">Analytics</span>
+                <i class="fas fa-chevron-down collapse-caret"></i>
+            </li>
+            <ul class="collapse-section" id="analytics-section" style="display: none;">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                    href="{% url 'va_analytics:dashboard' %}" data-tooltip="Dashboard">
+                        <i class="fas fa-chart-line nav-icon"></i>
+                        <span class="nav-label">Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Info Section -->
+            <li class="nav-section-header">
+                <span class="section-title">Info</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" 
+                href="{% url 'home:about' %}" data-tooltip="About">
+                    <i class="fas fa-info-circle nav-icon"></i>
+                    <span class="nav-label">About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Overlay for mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function toggleSection(header) {
+        const targetId = header.getAttribute('data-target');
+        const section = document.getElementById(targetId);
+        const expanded = header.getAttribute('aria-expanded') === 'true';
+        section.style.display = expanded ? 'none' : 'block';
+        header.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    }
+
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', function () {
+            toggleSection(header);
+        });
+        header.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleSection(header);
+            }
+        });
+    });
+});
+</script>

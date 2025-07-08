@@ -1,0 +1,56 @@
+{% load va_explorer_tags %}
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th><a href="?{% sort_url 'id' direction='-' %}">ID</a></th>
+      <th><a href="?{% sort_url 'enumerator' direction='-' %}">Enumerator</a></th>
+      <th><a href="?{% sort_url 'province' direction='-' %}">Province</a></th>
+      <th><a href="?{% sort_url 'district' direction='-' %}">District</a></th>
+      <th><a href="?{% sort_url 'PO_04' direction='-' %}">Mother's Name</a></th>
+      <th><a href="?{% sort_url 'PO_41' direction='-' %}">Delivery/End Date</a></th>
+      <th><a href="?{% sort_url 'PO_46' direction='-' %}">Outcome</a></th>
+      <th></th>
+      {% if va_data_cleanup and perms.va_data_cleanup.download %}
+        <th>Download</th>
+      {% endif %}
+      {% if va_data_cleanup and perms.va_data_management.delete_pregnancyoutcome %}
+        <th>Delete</th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% if object_list|length != 0 %}
+      {% for o in object_list %}
+        <tr>
+          <td>{{ o.id }}</td>
+          <td>{{ o.enumerator|default:"Not Listed" }}</td>
+          <td>{{ o.province|default:"-" }}</td>
+          <td>{{ o.district|default:"-" }}</td>
+          <td>{{ o.PO_04|default:"Unknown" }}</td>
+          <td>{{ o.PO_41|default:"-" }}</td>
+          <td>{{ o.PO_46|default:"-" }}</td>
+          <td><a class="btn btn-primary" href="{% url 'va_data_management:pregnancyoutcome_show' id=o.id %}">View</a></td>
+          {% if va_data_cleanup and perms.va_data_cleanup.download %}
+            <td>
+              <a class="btn btn-primary" href="{% url 'data_cleanup:pregnancyoutcome_download' o.id %}">
+                <i class="fas fa-download"></i>
+              </a>
+            </td>
+          {% endif %}
+          {% if va_data_cleanup and perms.va_data_management.delete_pregnancyoutcome %}
+            <td>
+              <a class="btn btn-danger" href="{% url 'va_data_management:pregnancyoutcome_delete' o.id %}">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="10">There are no results.</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>

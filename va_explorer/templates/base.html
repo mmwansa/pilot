@@ -1,0 +1,155 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>{% block title %}VA Explorer{% endblock title %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+  <!--[if lt IE 9]>
+      <script src="{% static 'vendor/html5shiv-3.7.3/html5shiv.js' %}"></script>
+    <![endif]-->
+
+  <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}">
+  {% block css %}
+    <link href="{% static 'vendor/bootstrap-4.3.1/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/select2-4.1.0-beta.1/select2.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/fontawesome-6.3.0/fontawesome.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/fontawesome-6.3.0/solid.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/form.css' %}" rel="stylesheet">
+    <link href="{% static 'css/fab.css' %}" rel="stylesheet">
+    <link href="{% static 'css/project.css' %}" rel="stylesheet">
+     {% comment %} <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+     {% endcomment %}
+   
+  {% endblock %}
+
+  <!-- Custom styles for sidebar layout -->
+</head>
+
+<body>
+  <!-- Fixed Top Navigation -->
+  <div class="top-navigation-wrapper">
+    {% include "partials/_top_navigation.html" %}
+  </div>
+
+  <!-- Fixed Sidebar Navigation -->
+   <div class="sidebar-wrapper side-navigation-wrapper">
+  {% include "partials/_side_navigation.html" %}
+  </div>
+  
+  <!-- Main Content Wrapper -->
+  <div class="main-content-wrapper main-content" id="mainContentWrapper">
+    <div class="{% block container-type %}container{% endblock %}" style="padding-top: 60px; padding-left:45px">
+      {% include "partials/_messages.html" %}
+
+      <div class="row page-heading-row">
+        <div class="col-12">
+          <h2>
+            {% block heading %} {% endblock heading %}
+          </h2>
+        </div>
+      </div>
+
+      {% block content %} {% endblock content %}
+    </div>
+    <!-- /container -->
+
+    <!-- Footer -->
+    <footer class="container copyright-text custom-footer">
+    Copyright &copy; {% now "Y" %} Zambia National Public Health Institute
+    </footer>
+  </div>
+
+  {% block modal %}{% endblock modal %}
+
+  <script src="{% static 'vendor/jquery-3.5.1/jquery.min.js' %}"></script>
+  <script src="{% static 'vendor/popper-1.14.3/popper.min.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap-4.3.1/bootstrap.min.js' %}"></script>
+  <script src="{% static 'js/project.js' %}"></script>
+  <script src="{% static 'js/logging_event_handlers.js' %}"></script>
+    {% comment %} <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> {% endcomment %}
+
+  <!-- Fixed Navigation JavaScript -->
+  <script>
+    $(document).ready(function() {
+      const sidebar = $('.sidebar-container');
+      const mainContent = $('#mainContentWrapper');
+      const toggleBtn = $('#sidebarToggle');
+      const toggleIcon = toggleBtn.find('i');
+
+      // Toggle sidebar (mobile only)
+      toggleBtn.click(function() {
+        // Only toggle on mobile screens
+        if ($(window).width() <= 768) {
+          sidebar.toggleClass('open');
+          mainContent.toggleClass('sidebar-open');
+          
+          // Change icon
+          if (sidebar.hasClass('open')) {
+            toggleIcon.removeClass('fa-bars').addClass('fa-times');
+          } else {
+            toggleIcon.removeClass('fa-times').addClass('fa-bars');
+          }
+        }
+      });
+
+      // Handle user dropdown
+      $('#userDropdown').click(function(e) {
+        e.preventDefault();
+        $('#userDropdownMenu').toggleClass('show');
+      });
+
+      // Close dropdown when clicking outside
+      $(document).click(function(e) {
+        if (!$(e.target).closest('.user-section').length) {
+          $('#userDropdownMenu').removeClass('show');
+        }
+      });
+
+      // Close sidebar on mobile when clicking outside
+      $(document).click(function(e) {
+        if ($(window).width() <= 768) {
+          if (!$(e.target).closest('.sidebar-container').length && 
+              !$(e.target).closest('#sidebarToggle').length && 
+              sidebar.hasClass('open')) {
+            sidebar.removeClass('open');
+            mainContent.removeClass('sidebar-open');
+            toggleIcon.removeClass('fa-times').addClass('fa-bars');
+          }
+        }
+      });
+
+      // Handle window resize
+      $(window).resize(function() {
+        if ($(window).width() > 768) {
+          // Reset mobile overrides on desktop
+          sidebar.removeClass('mobile-overlay open');
+          mainContent.removeClass('sidebar-open');
+          toggleIcon.removeClass('fa-times').addClass('fa-bars');
+        }
+      });
+
+      // Initialize proper layout on page load
+      function initializeLayout() {
+        if ($(window).width() > 768) {
+          // Desktop: ensure sidebar is always visible and main content is properly positioned
+          sidebar.removeClass('open');
+          mainContent.removeClass('sidebar-open');
+        }
+      }
+
+      initializeLayout();
+    });
+  </script>
+
+  {% block page_scripts %}{% endblock %}
+
+</body>
+
+</html>

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% load va_explorer_tags %}
+
+{% block title %}Verbal Autopsy #{{ object.id }}{% endblock %}
+
+{% block heading %}Verbal Autopsy #{{ object.id }}{% endblock %}
+
+{% block content %}
+{% if duplicate and AUTO_DETECT_DUPLICATES %}
+<div class="row mt-4">
+  <div class="alert alert-warning" role="alert">
+    Warning: This VA has been flagged as a potential duplicate.
+  </div>
+</div>
+{% endif %}
+<ul class="nav nav-tabs tab-spacing" id="myTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" id="record-tab" data-toggle="tab" href="#record" role="tab" aria-controls="record" aria-selected="true">Record</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="issues-tab" data-toggle="tab" href="#issues" role="tab" aria-controls="issues" aria-selected="false">Coding Issues</a>
+  </li>
+  {% if diffs and not user.is_fieldworker %}
+    <li class="nav-item">
+      <a class="nav-link" id="history-tab" data-toggle="tab" href="#history" role="tab" aria-controls="history" aria-selected="false">Change History</a>
+    </li>
+  {% endif %}
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="record" role="tabpanel" aria-labelledby="record-tab">
+    <div class="row mt-3">
+        <div class="va-options-container">
+            <div class="checkbox-container" align='center'>
+              <input class="checkbox" type="checkbox" id="hidden-missing" name="hidden-missing" value="checked" checked="TRUE">
+              <label class="checkbox-label"
+                    data-toggle="tooltip"
+                    title="Toggle whether or not you want to see fields with 'N/A' or '' as responses. When unchecked, these blank responses will be shown."
+                    for="hidden-missing">
+                    Hide Empty Fields
+              </label><br>
+              {% if not user.can_view_pii %}
+              <input class="checkbox" type="checkbox" id="hidden-redacted" name="hidden-redacted">
+              <label class="checkbox-label"
+                    data-toggle="tooltip"
+                    title="Toggle whether or not you want to see redacted fields."
+                    for="hidden-redacted">
+                    Hide Redacted Fields
+              </label><br>
+              {% endif %}
+            </div>
+            {% if perms.va_data_management.change_verbalautopsy %}
+            <div>
+              <a style="text-align:center;" class="btn btn-primary" href="{% url 'data_management:edit' id=id %}">Edit Record</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+      <table class="table table-hover table-sm">
+        <thead>
+          <tr>
+            <th>Field Name</th>
+            <th>Field Question</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for field in form %}
+            <tr data-value="{% pii_filter field.name field.value|replace %}">
+              <td><b>{{ field.name }}</b></td>
+              <td>{{ field.label }}</td>
+              <td>
+                {% pii_filter field.name field.value|replace %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="issues" role="tabpanel" aria-labelledby="issues-tab">
+    <div class="row mt-4">
+      {% if errors %}
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th>{{ errors|length }} Error{{ errors|pluralize }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for error in errors %}
+              <tr><td>{{ error }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+
+    {% if warnings %}
+      <div class="row mt-4">
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th>{{ warnings|length }} User Warning{{ warnings|pluralize }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for warning in warnings %}
+              <tr><td>{{ warning }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+    {% if algo_warnings %}
+      <div class="row mt-4">
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th>{{ algo_warnings|length }} Algorithm Warning{{ algo_warnings|pluralize }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for warning in algo_warnings %}
+              <tr><td>{{ warning }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if diffs and not user.is_fieldworker  %}
+    <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+      <div class="row mt-4">
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th colspan=3>{{ diffs|length }} Change{{ diffs|pluralize }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for diff in diffs %}
+              <tr>
+                <td>{{ diff.new_record.history_date|date:"Y-m-d H:i" }}</td>
+                <td>{{ diff.new_record.history_user.name|default:"System" }} &lt;{{ diff.new_record.history_user.email|default:"noreply@host" }}&gt;</td>
+                <td>
+                  {% for change in diff.changes %}
+                    {% if change.old and change.new %}
+                      <b>{{ change.field }}</b> changed from <b>{% pii_filter change.field change.old %}</b> to <b>{% pii_filter change.field change.new %}</b><br/>
+                    {% elif change.new %}
+                      <b>{{ change.field }}</b> was set to <b>{% pii_filter change.field change.new %}</b><br/>
+                    {% elif change.old %}
+                      <b>{{ change.field }}</b> had value <b>{% pii_filter change.field change.old %}</b> deleted<br/>
+                    {% endif %}
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+        </table>
+      </div>
+      <div class="row mt-4">
+        {% if perms.va_data_management.change_verbalautopsy %}
+          <a class="btn btn-primary mx-2" href="{% url 'data_management:reset' id=id %}">Reset to Original</a></p>
+          <a class="btn btn-primary mx-2" href="{% url 'data_management:revert_latest' id=id %}">Revert Most Recent Change</a>
+        {% endif %}
+      </div>
+    </div>
+
+  {% endif %}
+</div>
+
+<div class="flt-action-backdrop"></div>
+<div class="flt-action-btn child to-top" data-subitem="3"><i class="fas fa-caret-up"></i></div>
+<div class="flt-action-btn child to-bottom" data-subitem="2"><i class="fas fa-caret-down"></i></div>
+<a href="{% url 'va_data_management:index' %}">
+  <div class="flt-action-btn child" data-subitem="1"><i class="fas fa-angle-double-left"></i></div>
+</a>
+<div class="flt-action-btn" id="main-fab"><i class="fas fa-sort"></i></div>
+
+{% endblock %}
+
+<!-- Needs to be outside content block so JS in base template loads first -->
+{% block page_scripts %}
+  <script src="{% static 'js/fab.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Households{% endblock %}
+{% block heading %}Households{% endblock %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+{% include 'partials/_household_update_stats.html' %}
+<form method="get">
+  <div class="form-row align-items-end">
+    {% crispy filter.form %}
+    <div class="form-group filter-button">
+      <button class="form-control btn btn-primary" type="submit">Search</button>
+    </div>
+    {% if filter.is_valid %}
+      <div class="form-group filter-button">
+        <a class="btn btn-secondary form-control" href="{% url 'va_data_management:households' %}">Reset</a>
+      </div>
+    {% endif %}
+    <div class="form-group filter-button">
+    {% if download_url == "" %}
+      <button class="btn btn-primary form-control" disabled>
+        <i class="fas fa-download"></i> Data
+      </button>
+    {% else %}
+      <form action="{{download_url}}" method="post">
+        <button class="btn btn-primary form-control" type="submit">
+          <i class="fas fa-download"></i> Data
+        </button>
+      </form>
+    {% endif %}
+    </div>
+  </div>
+</form>
+
+<div class="row mt-4">
+  {% include "partials/_household_table.html" with household_list=object_list %}
+  {% if page_obj.has_other_pages %}
+    {% include "partials/_pagination.html" %}
+  {% endif %}
+</div>
+{% endblock %}

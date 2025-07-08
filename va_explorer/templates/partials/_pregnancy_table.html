@@ -1,0 +1,56 @@
+{% load va_explorer_tags %}
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th><a href="?{% sort_url 'id' direction='-' %}">ID</a></th>
+      <th><a href="?{% sort_url 'enumerator' direction='-' %}">Enumerator</a></th>
+      <th><a href="?{% sort_url 'province' direction='-' %}">Province</a></th>
+      <th><a href="?{% sort_url 'district' direction='-' %}">District</a></th>
+      <th><a href="?{% sort_url 'PE_06' direction='-' %}">Pregnant Woman</a></th>
+      <th><a href="?{% sort_url 'PE_07' direction='-' %}">DOB</a></th>
+      <th><a href="?{% sort_url 'PE_09A' direction='-' %}">Last Menstrual Period</a></th>
+      <th></th>
+      {% if va_data_cleanup and perms.va_data_cleanup.download %}
+        <th>Download</th>
+      {% endif %}
+      {% if va_data_cleanup and perms.va_data_management.delete_pregnancy %}
+        <th>Delete</th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% if object_list|length != 0 %}
+      {% for p in object_list %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.enumerator|default:"Not Listed" }}</td>
+          <td>{{ p.province|default:"-" }}</td>
+          <td>{{ p.district|default:"-" }}</td>
+          <td>{{ p.PE_06|default:"Unknown" }}</td>
+          <td>{{ p.PE_07|default:"-" }}</td>
+          <td>{{ p.PE_09A|default:"-" }}</td>
+          <td><a class="btn btn-primary" href="{% url 'va_data_management:pregnancy_show' id=p.id %}">View</a></td>
+          {% if va_data_cleanup and perms.va_data_cleanup.download %}
+            <td>
+              <a class="btn btn-primary" href="{% url 'data_cleanup:pregnancy_download' p.id %}">
+                <i class="fas fa-download"></i>
+              </a>
+            </td>
+          {% endif %}
+          {% if va_data_cleanup and perms.va_data_management.delete_pregnancy %}
+            <td>
+              <a class="btn btn-danger" href="{% url 'va_data_management:pregnancy_delete' p.id %}">
+                <i class="fas fa-trash"></i>
+              </a>
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="10">There are no results.</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>

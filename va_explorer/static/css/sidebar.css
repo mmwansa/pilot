@@ -1,0 +1,33 @@
+.collapsible-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.collapsible-header:focus {
+  outline: 2px solid #009140;
+  background: rgba(52, 152, 219, 0.10);
+}
+
+.collapse-caret {
+  margin-left: 8px;
+  font-size: 13px;
+  transition: transform 0.2s;
+}
+
+.collapsible-header[aria-expanded="true"] .collapse-caret {
+  transform: rotate(180deg);
+}
+
+/* Remove bullets from navigation list items */
+.nav-item {
+  list-style: none;
+}
+
+/* Optional: Reset padding/margin if needed */
+.nav .nav-item {
+  margin: 0;
+  padding: 0;
+}

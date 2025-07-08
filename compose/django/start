@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+export DJANGO_SETTINGS_MODULE=config.settings.production
+
+echo "Running database migrations..."
+python /app/manage.py migrate
+
+echo "Initializing groups..."
+python /app/manage.py initialize_groups
+
+echo "Starting gunicorn..."
+/usr/local/bin/gunicorn config.wsgi --bind=0.0.0.0:5000 --workers=$((2 * $(getconf _NPROCESSORS_ONLN) + 1)) --timeout=181 --chdir=/app

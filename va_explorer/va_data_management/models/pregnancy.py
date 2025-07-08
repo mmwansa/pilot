@@ -1,0 +1,60 @@
+from django.db import models
+import uuid
+from simple_history.models import HistoricalRecords
+
+class Pregnancy(models.Model):
+    uuid = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    deviceid = models.TextField(blank=True)
+    today = models.TextField(blank=True)
+    start = models.TextField(blank=True)
+    province = models.TextField("Select province", blank=True)
+    district = models.TextField("Select district", blank=True)
+    constituency = models.TextField("Select Constituency", blank=True)
+    ward = models.TextField("Select Ward", blank=True)
+    ea = models.TextField("Select Enumeration Area", blank=True)
+    supervisor = models.TextField("Select your Supervisor name", blank=True)
+    enumerator = models.TextField("Select your name", blank=True)
+    PE_02 = models.TextField("PE_02. Name of the respondent", blank=True)
+    
+    PE_03 = models.TextField("PE_03. Did respondent give consent?", blank=True)
+    consented = models.TextField("Pregnancy Notification", blank=True)
+    PE_04 = models.TextField("PE_04. Household", blank=True)
+    PE_05 = models.TextField("PE_05. What is the name of the head of this household?", blank=True)
+    PE_06 = models.TextField("PE_06. Name of Pregnant woman", blank=True)
+    PE_07 = models.TextField("PO_05. What is her Date of Birth?", blank=True)
+    PE_07A = models.IntegerField("PE_07. How old was she at her last birthday?", blank=True)
+    PE_08 = models.TextField("PE_08. What is her current marital status?", blank=True)
+    
+    PE_09 = models.TextField("PE_09. Do you know her date of  last menstrual period?", blank=True)
+    PE_09A = models.TextField("PE_09A. When was her last menstrual period?", blank=True)
+    PE_10 = models.TextField("PE_10. Do you know her expected date of delivery?", blank=True)
+    PE_10A = models.TextField("PE_10A. When is  she  expected date of delivery (EDD)?", blank=True)
+    PE_11 = models.TextField("PE_11. Does  she have any of the following medical conditions?", blank=True)
+    PE_11_other = models.TextField("PE_11. Specify other medical conditions.", blank=True)
+    PE_12 = models.TextField("PE_12. Has she  had any complications in her previous pregnancies?", blank=True)
+    PE_12A = models.TextField("PE_12. Has  she had any of the following complications in her previous pregnancies?", blank=True)
+    PE_12_other = models.TextField("PE_12. Specify other medical conditions.", blank=True)
+    PE_13 = models.TextField("PE_13. Has she  been diagnosed with any complications during this pregnancy?", blank=True)
+    PE_13_specify = models.TextField("PE_13. Specify Complications", blank=True)
+    PE_14 = models.TextField("PE_14. Is there a history of genetic conditions or pregnancy complications in your family?", blank=True)
+    PE_14_specify = models.TextField("PE_14. Specify histrory of genetic conditions", blank=True)
+    PE_15 = models.TextField("PE_15. Does she 'use any form of tobacco (smoked or smokeless)?", blank=True)
+    PE_16 = models.TextField("PE_16. Does she consume alcohol?", blank=True)
+    PE_17 = models.TextField("PE_17. How frequent  does she consume alcohol?", blank=True)
+    PE_18 = models.TextField("PE_18. Do you have an Antenatal card?", blank=True)
+    antenatal_card_details = models.TextField("Atenatal Card Details", blank=True)
+    
+    PE_20 = models.TextField("PE_20. Record the Name of the Facility", blank=True)
+    PE_21 = models.TextField("PE_21. Record the First Antenatal Visit", blank=True)
+    PE_22 = models.IntegerField("PE_22. Record number of Antenatal Visits", blank=True)
+    PE_23 = models.TextField("PE_23. Record HIV Status", blank=True)
+    PE_24 = models.TextField("PE_24. Record Treatment status", blank=True)
+    PE_25 = models.TextField("PE_25. Capture GPS Cordinates for the Household", blank=True)
+    end = models.TextField(blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
