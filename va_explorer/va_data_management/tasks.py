@@ -1,3 +1,8 @@
+import re
+from collections import defaultdict
+from io import BytesIO
+
+import pandas as pd
 from celery.schedules import crontab
 
 from config.celery_app import app
@@ -5,8 +10,63 @@ from config.settings.base import env
 from va_explorer.va_data_management.management.commands.import_from_kobo import (
     BATCH_SIZE,
 )
+from va_explorer.va_data_management.management.commands.load_form_csv import (
+    FORM_MODEL_MAP,
+)
+from va_explorer.va_data_management.models import ODKFormChoice
 from va_explorer.va_data_management.utils import coding, kobo, odk
 from va_explorer.va_data_management.utils.loading import load_records_from_dataframe
+from va_explorer.va_data_management.utils.odk import (
+    pyodk_download_definition,
+    pyodk_download_table,
+)
+
+
+def load_definition_from_bytes(form_name: str, content: bytes) -> int:
+    """Parse an XLSForm definition and populate ODKFormChoice."""
+    survey = pd.read_excel(BytesIO(content), sheet_name="survey")
+    choices = pd.read_excel(BytesIO(content), sheet_name="choices")
+    label_col = None
+    for col in choices.columns:
+        if str(col).lower().startswith("label"):
+            label_col = col
+            break
+    if label_col is None:
+        return 0
+    created = 0
+    for _, srow in survey.iterrows():
+        qtype = str(srow.get("type", ""))
+        match = re.match(r"select_(?:one|multiple)\s+(.+)", qtype)
+        if not match:
+            continue
+        list_name = match.group(1)
+        field = srow.get("name")
+        if not field:
+            continue
+        sub = choices[choices["list_name"] == list_name]
+        for _, crow in sub.iterrows():
+            ODKFormChoice.objects.update_or_create(
+                form_name=form_name,
+                field_name=field,
+                value=str(crow["name"]),
+                defaults={"label": str(crow[label_col])},
+            )
+            created += 1
+    return created
+
+
+def import_dataframe_records(form_name: str, df: pd.DataFrame) -> int:
+    """Map values using ODKFormChoice and save model records."""
+    lookup = defaultdict(dict)
+    for choice in ODKFormChoice.objects.filter(form_name=form_name):
+        lookup[choice.field_name][choice.value] = choice.label
+    for field, mapping in lookup.items():
+        if field in df.columns:
+            df[field] = df[field].map(lambda v, _m=mapping: _m.get(str(v), v))
+    model = FORM_MODEL_MAP[form_name]
+    objects = [model(**row) for row in df.to_dict(orient="records")]
+    model.objects.bulk_create(objects)
+    return len(objects)
 
 
 @app.on_after_finalize.connect
@@ -21,6 +81,13 @@ def setup_periodic_tasks(sender, **kwargs):
         crontab(hour=0, minute=30),
         run_coding_algorithms.s(),
         name="Run Coding Algorithms daily",
+    )
+
+    # Import forms and data from ODK daily at 01:00
+    sender.add_periodic_task(
+        crontab(hour=1, minute=0),
+        import_odk_forms.s(),
+        name="Import ODK forms",
     )
 
 
@@ -93,3 +160,26 @@ def import_from_kobo():
         "num_corrected": num_corrected,
         "num_removed": num_invalid,
     }
+
+
+@app.task()
+def import_odk_forms():
+    """Download ODK form definitions and data using pyODK."""
+    forms = {
+        "household": env("ODK_HOUSEHOLD_FORM_ID", default=""),
+        "pregnancy": env("ODK_PREGNANCY_FORM_ID", default=""),
+        "pregnancy_outcome": env("ODK_PREGNANCY_OUTCOME_FORM_ID", default=""),
+        "death": env("ODK_DEATH_FORM_ID", default=""),
+    }
+    results = {}
+    for name, form_id in forms.items():
+        if not form_id:
+            continue
+        definition = pyodk_download_definition(form_id)
+        if definition:
+            load_definition_from_bytes(name, definition)
+        df = pyodk_download_table(form_id)
+        if not df.empty:
+            num = import_dataframe_records(name, df)
+            results[name] = num
+    return results
