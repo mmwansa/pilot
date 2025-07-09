@@ -1,5 +1,3 @@
-import uuid
-
 from django.db import models
 from simple_history.models import HistoricalRecords
 
@@ -7,11 +5,6 @@ from .pregnancy import Pregnancy
 
 
 class PregnancyOutcome(models.Model):
-    uuid = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-    )
     pregnancy = models.ForeignKey(
         Pregnancy, on_delete=models.CASCADE, related_name="outcomes"
     )

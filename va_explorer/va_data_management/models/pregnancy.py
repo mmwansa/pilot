@@ -1,15 +1,8 @@
-import uuid
-
 from django.db import models
 from simple_history.models import HistoricalRecords
 
 
 class Pregnancy(models.Model):
-    uuid = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-    )
     deviceid = models.TextField(blank=True)
     today = models.TextField(blank=True)
     start = models.TextField(blank=True)
