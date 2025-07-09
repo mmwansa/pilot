@@ -8,19 +8,13 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='household',
-            name='id',
-            field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
-            preserve_default=False,
-        ),
         migrations.AlterField(
             model_name='household',
             name='uuid',
             field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
         ),
         migrations.AddField(
-            model_name='pregnancy',
+            model_name='household',
             name='id',
             field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
             preserve_default=False,
@@ -31,7 +25,7 @@ class Migration(migrations.Migration):
             field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
         ),
         migrations.AddField(
-            model_name='pregnancyoutcome',
+            model_name='pregnancy',
             name='id',
             field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
             preserve_default=False,
@@ -42,7 +36,7 @@ class Migration(migrations.Migration):
             field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
         ),
         migrations.AddField(
-            model_name='death',
+            model_name='pregnancyoutcome',
             name='id',
             field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
             preserve_default=False,
@@ -51,6 +45,12 @@ class Migration(migrations.Migration):
             model_name='death',
             name='uuid',
             field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+        ),
+        migrations.AddField(
+            model_name='death',
+            name='id',
+            field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
+            preserve_default=False,
         ),
         migrations.AddField(
             model_name='householdmember',
