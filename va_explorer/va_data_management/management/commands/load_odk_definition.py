@@ -1,0 +1,54 @@
+import argparse
+import re
+
+import pandas as pd
+from django.core.management.base import BaseCommand
+
+from va_explorer.va_data_management.models import ODKFormChoice
+
+
+class Command(BaseCommand):
+    """Load an ODK XLSForm definition into reference tables."""
+
+    help = "Load ODK form definition to create reference table"
+
+    def add_arguments(self, parser):
+        parser.add_argument("form_name", type=str, help="Name of the form")
+        parser.add_argument("definition_file", type=argparse.FileType("rb"))
+
+    def handle(self, *args, **options):
+        form_name = options["form_name"]
+        definition_file = options["definition_file"]
+
+        survey = pd.read_excel(definition_file, sheet_name="survey")
+        choices = pd.read_excel(definition_file, sheet_name="choices")
+
+        # Determine label column (label or label::English etc.)
+        label_col = None
+        for col in choices.columns:
+            if str(col).lower().startswith("label"):
+                label_col = col
+                break
+        if not label_col:
+            self.stderr.write("Could not find label column in choices sheet")
+            return
+        created = 0
+        for _, srow in survey.iterrows():
+            qtype = str(srow.get("type", ""))
+            match = re.match(r"select_(?:one|multiple)\s+(.+)", qtype)
+            if not match:
+                continue
+            list_name = match.group(1)
+            field = srow.get("name")
+            if not field:
+                continue
+            sub = choices[choices["list_name"] == list_name]
+            for _, crow in sub.iterrows():
+                ODKFormChoice.objects.update_or_create(
+                    form_name=form_name,
+                    field_name=field,
+                    value=str(crow["name"]),
+                    defaults={"label": str(crow[label_col])},
+                )
+                created += 1
+        self.stdout.write(f"Loaded {created} choices for form {form_name}")

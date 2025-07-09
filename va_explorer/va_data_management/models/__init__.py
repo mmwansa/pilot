@@ -1,27 +1,29 @@
-from .household_census import Household
+from .death import Death
+from .household_census import Household, HouseholdMember
+from .odk_reference import ODKFormChoice
 from .pregnancy import Pregnancy
 from .pregnancy_outcome import PregnancyOutcome
-from .death import Death
 from .verbal_autopsy import (
-    VerbalAutopsy, 
-    Location, 
-    CauseCodingIssue, 
-    questions_to_autodetect_duplicates,
+    CauseCodingIssue,
     CauseOfDeath,
     CODCodesDHIS,
-    DhisStatus
+    DhisStatus,
+    Location,
+    VerbalAutopsy,
+    questions_to_autodetect_duplicates,
 )
 
-__all__ = [
-    'Household',
-    'Pregnancy',
-    'PregnancyOutcome',
-    'Death',
-    'VerbalAutopsy', 
-    'Location',
-    'CauseCodingIssue',
-    'questions_to_autodetect_duplicates',
-    'CauseOfDeath',
-    'CODCodesDHIS',
-     'DhisStatus'
+__all__ = [    "Household",
+    "HouseholdMember",
+    "Pregnancy",
+    "PregnancyOutcome",
+    "Death",
+    "VerbalAutopsy",
+    "Location",
+    "CauseCodingIssue",
+    "questions_to_autodetect_duplicates",
+    "CauseOfDeath",
+    "CODCodesDHIS",
+    "DhisStatus",
+    "ODKFormChoice",
 ]
