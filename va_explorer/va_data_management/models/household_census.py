@@ -1,15 +1,8 @@
-import uuid
-
 from django.db import models
 from simple_history.models import HistoricalRecords
 
 
 class Household(models.Model):
-    uuid = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-    )
 
     deviceid = models.TextField("nan", blank=True)
     today = models.TextField("nan", blank=True)
@@ -241,12 +234,6 @@ class Household(models.Model):
 class HouseholdMember(models.Model):
     household = models.ForeignKey(
         "va_data_management.Household", on_delete=models.CASCADE, related_name="members"
-    )
-
-    uuid = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
     )
 
     HH_03 = models.TextField("HH_03. Household Member Details", blank=True)
