@@ -149,4 +149,5 @@ class PregnancyOutcome(models.Model):
         "PO_51B_08. Completed Birth Notification form", blank=True
     )
     gps = models.TextField("Capture GPS Cordinates", blank=True)
-    end = models.TextField("nan", blank=True)    history = HistoricalRecords()
+    end = models.TextField("nan", blank=True)    
+    history = HistoricalRecords()
