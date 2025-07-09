@@ -1,6 +1,8 @@
-from django.db import models
 import uuid
+
+from django.db import models
 from simple_history.models import HistoricalRecords
+
 
 class Death(models.Model):
     uuid = models.UUIDField(
