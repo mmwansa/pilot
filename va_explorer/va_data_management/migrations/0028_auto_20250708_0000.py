@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='household',
             name='id',
-            field=models.AutoField(auto_created=True, primary_key=True, serialize=False, default=0),
+            field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='pregnancy',
             name='id',
-            field=models.AutoField(auto_created=True, primary_key=True, serialize=False, default=0),
+            field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='pregnancyoutcome',
             name='id',
-            field=models.AutoField(auto_created=True, primary_key=True, serialize=False, default=0),
+            field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='death',
             name='id',
-            field=models.AutoField(auto_created=True, primary_key=True, serialize=False, default=0),
+            field=models.AutoField(auto_created=True, primary_key=True, serialize=False),
             preserve_default=False,
         ),
         migrations.AlterField(
