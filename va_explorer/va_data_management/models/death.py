@@ -1,12 +1,14 @@
-from django.db import models
 import uuid
+
+from django.db import models
 from simple_history.models import HistoricalRecords
+
 
 class Death(models.Model):
     uuid = models.UUIDField(
-        primary_key=True,
         default=uuid.uuid4,
-        editable=False
+        editable=False,
+        unique=True,
     )
 
     deviceid = models.TextField("Device ID", blank=True)
