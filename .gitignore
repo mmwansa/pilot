@@ -7,7 +7,6 @@ OpenVAFiles
 .pytest_cache/
 .ipython/
 .env
-.env.template
 .save
 .envs/*
 pgdata
