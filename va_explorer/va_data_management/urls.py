@@ -34,9 +34,9 @@ urlpatterns = [
     path("pregnancy/delete/<int:pk>", view=views.PregnancyDelete.as_view(), name="pregnancy_delete",),
 
     path("pregnancy-outcomes", view=views.PregnancyOutcomes.as_view(), name="pregnancy_outcomes"),
-    path("pregnancy-outcomes/detail/<int:id>", view=views.PregnancyOutcomeDetail.as_view(), name="pregnancy_detail",),
-    path("pregnancy-outcomes/edit/<int:id>",view=views.PregnancyOutcomeEdit.as_view(), name="pregnancy_edit",),
-    path("pregnancy-outcomes/delete/<int:pk>", view=views.PregnancyOutcomeDelete.as_view(), name="pregnancy_delete",),
+    path("pregnancy-outcomes/detail/<int:id>", view=views.PregnancyOutcomeDetail.as_view(), name="pregnancy_outcome_detail",),
+    path("pregnancy-outcomes/edit/<int:id>",view=views.PregnancyOutcomeEdit.as_view(), name="pregnancy_outcome_edit",),
+    path("pregnancy-outcomes/delete/<int:pk>", view=views.PregnancyOutcomeDelete.as_view(), name="pregnancy_outcome_delete",),
 
     # Deaths
     path("deaths", view=views.Deaths.as_view(), name="deaths"),
