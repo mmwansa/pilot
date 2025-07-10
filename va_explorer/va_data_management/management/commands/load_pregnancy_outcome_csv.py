@@ -8,6 +8,7 @@ from va_explorer.va_data_management.models import (
     ODKFormChoice,
     PregnancyOutcome,
 )
+from va_explorer.va_data_management.utils.loading import normalize_dataframe_columns
 
 
 class Command(BaseCommand):
@@ -28,6 +29,7 @@ class Command(BaseCommand):
             )
 
         df = pd.read_csv(csv_file)
+        df = normalize_dataframe_columns(df, PregnancyOutcome)
 
         lookup = defaultdict(dict)
         for choice in ODKFormChoice.objects.filter(form_name=form_name):

@@ -21,6 +21,24 @@ from ..constants import _checkbox_choices
 User = get_user_model()
 
 
+def normalize_dataframe_columns(df, model):
+    """Rename and filter DataFrame columns to align with model fields."""
+
+    # Remove prefixes before the last dash to match our model fields
+    df = df.rename(columns=lambda c: c.rsplit("-", 1)[-1])
+
+    model_fields = pd.Index([f.name for f in model._meta.get_fields()])
+
+    # Map column names ignoring case
+    case_map = {f.lower(): f for f in model_fields}
+    df = df.rename(columns=lambda c: case_map.get(c.lower(), c))
+
+    # Keep only columns that exist on the model
+    df = df[[c for c in df.columns if c in model_fields]]
+
+    return df
+
+
 # load VA records into django database
 def load_records_from_dataframe(record_df, random_locations=False, debug=False):
     logger = None if not debug else logging.getLogger("debug")
