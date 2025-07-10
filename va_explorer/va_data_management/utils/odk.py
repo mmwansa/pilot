@@ -1,8 +1,11 @@
 from io import BytesIO
+from tempfile import NamedTemporaryFile
 
 import environ
 import pandas as pd
 import requests
+import toml
+from pyodk import Client
 
 env = environ.Env()
 
@@ -116,3 +119,41 @@ def download_responses(
         forms = pd.read_csv(BytesIO(response.content))
         forms.columns = [c.rsplit("-", 1)[-1] for c in forms.columns]
         return forms
+
+
+def _make_client():
+    """Create a pyODK Client based on environment configuration."""
+    cfg = {
+        "central": {
+            "base_url": ODK_HOST,
+            "username": env("ODK_EMAIL"),
+            "password": env("ODK_PASSWORD"),
+            "default_project_id": env.int("ODK_PROJECT_ID"),
+        }
+    }
+    with NamedTemporaryFile(delete=False, suffix=".toml") as tmp:
+        toml.dump(cfg, tmp)
+        path = tmp.name
+    client = Client(config_path=path)
+    client.session.verify = SSL_VERIFY
+    return client
+
+
+def pyodk_download_definition(form_id):
+    """Return XLSForm definition bytes for the given form."""
+    with _make_client().open() as client:
+        resp = client.get(f"projects/{client.project_id}/forms/{form_id}.xlsx")
+        resp.raise_for_status()
+        return resp.content
+
+
+def pyodk_download_table(form_id):
+    """Download submission table for a form as a DataFrame."""
+    with _make_client().open() as client:
+        data = client.submissions.get_table(form_id=form_id)
+        records = data.get("value", [])
+        if not records:
+            return pd.DataFrame()
+        df = pd.DataFrame.from_records(records)
+        df.columns = [c.rsplit("-", 1)[-1] for c in df.columns]
+        return df
