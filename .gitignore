@@ -92,4 +92,6 @@ Icon
 .Trashes
 
 ### VACMS Stuff
-*.csv
+/*.csv
+/*.xlsx
+/*.xlsx
