@@ -5,6 +5,7 @@ import pandas as pd
 from django.core.management.base import BaseCommand, CommandError
 
 from va_explorer.va_data_management.models import ODKFormChoice, Pregnancy
+from va_explorer.va_data_management.utils.loading import normalize_dataframe_columns
 
 
 class Command(BaseCommand):
@@ -23,6 +24,7 @@ class Command(BaseCommand):
             raise CommandError("Definition for form 'pregnancy' has not been loaded")
 
         df = pd.read_csv(csv_file)
+        df = normalize_dataframe_columns(df, Pregnancy)
 
         lookup = defaultdict(dict)
         for choice in ODKFormChoice.objects.filter(form_name=form_name):
