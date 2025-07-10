@@ -4,8 +4,7 @@ va_explorer/media/
 OpenVAFiles
 *.log
 
-.pytest_cache/
-.ipython/
+
 .env
 .save
 .envs/*
@@ -24,11 +23,14 @@ ENV/
 venv310/
 vae_venv/
 
-### Python stuff
+# Python bytecode and cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyo
+.pytest_cache/
+.ipython/
 
 .Python
 build/
