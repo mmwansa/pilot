@@ -12,6 +12,7 @@ from va_explorer.va_data_management.models import (
     Pregnancy,
     PregnancyOutcome,
 )
+from va_explorer.va_data_management.utils.loading import normalize_dataframe_columns
 
 FORM_MODEL_MAP = {
     "household": Household,
@@ -37,6 +38,8 @@ class Command(BaseCommand):
             raise CommandError(f"Definition for form '{form_name}' has not been loaded")
 
         df = pd.read_csv(csv_file)
+        model = FORM_MODEL_MAP[form_name]
+        df = normalize_dataframe_columns(df, model)
 
         # Build mapping of field -> value -> label
         lookup = defaultdict(dict)
@@ -47,7 +50,6 @@ class Command(BaseCommand):
             if field in df.columns:
                 df[field] = df[field].map(lambda v, _map=mapping: _map.get(str(v), v))
 
-        model = FORM_MODEL_MAP[form_name]
         objects = [model(**row) for row in df.to_dict(orient="records")]
         model.objects.bulk_create(objects)
 
