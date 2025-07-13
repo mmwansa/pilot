@@ -20,6 +20,35 @@ from ..constants import _checkbox_choices
 
 User = get_user_model()
 
+def normalize_string(s):
+    """Strip whitespace, replace hyphens with underscores, remove surrounding quotes."""
+    if pd.isnull(s):
+        return ""
+    s = str(s).strip().replace("-", "_")
+    if s.startswith(("'", '"')): s = s[1:]
+    if s.endswith(("'", '"')): s = s[:-1]
+    return s
+
+def normalize_value(val):
+    """Remove leading zeros, normalize .0 floats to int, preserve case."""
+    if pd.isnull(val):
+        return ""
+    # Handle float/int conversion
+    try:
+        if isinstance(val, float) and val.is_integer():
+            val = int(val)
+        s = str(val).strip()
+        # If string looks like '1.0', '02.0', etc.
+        if s.replace('.', '', 1).isdigit():
+            float_val = float(s)
+            if float_val.is_integer():
+                s = str(int(float_val))
+        # Remove leading zeros for digit codes (but keep for non-numeric)
+        if s.isdigit():
+            s = str(int(s))
+        return normalize_string(s)
+    except Exception:
+        return normalize_string(val)
 
 def normalize_dataframe_columns(df, model):
     """
@@ -47,6 +76,7 @@ def normalize_dataframe_columns(df, model):
 
     # Rename columns in the DataFrame
     df = df.rename(columns=rename_map)
+    df.columns = df.columns.str.strip()
 
     # Keep only columns that exist on the model
     df = df[[col for col in df.columns if col in model_fields_set]]
