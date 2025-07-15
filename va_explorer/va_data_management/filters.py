@@ -98,10 +98,10 @@ class VAFilter(FilterSet):
 
 
 class PregnancyFilter(FilterSet):
-    id = CharFilter(
-        field_name="id",
-        label="ID",
-        validators=[validate_integer],
+    province = CharFilter(
+        field_name="province",
+        lookup_expr="icontains",
+        label="Province",
         widget=TextInput(attrs={"class": "form-text"}),
     )
     district = CharFilter(
@@ -110,34 +110,29 @@ class PregnancyFilter(FilterSet):
         label="District",
         widget=TextInput(attrs={"class": "form-text"}),
     )
+    ward = CharFilter(
+        field_name="ward",
+        lookup_expr="icontains",
+        label="Ward",
+        widget=TextInput(attrs={"class": "form-text"}),
+    )
     enumerator = CharFilter(
         field_name="enumerator",
         lookup_expr="icontains",
         label="Enumerator",
         widget=TextInput(attrs={"class": "form-text"}),
     )
-    respondent = CharFilter(
-        method="filter_respondent",
-        label="Respondent",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-
     start_date = DateFilter(
         field_name="created",
         lookup_expr="gte",
-        label="Earliest Date",
+        label="Earliest Record Date",
         widget=DateInput(attrs={"class": "form-date datepicker"}),
     )
     end_date = DateFilter(
         field_name="created",
         lookup_expr="lte",
-        label="Latest Date",
+        label="Latest Record Date",
         widget=DateInput(attrs={"class": "form-date datepicker"}),
-    )
-    only_errors = BooleanFilter(
-        method="filter_errors",
-        label="Only Errors",
-        widget=Select(choices=TRUE_FALSE_CHOICES, attrs={"class": "custom-select"}),
     )
 
     class Meta:
@@ -258,47 +253,24 @@ class PregnancyOutcomeFilter(FilterSet):
         lookup_expr="icontains",
         label="Enumerator",
         widget=TextInput(attrs={"class": "form-text"}),
-    )
-    supervisor = CharFilter(
-        field_name="supervisor",
-        lookup_expr="icontains",
-        label="Supervisor",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    respondent = CharFilter(
-        method="filter_respondent_fuzzy",
-        label="Respondent",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    mother_name = CharFilter(
-        field_name="PO_04",
-        lookup_expr="icontains",
-        label="Mother's Name",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    father_name = CharFilter(
-        field_name="PO_23",
-        lookup_expr="icontains",
-        label="Father's Name",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    facility = CharFilter(
-        field_name="PO_17",
-        lookup_expr="icontains",
-        label="Facility",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
+    )        
     outcome_type = CharFilter(
         field_name="po_group",
         lookup_expr="icontains",
         label="Pregnancy Outcome",
         widget=TextInput(attrs={"class": "form-text"}),
     )
-    date_of_delivery = CharFilter(
+    start_date = DateFilter(
         field_name="PO_41",
-        lookup_expr="icontains",
-        label="Date of Delivery or End",
-        widget=TextInput(attrs={"class": "form-text"}),
+        lookup_expr="gte",
+        label="Earliest Date of Delivery",
+        widget=DateInput(attrs={"class": "form-date datepicker"}),
+    )
+    end_date = DateFilter(
+        field_name="PO_41",
+        lookup_expr="lte",
+        label="Latest Date of Delivery",
+        widget=DateInput(attrs={"class": "form-date datepicker"}),
     )
 
     class Meta:
@@ -351,28 +323,19 @@ class DeathFilter(FilterSet):
         label="Enumerator",
         widget=TextInput(attrs={"class": "form-text"}),
     )
-    supervisor = CharFilter(
-        field_name="supervisor",
-        lookup_expr="icontains",
-        label="Supervisor",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    respondent = CharFilter(
-        method="filter_respondent_fuzzy",
-        label="Respondent",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    deceased_name = CharFilter(
-        method="filter_deceased_fuzzy",
-        label="Deceased Name",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    date_of_death = DateFilter(
-        field_name="date_of_death",
-        lookup_expr="exact",
-        label="Date of Death",
+    start_date = DateFilter(
+        field_name="DE_06",
+        lookup_expr="gte",
+        label="Earliest Date of Death",
         widget=DateInput(attrs={"class": "form-date datepicker"}),
     )
+    end_date = DateFilter(
+        field_name="DE_06",
+        lookup_expr="lte",
+        label="Latest Date of Death",
+        widget=DateInput(attrs={"class": "form-date datepicker"}),
+    )
+
 
     class Meta:
         model = Death
@@ -393,11 +356,11 @@ class DeathFilter(FilterSet):
     def filter_deceased_fuzzy(self, queryset, name, value):
         if value:
             threshold = 75
-            records = queryset.values("id", "deceased_name")
+            records = queryset.values("id", "DE_03")
             matches = [
                 record["id"]
                 for record in records
-                if fuzz.token_set_ratio(value, record.get("deceased_name") or "") > threshold
+                if fuzz.token_set_ratio(value, record.get("DE_03") or "") > threshold
             ]
             return queryset.filter(id__in=matches)
         return queryset

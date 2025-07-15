@@ -22,7 +22,7 @@ class Pregnancy(models.Model):
         "PE_05. What is the name of the head of this household?", blank=True, null=True
     )
     PE_06 = models.TextField("PE_06. Name of Pregnant woman", blank=True, null=True)
-    PE_07 = models.TextField("PO_05. What is her Date of Birth?", blank=True, null=True)
+    PE_07 = models.TextField("PE_07. What is her Date of Birth?", blank=True, null=True)
     PE_07A = models.IntegerField(
         "PE_07. How old was she at her last birthday?", blank=True, null=True
     )

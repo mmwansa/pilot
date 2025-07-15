@@ -56,17 +56,6 @@ class Pregnancies(CustomAuthMixin, PermissionRequiredMixin, FilterView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['filterset'] = self.filterset
-      
-        context["object_list"] = [
-            {
-                "id": obj.id,
-                "respondent": obj.PE_02,
-                "pregnant_woman": obj.PE_06,
-                "district": obj.district,
-                "created": obj.created,
-            }
-            for obj in context["object_list"]
-        ]
         return context
 
 

@@ -83,6 +83,77 @@ def normalize_dataframe_columns(df, model):
 
     return df
 
+def load_odk_csv_to_model(
+    df,
+    model,
+    odk_choices_queryset,
+    odk_map_columns,
+    verbose=False
+):
+    """
+    Generic loader for ODK CSV to Django model, using ODKFormChoice for value-to-label mapping.
+    """
+    # Build odk_map (all normalized but case preserved)
+    odk_map = {}
+    for choice in odk_choices_queryset:
+        field_name = normalize_string(choice.field_name)
+        value = normalize_value(choice.value)
+        if field_name not in odk_map:
+            odk_map[field_name] = {}
+        odk_map[field_name][value] = choice.label
+
+    def lookup_label(col, v):
+        v_norm = normalize_value(v)
+        if v_norm in odk_map.get(col, {}):
+            return odk_map[col][v_norm]
+        return v if pd.isnull(v) or str(v).lower() == "nan" else v_norm
+
+    # Map ODK code values to labels
+    for col in odk_map_columns:
+        if col in df.columns and col in odk_map:
+            if verbose:
+                print(f"Mapping csv column '{col}' with odk_map keys {list(odk_map[col].keys())}")
+                print("BEFORE:", df[col].unique())
+            df[col] = df[col].map(lambda v, c=col: lookup_label(c, v))
+            if verbose:
+                print("AFTER:", df[col].unique())
+        elif col not in df.columns and verbose:
+            print(f"Column '{col}' not in DataFrame")
+        elif col not in odk_map and verbose:
+            print(f"Column '{col}' not in odk_map") 
+
+    # Remove duplicate columns after renaming
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    # Only keep columns that are model fields
+    model_fields = {f.name for f in model._meta.get_fields()}
+    df = df[[col for col in df.columns if col in model_fields]]
+
+    # Identify integer fields in the model
+    int_fields = [
+        f.name for f in model._meta.get_fields()
+        if getattr(f, "get_internal_type", lambda: None)() in [
+            "IntegerField",
+            "BigIntegerField",
+            "SmallIntegerField",
+            "PositiveIntegerField",
+            "PositiveSmallIntegerField",
+        ]
+    ]
+
+    def nan_to_none_for_intfields(row, int_fields):
+        return {
+            k: (None if (k in int_fields and pd.isnull(v)) else v)
+            for k, v in row.items()
+        }
+
+    objects = [
+        model(**nan_to_none_for_intfields(row, int_fields))
+        for row in df.to_dict(orient="records")
+    ]
+    return objects
+
+
 
 # load VA records into django database
 def load_records_from_dataframe(record_df, random_locations=False, debug=False):

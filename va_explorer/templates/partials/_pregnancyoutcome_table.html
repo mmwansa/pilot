@@ -7,7 +7,7 @@
       <th><a href="?{% sort_url 'enumerator' direction='-' %}">Enumerator</a></th>
       <th><a href="?{% sort_url 'province' direction='-' %}">Province</a></th>
       <th><a href="?{% sort_url 'district' direction='-' %}">District</a></th>
-      <th><a href="?{% sort_url 'PO_04' direction='-' %}">Mother's Name</a></th>
+      <th><a href="?{% sort_url 'ward' direction='-' %}">Ward</a></th>
       <th><a href="?{% sort_url 'PO_41' direction='-' %}">Delivery/End Date</a></th>
       <th><a href="?{% sort_url 'PO_46' direction='-' %}">Outcome</a></th>
       <th></th>
@@ -27,10 +27,10 @@
           <td>{{ o.enumerator|default:"Not Listed" }}</td>
           <td>{{ o.province|default:"-" }}</td>
           <td>{{ o.district|default:"-" }}</td>
-          <td>{{ o.PO_04|default:"Unknown" }}</td>
+          <td>{{ o.ward|default:"-" }}</td>
           <td>{{ o.PO_41|default:"-" }}</td>
           <td>{{ o.PO_46|default:"-" }}</td>
-          <td><a class="btn btn-primary" href="{% url 'va_data_management:pregnancyoutcome_show' id=o.id %}">View</a></td>
+          <td><a class="btn btn-primary" href="{% url 'va_data_management:pregnancy_outcome_detail' id=o.id %}">View</a></td>
           {% if va_data_cleanup and perms.va_data_cleanup.download %}
             <td>
               <a class="btn btn-primary" href="{% url 'data_cleanup:pregnancyoutcome_download' o.id %}">
@@ -40,7 +40,7 @@
           {% endif %}
           {% if va_data_cleanup and perms.va_data_management.delete_pregnancyoutcome %}
             <td>
-              <a class="btn btn-danger" href="{% url 'va_data_management:pregnancyoutcome_delete' o.id %}">
+              <a class="btn btn-danger" href="{% url 'va_data_management:pregnancy_outcome_delete' o.id %}">
                 <i class="fas fa-trash"></i>
               </a>
             </td>

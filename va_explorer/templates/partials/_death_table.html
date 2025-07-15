@@ -7,9 +7,9 @@
       <th><a href="?{% sort_url 'enumerator' direction='-' %}">Enumerator</a></th>
       <th><a href="?{% sort_url 'province' direction='-' %}">Province</a></th>
       <th><a href="?{% sort_url 'district' direction='-' %}">District</a></th>
-      <th><a href="?{% sort_url 'deceased_name' direction='-' %}">Deceased Name</a></th>
-      <th><a href="?{% sort_url 'date_of_death' direction='-' %}">Date of Death</a></th>
-      <th><a href="?{% sort_url 'cause_of_death' direction='-' %}">Cause of Death</a></th>
+      <th><a href="?{% sort_url 'ward' direction='-' %}">Ward</a></th>
+      <th><a href="?{% sort_url 'DE_03' direction='-' %}">Deceased Name</a></th>
+      <th><a href="?{% sort_url 'DE_06' direction='-' %}">Date of Death</a></th>      
       <th></th>
       {% if va_data_cleanup and perms.va_data_cleanup.download %}
         <th>Download</th>
@@ -27,9 +27,9 @@
           <td>{{ o.enumerator|default:"Not Listed" }}</td>
           <td>{{ o.province|default:"-" }}</td>
           <td>{{ o.district|default:"-" }}</td>
-          <td>{{ o.deceased_name|default:"Unknown" }}</td>
-          <td>{{ o.date_of_death|default:"-" }}</td>
-          <td>{{ o.cause_of_death|default:"-" }}</td>
+          <td>{{ o.ward|default:"-" }}</td>
+          <td>{{ o.DE_03|default:"Unknown" }}</td>
+          <td>{{ o.DE_06|default:"-" }}</td>         
           <td><a class="btn btn-primary" href="{% url 'va_data_management:death_detail' id=o.id %}">View</a></td>
           {% if va_data_cleanup and perms.va_data_cleanup.download %}
             <td>

@@ -7,9 +7,9 @@
       <th><a href="?{% sort_url 'enumerator' direction='-' %}">Enumerator</a></th>
       <th><a href="?{% sort_url 'province' direction='-' %}">Province</a></th>
       <th><a href="?{% sort_url 'district' direction='-' %}">District</a></th>
-      <th><a href="?{% sort_url 'PE_06' direction='-' %}">Pregnant Woman</a></th>
-      <th><a href="?{% sort_url 'PE_07' direction='-' %}">DOB</a></th>
-      <th><a href="?{% sort_url 'PE_09A' direction='-' %}">Last Menstrual Period</a></th>
+      <th><a href="?{% sort_url 'ward' direction='-' %}">Ward</a></th>
+      <th><a href="?{% sort_url 'pregnant_woman' direction='-' %}">Pregnant Woman</a></th>
+      <th><a href="?{% sort_url 'dob' direction='-' %}">DOB</a></th>      
       <th></th>
       {% if va_data_cleanup and perms.va_data_cleanup.download %}
         <th>Download</th>
@@ -27,9 +27,9 @@
           <td>{{ p.enumerator|default:"Not Listed" }}</td>
           <td>{{ p.province|default:"-" }}</td>
           <td>{{ p.district|default:"-" }}</td>
+          <td>{{ p.ward|default:"-" }}</td>
           <td>{{ p.PE_06|default:"Unknown" }}</td>
           <td>{{ p.PE_07|default:"-" }}</td>
-          <td>{{ p.PE_09A|default:"-" }}</td>
           <td><a class="btn btn-primary" href="{% url 'va_data_management:pregnancy_detail' id=p.id %}">View</a></td>
           {% if va_data_cleanup and perms.va_data_cleanup.download %}
             <td>
