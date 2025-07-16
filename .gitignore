@@ -1,4 +1,8 @@
 ### Project stuff
+commands.md
+requirements.txt
+vaenv/
+
 user_list.csv
 va_explorer/media/
 OpenVAFiles
