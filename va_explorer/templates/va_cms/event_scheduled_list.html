@@ -1,0 +1,58 @@
+{% extends "base.html" %} {% block title %} All Events{% endblock %} 
+{% block heading %} Scheduled Events {% endblock %} {% block content %}
+
+<div class="row mt-4">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Respondent</th>
+        <th>Proposed Date</th>
+        <th>Scheduled Date</th>
+        <th>Comment</th>
+        <th>Staff</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in object_list %}
+      <tr>
+        <td>{{ event.id }}</td>
+        <td>{{ event.get_event_type_display }}</td>
+        <td>{{ event.get_event_status_display }}</td>
+        <td>{{ event.respondent_name }}</td>
+        <td>{{ event.interview_proposed_date }}</td>
+        <td>{{ event.interview_scheduled_date }}</td>
+        <td>{{ event.comment }}</td>
+        <td>{{ event.interview_staff.full_name }}</td>
+        <td>
+          <a
+            href="{% url 'cms-event-update' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Edit</a
+          >
+          <a
+            href="{% url 'cms-event-detail' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Show</a
+          >
+
+          {% if event.event_status == 1 %}
+          <a
+            href="{% url 'cms-event-complete' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Complete</a
+          >
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

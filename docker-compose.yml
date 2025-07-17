@@ -80,6 +80,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-va_explorer}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Pimin73y!we}
+    ports:
+      - "6432:5432" # Maps host port 6432 to container port 5432
     volumes:
       - production_postgres_data:/var/lib/postgresql/data
       - production_postgres_data_backups:/backups
