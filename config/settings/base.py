@@ -52,7 +52,7 @@ db_user = os.environ.get("POSTGRES_USER", "postgres")
 db_password = os.environ.get("POSTGRES_PASSWORD", "postgres")
 db_host = os.environ.get("POSTGRES_HOST", "localhost")
 db_port = os.environ.get("POSTGRES_PORT", "5432")
-db_db = os.environ.get("POSTGRES_DB", "va_explorer")
+db_db = os.environ.get("POSTGRES_DB", "vae_cms_pilot_db")
 
 DATABASES = {
     "default": env.db(
