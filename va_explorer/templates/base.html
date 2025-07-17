@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
-  <title>{% block title %}VA Explorer{% endblock title %}</title>
+  <title>{% block title %}ZNPHI VA CMS{% endblock title %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="">
   <meta name="author" content="">
@@ -57,13 +57,15 @@
       </div>
 
       {% block content %} {% endblock content %}
-    </div>
-    <!-- /container -->
 
-    <!-- Footer -->
+        <!-- Footer -->
     <footer class="container copyright-text custom-footer">
     Copyright &copy; {% now "Y" %} Zambia National Public Health Institute
     </footer>
+    </div>
+    <!-- /container -->
+
+  
   </div>
 
   {% block modal %}{% endblock modal %}

@@ -110,25 +110,28 @@ body {
 }
 
 .auth-body {
-  background-image: url("/static/images/srs1.png");
+  background-image: url("/static/images/srs3.png");
   background-color: #E0E0E0;
   background-blend-mode: multiply;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  background-position: center;
+  background-position: left;
   background-size: contain;
-  margin-bottom: 0px;
+  margin-bottom: 10px;
   padding-bottom: 0px;
+  
 }
 
 .auth-logo {
-  width: 12%;
+  width: 10%;
   height: auto;
+  margin-left: -35px;
   filter: invert(12%);
+  margin-top: auto;
 }
 
 .auth-logo2 {
-  width: 12%;
+  width: 8%;
   height: auto;
   margin-right: -25px;
   filter: invert(12%);
@@ -170,20 +173,49 @@ body {
 
 .auth-title-name {
   font-weight: bold;
-  font-size: 5vw;
-  margin-left: -210px;
+  font-size: 4vw;
+  margin-left: 180px;
+  margin-top: -35px;
   color: white;
   text-shadow: 0 1px 0 black;
+  display: inline-block; /* optional, helps with layout */
 }
 
 .auth-title-desc {
   font-size: 2.5vw;
   color: white;
-  margin-right: 30px;
-  margin-left: -200px;
-  line-height: 120%;
+  margin-right: 80px;
+  margin-left: auto;
+  margin-bottom: 70px;
+  line-height: 1.2; /* <- Changed this */
+  display: block; /* <- Ensures it's on a new line */
   text-shadow: 0 1px 0 black;
 }
+
+.logo-title-container {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* space between logo and text */
+  padding: 20px 60px;
+}
+
+.header-separator {
+  height: 2px;
+  background-color: green;
+  width: 100%;
+  margin-top: -10px;
+  margin-bottom: 20px;
+}
+
+
+
+
+.institute-name {
+  font-size: 2vw;
+  font-weight: bold;
+  color: black;
+}
+
 
 .auth-attribution {
   font-size: 1vw;
