@@ -58,12 +58,12 @@
       <div class="col-md-5">
         <div class="auth-sign-in-box">
           <span class="auth-title">Sign in</span><br />
-          <form class="login" method="POST" action="{% url 'account_login' %}">
+                    <form class="login" method="POST" action="{% url 'account_login' %}">
               {% csrf_token %}
               {% if form.non_field_errors %}
-                <div class="form-errors">
+                <div class="form-errors" style="margin-bottom: 1em;">
                   {% for error in form.non_field_errors %}
-                    <p class="error">{{ error }}</p>
+                    <p class="error" style="color: #b94a48; font-weight: bold;">{{ error }}</p>
                   {% endfor %}
                 </div>
               {% endif %}
@@ -100,7 +100,7 @@
  
 
   </body>
-   <footer  style="font-weight: bold; text-align: center; padding: 10px; background-color: #f7d092ff; color: #424a51ff; position: fixed; bottom: 0; width: 100%;">
+   <footer  style="font-weight: bold; text-align: center; padding: 10px; background-color: #009140; color: #fff; position: fixed; bottom: 0; width: 100%;">
     Copyright &copy; {% now "Y" %} Zambia National Public Health Institute. <br/>
     Maintained by ZNPHI ICT
   </footer>

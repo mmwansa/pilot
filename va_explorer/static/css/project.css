@@ -723,3 +723,12 @@ table thead th,
 .nav-tabs .nav-link {
   font-weight: bold;
 }
+
+/* project.css */
+.footer {
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 1030;
+  background-color: #f8f9fa;
+}
