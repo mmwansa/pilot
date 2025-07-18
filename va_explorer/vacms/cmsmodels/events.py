@@ -30,7 +30,7 @@ class Event(models.Model):
 
     data_collection_staff = models.ForeignKey(
         Staff,
-        related_name="staff",
+        related_name="data_collection_events",  # Changed from "staff"
         null=True,
         on_delete=models.RESTRICT,
         help_text="Foreign key to the Staff.",
@@ -38,7 +38,7 @@ class Event(models.Model):
 
     va_interview_staff = models.ForeignKey(
         Staff,
-        related_name="staff",
+        related_name="va_interview_events",  # Changed from "staff"
         null=True,
         on_delete=models.RESTRICT,
         help_text="Foreign key to the Staff.",
@@ -46,7 +46,7 @@ class Event(models.Model):
 
     death = models.ForeignKey(
         Death,
-        related_name="death",
+        related_name="events",  # Changed from "death"
         null=True,
         blank=False,
         on_delete=models.RESTRICT,
@@ -55,7 +55,7 @@ class Event(models.Model):
 
     va = models.ForeignKey(
         VerbalAutopsy,
-        related_name="va",
+        related_name="events",  # Changed from "va"
         null=True,
         blank=False,
         on_delete=models.RESTRICT,
@@ -64,7 +64,7 @@ class Event(models.Model):
 
     pregnancy = models.ForeignKey(
         Pregnancy,
-        related_name="pregnancy",
+        related_name="events",  # Changed from "pregnancy"
         null=True,
         blank=False,
         on_delete=models.RESTRICT,
@@ -73,7 +73,7 @@ class Event(models.Model):
 
     pregnancy_outcome = models.ForeignKey(
         PregnancyOutcome,
-        related_name="pregnancy_outcome",
+        related_name="events",  # Changed from "pregnancy_outcome"
         null=True,
         blank=False,
         on_delete=models.RESTRICT,
@@ -82,7 +82,7 @@ class Event(models.Model):
 
     household = models.ForeignKey(
         Household,
-        related_name="household",
+        related_name="events",  # Changed from "household"
         null=True,
         blank=True,
         on_delete=models.RESTRICT,
