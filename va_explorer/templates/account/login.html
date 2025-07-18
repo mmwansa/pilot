@@ -8,7 +8,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>{% block title %}ZNPHI SRS{% endblock title %}</title>
+    <title>{% block title %}ZNPHI VA CMS{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}">
     {% block css %}
@@ -16,40 +16,63 @@
     <link href="{% static 'css/project.css' %}" rel="stylesheet">
     {% endblock %}
 
-    <img class="auth-logo" src="{% static 'images/bg3.png' %}" />
+
+
+
   </head>
   <body class="auth-body">
+         <div class="auth-header">
+          <div class="logo-title-container">
+            <img class="auth-logo" src="{% static 'images/bg.png' %}" alt="Logo" />
+            <span class="institute-name">Zambia National Public Health Institute</span>
+          </div>
+        </div>
+        <div class="header-separator"></div>
+
 
 {% block inner %}
 
   {% include "partials/_messages.html" %}
+<span class="auth-title-name"> 
+  <span style="color: rgb(218, 143, 44);">VA</span>
+  <span style="color: black;">C</span><span style="color: rgb(36, 124, 55);">M</span><span style="color: rgb(156, 13, 13);">S</span><br/>
+  <span class="auth-title-desc" style="color: black; font-size: large;">
+    Verbal Autopsy & Case Management System
+  </span>
+</span>
+
+
+
+
   <div class="auth-container">
+    
     <div class="row align-items-center">
       <div class="col-md-7">
         <span class="auth-title-name"> 
-           <span style="color: rgb(218, 143, 44);">VA</span> 
-           <span style="color: black;">C</span>
-           <span style="color: rgb(36, 124, 55);">M</span>
-           <span style="color: rgb(156, 13, 13);">S</span> 
-           
-           
 
-           <img class="auth-logo2" src="{% static 'images/bg.png' %}" /></span><br />
-        <span class="auth-title-desc" style="color: black; font-size: xx-large;">Verbal Autopsy & </span> </br>
-        <span class="auth-title-desc" style="color: black; font-size: xx-large;">Case Management System</span>
-        <!-- <a class="auth-title-link" href="https://github.com/VA-Explorer/va_explorer/#va-explorer-web-application-prototype">Learn more</a> -->
+           {% comment %} <img class="auth-logo2" src="{% static 'images/bg.png' %}" /></span><br /> {% endcomment %}
+        
+        </span>
+
       </div>
       <div class="col-md-5">
         <div class="auth-sign-in-box">
           <span class="auth-title">Sign in</span><br />
-          <form class="login" method="POST" action="{% url 'account_login' %}">
-            {% csrf_token %}
-            {{ form|crispy }}
-            {% if redirect_field_value %}
-            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-            {% endif %}
-            <button class="primaryAction btn btn-primary" type="submit">{% trans "Sign In" %}</button><br />
-            <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
+                    <form class="login" method="POST" action="{% url 'account_login' %}">
+              {% csrf_token %}
+              {% if form.non_field_errors %}
+                <div class="form-errors" style="margin-bottom: 1em;">
+                  {% for error in form.non_field_errors %}
+                    <p class="error" style="color: #b94a48; font-weight: bold;">{{ error }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {{ form|crispy }}
+              {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+              {% endif %}
+              <button class="primaryAction btn btn-primary" type="submit">{% trans "Sign In" %}</button><br />
+              <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
           </form>
         </div>
       </div>
@@ -65,10 +88,20 @@
     <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark 1.0</a>
   </div> -->
 
+  
+
 {% endblock %}
+
+ 
 
   <script src="{% static 'vendor/jquery-3.5.1/jquery.min.js' %}"></script>
   <script src="{% static 'vendor/bootstrap-4.3.1/bootstrap.min.js' %}"></script>
 
+ 
+
   </body>
+   <footer  style="font-weight: bold; text-align: center; padding: 10px; background-color: #009140; color: #fff; position: fixed; bottom: 0; width: 100%;">
+    Copyright &copy; {% now "Y" %} Zambia National Public Health Institute. <br/>
+    Maintained by ZNPHI ICT
+  </footer>
 </html>

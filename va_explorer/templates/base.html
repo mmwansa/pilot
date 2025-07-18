@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
-  <title>{% block title %}VA Explorer{% endblock title %}</title>
+  <title>{% block title %}ZNPHI VA CMS{% endblock title %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="">
   <meta name="author" content="">
@@ -57,13 +57,16 @@
       </div>
 
       {% block content %} {% endblock content %}
+
+        <!-- Footer -->
+        <!-- filepath: c:\projects\znphi-stuff\srs-vacms-pilot\va_explorer\templates\base.html -->
+    <footer class="footer fixed-bottom  copyright-text custom-footer text-center py-2">
+      Copyright &copy; {% now "Y" %} Zambia National Public Health Institute
+    </footer>
     </div>
     <!-- /container -->
 
-    <!-- Footer -->
-    <footer class="container copyright-text custom-footer">
-    Copyright &copy; {% now "Y" %} Zambia National Public Health Institute
-    </footer>
+  
   </div>
 
   {% block modal %}{% endblock modal %}
