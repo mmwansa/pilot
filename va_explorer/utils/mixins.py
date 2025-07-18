@@ -7,7 +7,7 @@ from django.urls import reverse
 class CustomAuthMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            messages.error(request, "You must be signed in to view this page.")
+            # messages.error(request, "You must be signed in to view this page.")
             return self.handle_no_permission()
         elif not self.user_has_valid_password(request):
             messages.error(
