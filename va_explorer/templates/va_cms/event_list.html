@@ -12,8 +12,8 @@
         <th>ID</th>
         <th>Type</th>
         <th>Status</th>
-        <th>Respondent</th>
-        <th>Proposed Date</th>
+        <th>Data Collection Date</th>
+        <th>VA Interview Date</th>
         <th>Completed Date</th>
         <th>Comment</th>
         <th>Staff</th>
@@ -26,11 +26,11 @@
         <td>{{ event.id }}</td>
         <td>{{ event.get_event_type_display }}</td>
         <td>{{ event.get_event_status_display }}</td>
-        <td>{{ event.respondent_name }}</td>
-        <td>{{ event.interview_proposed_date }}</td>
+        <td>{{ event.data_collect_scheduled_date }}</td>
+        <td>{{ event.interview_scheduled_date }}</td>
         <td>{{ event.completion_date }}</td>
         <td>{{ event.comment }}</td>
-        <td>{{ event.interview_staff.full_name }}</td>
+        <td>{{ event.data_collection_staff.full_name }}</td>
         <td>
           <a
             href="{% url 'cms-event-update' event.pk %}"
@@ -47,10 +47,34 @@
 
           {% if event.event_status == 0 %}
           <a
-            href="{% url 'cms-event-schedule' event.pk %}"
+            href="{% url 'cms-event-datacollection-schedule' event.pk %}"
             class="btn btn-primary"
             role="button"
             >Schedule</a
+          >
+          {% endif %}
+          {% if event.event_status == 1 %}
+          <a
+            href="{% url 'cms-event-link' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Link Data</a
+          >
+          {% endif %}
+          {% if event.event_status == 2 and event.event_type == 3 %}
+          <a
+            href="{% url 'cms-event-vainterview-schedule' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Schedule VA</a
+          >
+          {% endif %}
+          {% if event.event_status == 4 %}
+          <a
+            href="{% url 'cms-event-linkva' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Link VA</a
           >
           {% endif %}
         </td>

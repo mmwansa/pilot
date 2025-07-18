@@ -1,10 +1,6 @@
-{% extends "base.html" %} {% block title %} All Events{% endblock %} 
-{% block heading %} All Events {% endblock %} {% block content %}
-<div class="row mt-4">
-  <a href="{% url 'cms-event-create' %}" class="btn btn-success" role="button"
-    >Create Event</a
-  >
-</div>
+{% extends "base.html" %} {% block title %} Completed Events{% endblock %} 
+{% block heading %} Completed Events {% endblock %} {% block content %}
+
 <div class="row mt-4">
   <table class="table">
     <thead>
@@ -33,25 +29,22 @@
         <td>{{ event.interview_staff.full_name }}</td>
         <td>
           <a
-            href="{% url 'cms-event-update' event.pk %}"
-            class="btn btn-primary"
-            role="button"
-            >Edit</a
-          >
-          <a
             href="{% url 'cms-event-detail' event.pk %}"
             class="btn btn-primary"
             role="button"
-            >Show</a
-          >
-
-          {% if event.event_status != 1 %}
-          <a
-            href="{% url 'cms-event-schedule' event.pk %}"
+            >Show</a>
+           {% if event.event_type == 3 %}
+           <a
+            href="{% url 'va_data_management:death_detail' event.death.id %}"
             class="btn btn-primary"
             role="button"
-            >Schedule</a
-          >
+            >View Death</a>
+
+          <a
+            href="{% url 'data_management:show' id=event.va.id %}"
+            class="btn btn-primary"
+            role="button"
+            >View VA</a>
           {% endif %}
         </td>
       </tr>

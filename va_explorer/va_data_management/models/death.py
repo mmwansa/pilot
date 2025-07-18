@@ -65,3 +65,6 @@ class Death(models.Model):
 
     DE_34 = models.TextField("DE-34 Capture GPS Cordinates for the Household", blank=True, null=True)
     history = HistoricalRecords()
+    
+    def __str__(self):
+        return f'{self.DE_03} - {self.DE_23} - {self.ward}'

@@ -29,7 +29,7 @@ class Staff(models.Model):
         db_table = 'vacms_staff'
 
     def __str__(self):
-        return f"{self.code} - {self.full_name} ({self.id})"
+        return f"{self.code} - {self.full_name} - {self.staff_type} (ID={self.id})"
     
     def get_absolute_url(self): # new
         #return reverse('cms-baby-list', args=[str(self.id)])

@@ -50,6 +50,16 @@
         </li>
         <li class="nav-item">
           <a
+            class="nav-link {% if request.resolver_match.url_name == 'cms-staff-list' %}active{% endif %}"
+            href="{% url 'cms-staff-list' %}"
+            data-tooltip="Staff"
+          >
+            <i class="fas fa-users nav-icon"></i>
+            <span class="nav-label">Staff</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
             class="nav-link {% if request.resolver_match.url_name == 'supervision' %}active{% endif %}"
             href="{% url 'va_analytics:supervision' %}"
             data-tooltip="Supervision"
@@ -188,16 +198,7 @@
             <span class="nav-label">Completed Events</span>
           </a>
         </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-staff-list' %}active{% endif %}"
-            href="{% url 'cms-staff-list' %}"
-            data-tooltip="Staff"
-          >
-            <i class="fas fa-users nav-icon"></i>
-            <span class="nav-label">Staff</span>
-          </a>
-        </li>
+   
       </ul>
 
       <!-- Analytics Section -->
