@@ -22,36 +22,36 @@ from va_explorer.va_data_management.models import Death
 # staff
 class StaffListView(ListView):
     model = Staff
-    template_name = "va_cms\staff_list.html"
+    template_name = "va_cms/staff_list.html"
 
 
 class StaffCreateView(CreateView):
     model = Staff
     fields = "__all__"
-    template_name = "va_cms\staff_create.html"
+    template_name = "va_cms/staff_create.html"
 
 
 class StaffUpdateView(UpdateView):
     model = Staff
     fields = "__all__"
-    template_name = "va_cms\staff_update.html"
+    template_name = "va_cms/staff_update.html"
 
 
 class StaffDetailView(DetailView):
     model = Staff
     fields = "__all__"
-    template_name = "va_cms\staff_detail.html"
+    template_name = "va_cms/staff_detail.html"
 
 
 # event
 class EventListView(ListView):
     model = Event
-    template_name = "va_cms\event_list.html"
+    template_name = "va_cms/event_list.html"
 
 
 class EventListScheduledView(ListView):
     model = Event
-    template_name = "va_cms\event_scheduled_list.html"
+    template_name = "va_cms/event_scheduled_list.html"
 
     def get_queryset(self):
         queryset = super().get_queryset()  # Start with the default queryset
@@ -62,7 +62,7 @@ class EventListScheduledView(ListView):
 
 class EventListCompletedView(ListView):
     model = Event
-    template_name = "va_cms\event_completed_list.html"
+    template_name = "va_cms/event_completed_list.html"
 
     def get_queryset(self):
         queryset = super().get_queryset()  # Start with the default queryset
@@ -82,7 +82,7 @@ class EventCreateView(CreateView):
         "data_collect_contact_tel",
         "data_collect_comments",
     ]
-    template_name = "va_cms\event_create.html"
+    template_name = "va_cms/event_create.html"
 
 
 def EventCreateDeathView(request, death):
@@ -126,10 +126,10 @@ def EventCreateDeathView(request, death):
             )
             
             '''
-            # return render(request, "va_cms\event_death_create.html", context)
+            # return render(request, "va_cms/event_death_create.html", context)
         else:
             # Form is invalid, re-render with errors
-            return render(request, "va_cms\event_death_create.html", {"form": form})
+            return render(request, "va_cms/event_death_create.html", {"form": form})
     else:
 
         initials = {"id": death}
@@ -148,7 +148,7 @@ def EventCreateDeathView(request, death):
 
         return render(
             request,
-            "va_cms\event_death_create.html",
+            "va_cms/event_death_create.html",
             {"form": ScheduleDeathForm(initial=initials)},
         )
 
@@ -173,13 +173,13 @@ class EventUpdateView(UpdateView):
         "enumerator",
         "form_version",
     ]
-    template_name = "va_cms\event_update.html"
+    template_name = "va_cms/event_update.html"
 
 
 class EventDetailView(DetailView):
     model = Event
     fields = "__all__"
-    template_name = "va_cms\event_detail.html"
+    template_name = "va_cms/event_detail.html"
 
 
 class EventScheduleDataCollectionView(UpdateView):
@@ -195,7 +195,7 @@ class EventScheduleDataCollectionView(UpdateView):
         "data_collect_contact_tel",
         "data_collect_comments",
     ]
-    template_name = "va_cms\event_schedule_data.html"
+    template_name = "va_cms/event_schedule_data.html"
 
     def form_valid(self, form):
         form.instance.event_status = 1
@@ -216,7 +216,7 @@ class EventScheduleVAInterviewView(UpdateView):
         "interview_contact_tel",
         "interview_comments",
     ]
-    template_name = "va_cms\event_schedule_va.html"
+    template_name = "va_cms/event_schedule_va.html"
 
     def form_valid(self, form):
         form.instance.event_status = 4
@@ -276,7 +276,7 @@ class EventLinkPregnancyOutcome(forms.ModelForm):
 
 class EventLinkDataView(UpdateView):
     model = Event
-    template_name = "va_cms\event_link.html"
+    template_name = "va_cms/event_link.html"
 
     def form_valid(self, form):
         form.instance.event_status = 2
@@ -313,7 +313,7 @@ class EventLinkVA(UpdateView):
         "interview_comments",
     ]
 
-    template_name = "va_cms\event_complete.html"
+    template_name = "va_cms/event_complete.html"
 
     def form_valid(self, form):
         form.instance.event_status = 5
