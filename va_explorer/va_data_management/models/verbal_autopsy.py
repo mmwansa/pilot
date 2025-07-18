@@ -1751,6 +1751,10 @@ class VerbalAutopsy(SoftDeletionModel):
             self.handle_update_duplicates()
 
         super().save(*args, **kwargs)
+        
+    
+    def __str__(self):
+        return f'{self.deviceid} - {self.Id10023_a} - {self.hospital} - {self.area}'
 
 
 # Parses the comma-separated list string in settings.QUESTIONS_TO_AUTODETECT_DUPLICATES into a Python list

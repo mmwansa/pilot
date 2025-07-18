@@ -2,11 +2,11 @@
 {% load static %}
 {% load crispy_forms_tags %}
 
-{% block title %}Link VA Interview{% endblock %}
+{% block title %}Schedule Event Interview{% endblock %}
 
 {% block content %}
   <div class="row mt-4">
-    <h2>Link VA Interview</h2>
+    <h2>Schedule Event Interview</h2>
   </div>
   <div class="row">
     <div class="col-md-6">
@@ -15,8 +15,8 @@
         {{ form|crispy }}
         <div class="control-group">
           <div class="controls">
-            <button type="submit" class="btn btn-primary">Complete</button>
-            <a href="{% url 'cms-event-completed-list' %}" class="btn btn-link">Cancel</a>
+            <button type="submit" class="btn btn-primary">Schedule</button>
+            <a href="{% url 'cms-event-list' %}" class="btn btn-link">Cancel</a>
           </div>
         </div>
       </form>

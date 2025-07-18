@@ -43,6 +43,7 @@
         {% if perms.va_data_management.change_death %}
         <div>
           <a class="btn btn-primary" href="{% url 'va_data_management:death_edit' id=id %}">Edit Record</a>
+          <a class="btn btn-primary" href="{% url 'cms-event-death-create' death=id %}">Schedule VA</a>
         </div>
         {% endif %}
       </div>

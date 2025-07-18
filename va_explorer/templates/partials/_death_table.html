@@ -30,7 +30,10 @@
           <td>{{ o.ward|default:"-" }}</td>
           <td>{{ o.DE_03|default:"Unknown" }}</td>
           <td>{{ o.DE_06|default:"-" }}</td>         
-          <td><a class="btn btn-primary" href="{% url 'va_data_management:death_detail' id=o.id %}">View</a></td>
+          <td>
+            <a class="btn btn-primary" href="{% url 'va_data_management:death_detail' id=o.id %}">View</a>
+            <a class="btn btn-primary" href="{% url 'cms-event-death-create' death=o.id %}">Schedule VA</a>
+          </td>
           {% if va_data_cleanup and perms.va_data_cleanup.download %}
             <td>
               <a class="btn btn-primary" href="{% url 'data_cleanup:death_download' o.id %}">
