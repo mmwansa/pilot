@@ -95,7 +95,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_pivot",
     "corsheaders",
-]
+] 
 
 LOCAL_APPS = [
     "va_explorer.home.apps.HomeConfig",
@@ -105,6 +105,7 @@ LOCAL_APPS = [
     "va_explorer.dhis_manager.apps.DhisManagerConfig",
     "va_explorer.va_export.apps.VaExportConfig",
     "va_explorer.va_data_cleanup.apps.VaDataCleanupConfig",
+    "va_explorer.vacms.apps.VacmsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

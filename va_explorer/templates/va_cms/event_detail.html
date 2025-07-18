@@ -1,0 +1,98 @@
+{% extends "base.html" %} {% load static i18n %} {% load va_explorer_tags %} 
+{% load static %} {% load crispy_forms_tags %} 
+{% block title %}Event Details{%endblock %} 
+{% block content %}
+<div class="row mt-4">
+  <h2>Event Details</h2>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">Type </label>
+      <label for="email"><strong>{{ object.get_event_type_display }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">Status </label>
+      <label for="email"><strong>{{ object.get_event_status_display }}</strong></label>
+  </div>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">Data Collection Proposed Date </label>
+      <label for="email"><strong>{{ object.data_collect_proposed_date }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">Data Collection Scheduled Date</label>
+      <label for="email"><strong>{{ object.data_collect_scheduled_date }}</strong></label>
+  </div>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">Data Collection Contact Name </label>
+      <label for="email"><strong>{{ object.data_collect_contact_name }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">Data Collection Contact Phone</label>
+      <label for="email"><strong>{{ object.data_collect_contact_tel }}</strong></label>
+  </div>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">Data Collection Complete Date</label>
+      <label for="email"><strong>{{ object.data_collect_complete_date }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">Data Collection Comments</label>
+      <label for="email"><strong>{{ object.data_collect_comments }}</strong></label>
+  </div>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">VA Interview Proposed Date </label>
+      <label for="email"><strong>{{ object.interview_proposed_date }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">VA Interview Scheduled Date</label>
+      <label for="email"><strong>{{ object.interview_scheduled_date }}</strong></label>
+  </div>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">VA Interview Complete Date</label>
+      <label for="email"><strong>{{ object.interview_complete_date }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">VA Interview Comments</label>
+      <label for="email"><strong>{{ object.interview_comments }}</strong></label>
+  </div>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">VA Interview Contact Name </label>
+      <label for="email"><strong>{{ object.interview_contact_name }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">VA Interview Contact Phone</label>
+      <label for="email"><strong>{{ object.interview_contact_tel }}</strong></label>
+  </div>
+</div>
+
+<div class="row">
+    <div class="form-group col-md-6">
+      <label for="email">Respondent Name </label>
+      <label for="email"><strong>{{ object.respondent_name }}</strong></label>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="email">Respondent Phone </label>
+      <label for="email"><strong>{{ object.respondent_phone }}</strong></label>
+  </div>
+
+</div>
+
+<a href="{% url 'cms-event-list' %}" class="btn btn-link" role="button">Back</a>
+{% endblock %}
+
+<!-- Needs to be outside content block so JS in base template loads first -->
+{% block page_scripts %}
+<script src="{% static 'vendor/select2-4.1.0-beta.1/select2.js' %}"></script>
+<script src="{% static 'js/location.js' %}"></script>
+{% endblock %}

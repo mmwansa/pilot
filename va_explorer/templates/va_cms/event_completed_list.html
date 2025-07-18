@@ -1,0 +1,55 @@
+{% extends "base.html" %} {% block title %} Completed Events{% endblock %} 
+{% block heading %} Completed Events {% endblock %} {% block content %}
+
+<div class="row mt-4">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Respondent</th>
+        <th>Proposed Date</th>
+        <th>Completed Date</th>
+        <th>Comment</th>
+        <th>Staff</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in object_list %}
+      <tr>
+        <td>{{ event.id }}</td>
+        <td>{{ event.get_event_type_display }}</td>
+        <td>{{ event.get_event_status_display }}</td>
+        <td>{{ event.respondent_name }}</td>
+        <td>{{ event.interview_proposed_date }}</td>
+        <td>{{ event.completion_date }}</td>
+        <td>{{ event.comment }}</td>
+        <td>{{ event.interview_staff.full_name }}</td>
+        <td>
+          <a
+            href="{% url 'cms-event-detail' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Show</a>
+           {% if event.event_type == 3 %}
+           <a
+            href="{% url 'va_data_management:death_detail' event.death.id %}"
+            class="btn btn-primary"
+            role="button"
+            >View Death</a>
+
+          <a
+            href="{% url 'data_management:show' id=event.va.id %}"
+            class="btn btn-primary"
+            role="button"
+            >View VA</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

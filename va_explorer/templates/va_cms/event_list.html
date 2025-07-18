@@ -1,0 +1,86 @@
+{% extends "base.html" %} {% block title %} All Events{% endblock %} 
+{% block heading %} All Events {% endblock %} {% block content %}
+<div class="row mt-4">
+  <a href="{% url 'cms-event-create' %}" class="btn btn-success" role="button"
+    >Create Event</a
+  >
+</div>
+<div class="row mt-4">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Data Collection Date</th>
+        <th>VA Interview Date</th>
+        <th>Completed Date</th>
+        <th>Comment</th>
+        <th>Staff</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in object_list %}
+      <tr>
+        <td>{{ event.id }}</td>
+        <td>{{ event.get_event_type_display }}</td>
+        <td>{{ event.get_event_status_display }}</td>
+        <td>{{ event.data_collect_scheduled_date }}</td>
+        <td>{{ event.interview_scheduled_date }}</td>
+        <td>{{ event.completion_date }}</td>
+        <td>{{ event.comment }}</td>
+        <td>{{ event.data_collection_staff.full_name }}</td>
+        <td>
+          <a
+            href="{% url 'cms-event-update' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Edit</a
+          >
+          <a
+            href="{% url 'cms-event-detail' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Show</a
+          >
+
+          {% if event.event_status == 0 %}
+          <a
+            href="{% url 'cms-event-datacollection-schedule' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Schedule</a
+          >
+          {% endif %}
+          {% if event.event_status == 1 %}
+          <a
+            href="{% url 'cms-event-link' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Link Data</a
+          >
+          {% endif %}
+          {% if event.event_status == 2 and event.event_type == 3 %}
+          <a
+            href="{% url 'cms-event-vainterview-schedule' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Schedule VA</a
+          >
+          {% endif %}
+          {% if event.event_status == 4 %}
+          <a
+            href="{% url 'cms-event-linkva' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Link VA</a
+          >
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
