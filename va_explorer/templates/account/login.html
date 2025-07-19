@@ -15,93 +15,111 @@
     <link href="{% static 'vendor/bootstrap-4.3.1/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/project.css' %}" rel="stylesheet">
     {% endblock %}
-
-
-
-
   </head>
+  
   <body class="auth-body">
-         <div class="auth-header">
-          <div class="logo-title-container">
-            <img class="auth-logo" src="{% static 'images/bg.png' %}" alt="Logo" />
-            <span class="institute-name">Zambia National Public Health Institute</span>
-          </div>
-        </div>
-        <div class="header-separator"></div>
-
-
-{% block inner %}
-
-  {% include "partials/_messages.html" %}
-<span class="auth-title-name"> 
-  <span style="color: rgb(218, 143, 44);">VA</span>
-  <span style="color: black;">C</span><span style="color: rgb(36, 124, 55);">M</span><span style="color: rgb(156, 13, 13);">S</span><br/>
-  <span class="auth-title-desc" style="color: black; font-size: large;">
-    Verbal Autopsy & Case Management System
-  </span>
-</span>
-
-
-
-
-  <div class="auth-container">
-    
-    <div class="row align-items-center">
-      <div class="col-md-7">
-        <span class="auth-title-name"> 
-
-           {% comment %} <img class="auth-logo2" src="{% static 'images/bg.png' %}" /></span><br /> {% endcomment %}
-        
-        </span>
-
-      </div>
-      <div class="col-md-5">
-        <div class="auth-sign-in-box">
-          <span class="auth-title">Sign in</span><br />
-                    <form class="login" method="POST" action="{% url 'account_login' %}">
-              {% csrf_token %}
-              {% comment %} {% if form.non_field_errors %}
-                <div class="form-errors" style="margin-bottom: 1em;">
-                  {% for error in form.non_field_errors %}
-                    <p class="error" style="color: #b94a48; font-weight: bold;">{{ error }}</p>
-                  {% endfor %}
-                </div>
-              {% endif %} {% endcomment %}
-              {{ form|crispy }}
-              {% if redirect_field_value %}
-                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-              {% endif %}
-              <button class="primaryAction btn btn-primary" type="submit">{% trans "Sign In" %}</button><br />
-              <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
-          </form>
-        </div>
+    <!-- Header Section -->
+    <div class="auth-header">
+      <div class="logo-title-container">
+        <img class="auth-logo" src="{% static 'images/bg.png' %}" alt="Logo" style="background-color: white;" />
+        <span class="institute-name">Zambia National Public Health Institute</span>
       </div>
     </div>
-  </div>
+    <div class="header-separator"></div>
 
-  <!-- <div class="auth-attribution">
-    <a href="https://www.flickr.com/photos/37583176@N00/14459661386/">Lower Zambezi, Zambia, Kafue River</a>
-    
-    by
-    <a href="https://www.flickr.com/people/ninara/">Ninara</a>
-    is used under
-    <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark 1.0</a>
-  </div> -->
+    {% block inner %}
+      {% include "partials/_messages.html" %}
+      
+      <!-- Title Section -->
+    <div class="mb-4">
+        <span class="auth-title-name"> 
+          <span style="color: rgb(218, 143, 44);">VA</span>
+          <span style="color: black;">C</span><span style="color: rgb(36, 124, 55);">M</span><span style="color: rgb(156, 13, 13);">S</span><br/>
+          <span class="auth-title-desc" style="color: black; font-size: large;">
+            Verbal Autopsy & Case Management System
+          </span>
+        </span>
+      </div>
 
-  
+      <!-- Main Content Container -->
+      <div class="auth-container">
+        <div class="container-fluid px-4">
+          <div class="row justify-content-center">
+            <div class="col-lg-11 col-xl-10">
+              <div class="card shadow-lg border-0">
+                <div class="card-body p-4">
+                  <div class="row g-0">
+                    
+                    <!-- Image Column - 7/12 width -->
+                    <div class="col-lg-7 d-flex justify-content-center align-items-center p-0 bg-white">
+                      <img class="auth-logo-3 img-fluid" src="{% static 'images/srs1.png' %}" alt="System Image"  style="max-height: 400px; width: auto; max-width: 100%;" />
+                    </div>
+                    
+                    <!-- Sign In Form Column - 5/12 width -->
+                    <div class="col-md-5 p-4">
+                      <h3 class="auth-title mb-4 text-center">Sign in</h3>
+                      
+                      <form class="login" method="POST" action="{% url 'account_login' %}">
+                        {% csrf_token %}
+                        
+                        {% comment %} 
+                        {% if form.non_field_errors %}
+                          <div class="form-errors mb-3">
+                            {% for error in form.non_field_errors %}
+                              <p class="text-danger font-weight-bold">{{ error }}</p>
+                            {% endfor %}
+                          </div>
+                        {% endif %} 
+                        {% endcomment %}
+                        
+                        {{ form|crispy }}
+                        
+                        {% if redirect_field_value %}
+                          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                        {% endif %}
+                        
+                        <div class="form-group mt-4">
+                          <button class="btn btn-primary btn-block primaryAction" type="submit">
+                            {% trans "Sign In" %}
+                          </button>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                          <a class="btn btn-link secondaryAction" href="{% url 'account_reset_password' %}">
+                            {% trans "Forgot Password?" %}
+                          </a>
+                        </div>
+                      </form>
+                    </div>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-{% endblock %}
+      {% comment %}
+      <div class="auth-attribution">
+        <a href="https://www.flickr.com/photos/37583176@N00/14459661386/">Lower Zambezi, Zambia, Kafue River</a>
+        by
+        <a href="https://www.flickr.com/people/ninara/">Ninara</a>
+        is used under
+        <a href="https://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark 1.0</a>
+      </div>
+      {% endcomment %}
 
- 
+    {% endblock %}
 
-  <script src="{% static 'vendor/jquery-3.5.1/jquery.min.js' %}"></script>
-  <script src="{% static 'vendor/bootstrap-4.3.1/bootstrap.min.js' %}"></script>
+    <!-- Scripts -->
+    <script src="{% static 'vendor/jquery-3.5.1/jquery.min.js' %}"></script>
+    <script src="{% static 'vendor/bootstrap-4.3.1/bootstrap.min.js' %}"></script>
 
- 
-
+    <!-- Footer -->
+    <footer style="font-weight: bold; text-align: center; padding: 10px; background-color: #009140; color: #fff; position: fixed; bottom: 0; width: 100%;">
+      Copyright &copy; {% now "Y" %} Zambia National Public Health Institute. <br/>
+      Maintained by ZNPHI ICT
+    </footer>
   </body>
-   <footer  style="font-weight: bold; text-align: center; padding: 10px; background-color: #009140; color: #fff; position: fixed; bottom: 0; width: 100%;">
-    Copyright &copy; {% now "Y" %} Zambia National Public Health Institute. <br/>
-    Maintained by ZNPHI ICT
-  </footer>
 </html>

@@ -110,8 +110,8 @@ body {
 }
 
 .auth-body {
-  background-image: url("/static/images/srs3.png");
-  background-color: #E0E0E0;
+  /* background-image: url("/static/images/srs3.png"); */
+  /* background-color: #E0E0E0; */
   background-blend-mode: multiply;
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -123,25 +123,35 @@ body {
 }
 
 .auth-logo {
+  background-color: #fff;
   width: 10%;
   height: auto;
   margin-left: -35px;
-  filter: invert(12%);
+  /* filter: invert(12%); */
   margin-top: auto;
 }
 
 .auth-logo2 {
+  background-color: #fff;
   width: 8%;
   height: auto;
-  margin-right: -25px;
-  filter: invert(12%);
-  border-radius: 50%;
+  /* filter: invert(12%); */
+  border-radius: 100%;
 }
+
+.auth-logo-3 {
+  background-color: #fff;
+  width: 8%;
+  height: auto;
+  /* filter: invert(12%); */
+  border-radius: 10%;
+}
+
 
 .auth-container {
   position: fixed;
   width: 70%;
-  top: 45%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   transform: -webkit-translate(-50%, -50%);
