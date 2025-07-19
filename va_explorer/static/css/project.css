@@ -141,10 +141,20 @@ body {
 
 .auth-logo-3 {
   background-color: #fff;
-  width: 8%;
-  height: auto;
-  /* filter: invert(12%); */
+  max-height: 400px; 
+  max-width: 100%;
   border-radius: 10%;
+}
+
+@media (max-width: 768px) {
+ 
+  
+ .auth-logo-3 {
+    background-color: #fff;
+    max-height: auto !important;
+    max-width: 50% !important; ;
+    border-radius: 10%;
+  }
 }
 
 
@@ -158,6 +168,8 @@ body {
   transform: -moz-translate(-50%, -50%);
   transform: -ms-translate(-50%, -50%);
 }
+
+
 
 .auth-title {
   font-weight: bold;
@@ -183,23 +195,48 @@ body {
 
 .auth-title-name {
   font-weight: bold;
-  font-size: 4vw;
-  margin-left: 180px;
-  margin-top: -35px;
+  font-size: clamp(24px, 4vw, 48px); /* Responsive with min/max limits */
+  margin-left: clamp(20px, 15vw, 180px); /* Responsive left margin */
+  margin-top: clamp(-50px, -3vw, -20px); /* Responsive negative margin */
   color: white;
   text-shadow: 0 1px 0 black;
-  display: inline-block; /* optional, helps with layout */
+  display: inline-block;
 }
 
 .auth-title-desc {
-  font-size: 2.5vw;
+  font-size: clamp(16px, 2.5vw, 32px); /* Responsive with min/max limits */
   color: white;
-  margin-right: 80px;
+  margin-right: clamp(20px, 8vw, 80px); /* Responsive right margin */
   margin-left: auto;
-  margin-bottom: 70px;
-  line-height: 1.2; /* <- Changed this */
-  display: block; /* <- Ensures it's on a new line */
+  margin-bottom: clamp(30px, 7vw, 70px); /* Responsive bottom margin */
+  line-height: 1.2;
+  display: block;
   text-shadow: 0 1px 0 black;
+}
+
+/* Media queries for fine-tuning on specific breakpoints */
+@media screen and (max-width: 768px) {
+  .auth-title-name {
+    margin-left: 5vw; /* Smaller margin on mobile */
+    margin-top: -2vw;
+  }
+  
+  .auth-title-desc {
+    margin-right: 5vw;
+    margin-bottom: 8vw;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .auth-title-name {
+    font-size: clamp(20px, 6vw, 36px); /* Slightly larger on very small screens */
+    margin-left: 3vw;
+  }
+  
+  .auth-title-desc {
+    font-size: clamp(14px, 4vw, 24px);
+    margin-right: 3vw;
+  }
 }
 
 .logo-title-container {
@@ -742,3 +779,21 @@ table thead th,
   z-index: 1030;
   background-color: #f8f9fa;
 }
+
+
+.title-container {
+    
+    padding-top: 15px !important;
+}
+
+/* Show on mobile devices */
+@media (max-width: 768px) {
+    .title-container {
+       font-size: smaller !important;
+    }
+}
+
+
+
+  
+
