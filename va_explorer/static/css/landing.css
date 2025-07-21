@@ -1,0 +1,240 @@
+body {
+    background-color: #f8f9fa; /* Light gray background */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+}
+
+.header-top-line {
+    height: 5px;
+    background-color: #00933f; /* Green #28a745 */
+    width: 100%;
+}
+
+/* Header link styling - maintains visual appearance while making it clickable */
+.header-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-block;
+}
+
+.header-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.header-link:focus {
+    text-decoration: none;
+    color: inherit;
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.header {
+    padding: 20px 0;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fff;
+}
+
+.header {
+    padding: 15px 0;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fff;
+}
+
+/* Reduced header logo size */
+.header .col-auto img {
+    height: 40px; /* Reduced from default size */
+    width: auto;
+}
+
+.header .logo-text {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-left: 10px;
+}
+
+.header .va-cms {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ff8c00; /* Orange */
+    display: inline-block;
+    /*margin-right: 5px;*/
+}
+
+.header .cms-text {
+    color: #dc3545; /* Red */
+}
+
+.header .znphi-text {
+    margin-right: 5px;
+    color: #00933f; /* Green */
+}
+
+.header .system-text {
+    font-size: 18px;
+    color: #555;
+    margin-top: -10px;
+}
+
+.header .djdt-text {
+    font-size: 14px;
+    font-weight: bold;
+    color: #6c757d;
+    transform: rotate(90deg);
+    transform-origin: right bottom;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    margin-right: -20px; /* Adjust as needed */
+    white-space: nowrap;
+}
+
+.login-card-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.login-card {
+    background-color: #fff;
+    /*  border-radius: 8px;  */
+    /*  box-shadow: 0 0px 2px rgba(0, 0, 0, 0.1);*/
+    overflow: hidden;
+    max-width: 1100px; /* Increased from 900px */
+    width: 100%;
+}
+
+.login-card .card-image {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card .card-image img {
+    max-width: 100%;
+    height: auto;
+}
+
+.login-card .card-form {
+    padding: 40px;
+}
+
+.login-card .card-form h2 {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.login-card .card-form .form-group label {
+    font-weight: bold;
+    color: #555;
+}
+
+.login-card .card-form .form-control {
+    border-radius: 4px;
+    padding: 10px 15px;
+    height: auto;
+}
+
+.login-card .card-form .btn-success {
+    background-color: #28a745; /* Green */
+    border-color: #28a745;
+    padding: 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    width: 100%;
+    border-radius: 4px;
+}
+
+.login-card .card-form .btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.login-card .card-form .forgot-password {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.login-card .card-form .forgot-password:hover {
+    text-decoration: underline;
+}
+
+.footer {
+    background-color: #00933f; /* Green */
+    color: #fff;
+    padding: 20px 0;
+    text-align: center;
+    font-size: 14px;
+}
+
+.footer p {
+    margin-bottom: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    /* Tablet adjustments */
+    .login-card .card-image img {
+        max-width: 80%; /* Reduce image size on medium screens */
+    }
+}
+
+@media (max-width: 767.98px) {
+    body {
+       background-color: #fff;
+    }
+    .login-card {
+        margin: 5px;
+    }
+    .login-card .card-image {
+        display: block; /* Show image on mobile but smaller */
+        padding: 15px;
+    }
+    .login-card .card-image img {
+        max-width: 60%; /* Further reduce image size on mobile */
+    }
+    .login-card .card-form {
+        padding: 30px;
+    }
+    .login-card .card-form h2 {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+    .header .logo-text {
+        font-size: 20px;
+    }
+    .header .va-cms {
+        font-size: 28px;
+    }
+    .header .system-text {
+        font-size: 16px;
+    }
+    .header .djdt-text {
+        display: none; /* Hide DJDT text on small screens */
+    }
+    /* Further reduce header logo on mobile */
+    .header .col-auto img {
+        height: 30px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    /* Extra small screens */
+    .login-card .card-image img {
+        max-width: 50%; /* Even smaller image on very small screens */
+    }
+    .login-card .card-form {
+        padding: 20px;
+    }
+}
