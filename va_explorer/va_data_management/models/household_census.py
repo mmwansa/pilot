@@ -1,18 +1,60 @@
 from django.db import models
+from treebeard.mp_tree import MP_Node
 from simple_history.models import HistoricalRecords
 
+class SRSClusterLocation(MP_Node):
+    name = models.TextField()
+    location_type = models.TextField()  # e.g., "province", "district", etc.
+    code = models.TextField(blank=True, null=True)  # for EA or cluster codes
+    status = models.TextField(blank=True, null=True)  # e.g., "Active"
+    node_order_by = ['name']
+
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.location_type})"
+
+    def get_descendant_ids(self):
+        return [descendant.id for descendant in self.get_descendants()]
+
+    def parent_id(self):
+        return self.get_parent().id if self.get_parent() else None
+
+class Cluster(models.Model):
+    cluster = models.CharField(max_length=20, unique=True)
+    province = models.CharField(max_length=100)
+    district = models.CharField(max_length=100)
+    constituency = models.CharField(max_length=100)
+    ward = models.CharField(max_length=100)
+    residence = models.CharField(max_length=100)
+    ea = models.CharField("Enumeration Area", max_length=100)
+
+    def __str__(self):
+        return f"Cluster {self.cluster} - {self.district}, {self.ward}"
 
 class Household(models.Model):
-
+    cluster = models.ForeignKey("Cluster", on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Metadata and geo/admin data
+    submission_date = models.TextField(blank=True)
     deviceid = models.TextField("nan", blank=True)
     today = models.TextField("nan", blank=True)
     start = models.TextField("nan", blank=True)
+    end = models.TextField("nan", blank=True)
     province = models.TextField("Province", blank=True)
     district = models.TextField("District", blank=True)
     constituency = models.TextField("Constituency", blank=True)
     ward = models.TextField("Ward", blank=True)
     rural_urban = models.TextField("Rural/urban", blank=True)
     ea = models.TextField("EA", blank=True)
+    visits = models.TextField("INTERVIEWER VISITS", blank=True)
+    next_visit_date = models.TextField("Next Visit Date", blank=True)
+    result_list = models.TextField("Result", blank=True)
+    hh_gps = models.TextField("GPS Cordinates for the Household", blank=True)
+    submit_time = models.TextField("nan", blank=True)
+    
+    # Household identifiers and descriptors
     code_input = models.TextField("Survey building number (SBN)", blank=True)
     household = models.TextField("Is there a household?", blank=True)
     description = models.TextField("Enter building description", blank=True)
@@ -20,13 +62,9 @@ class Household(models.Model):
     hun = models.TextField("Housing Unit Number (HUN)", blank=True)
     hhn = models.TextField("Household  Number (HHN)", blank=True)
     household_type = models.TextField("Type of household", blank=True)
-    locality_name = models.TextField(
-        "What is the village or locality name?", blank=True
-    )
+    locality_name = models.TextField("What is the village or locality name?", blank=True)
     address = models.TextField("What is the residential address/ village?", blank=True)
-    name_of_chief = models.TextField(
-        "What is the name of the chief/chieftainess?", blank=True
-    )
+    name_of_chief = models.TextField("What is the name of the chief/chieftainess?", blank=True)
     respondent = models.TextField("Respondent's Name", blank=True)
     result_other = models.TextField("Other result (Specify)", blank=True)
 
@@ -34,116 +72,49 @@ class Household(models.Model):
     enumerator = models.TextField("Enumerator", blank=True)
     supervisor = models.TextField("Supervisor", blank=True)
     consent = models.TextField("Did respondent give consent?", blank=True)
-    household_details = models.TextField("HOUSEHOLD DETAILS", blank=True)
+    
+    # Housing and asset indicators
     HH_01 = models.TextField("HH_01. Name of Head of Household ", blank=True)
-    usual_residents_group = models.TextField("USUAL RESIDENTS AND VISITORS", blank=True)
-    HH_02 = models.TextField(
-        "HH_01. Please give me the number or persons who usually live in this household and the visitors who stayed here last night",
-        blank=True,
-    )
+    HH_02 = models.TextField("HH_01. Please give me the number or persons who usually live in this household and the visitors who stayed here last night",
+        blank=True)
 
     HH_16 = models.TextField("HH_16. TYPE OF HOUSING", blank=True)
     HH_16A = models.TextField("HH_61A. Other (Specify)", blank=True)
-    HH_17 = models.TextField(
-        "HH_17. What is the main type of material used for the roof?", blank=True
-    )
+    HH_17 = models.TextField("HH_17. What is the main type of material used for the roof?", blank=True)
     HH_17A = models.TextField("HH_17A.Other (Specify)", blank=True)
-    HH_18 = models.TextField(
-        "HH_18. What are the walls of this housing unit mainly ", blank=True
-    )
+    HH_18 = models.TextField("HH_18. What are the walls of this housing unit mainly ", blank=True)
     HH_18A = models.TextField("HH_18A. Other (Specify)", blank=True)
-    HH_19 = models.TextField(
-        "HH_19. What is the floor of this housing unit mainly", blank=True
-    )
+    HH_19 = models.TextField("HH_19. What is the floor of this housing unit mainly", blank=True)
     HH_19A = models.TextField("HH_19A. Other (Specify)", blank=True)
-    HH_20 = models.TextField(
-        "HH_20. Is this housing unit occupied by one or more households?", blank=True
-    )
-    HH_21 = models.TextField(
-        "HH_21. How many households occupy this housing unit? ", blank=True
-    )
-    HH_22 = models.TextField(
-        "HH_22. What is the main source of water for drinking for this household?",
-        blank=True,
-    )
-    HH_22A = models.TextField(
-        "HH_22A. In the last month, has there been any time when your household did not have sufficient quantities of drinking water when needed?",
-        blank=True,
-    )
-    HH_22B = models.TextField(
-        "HH_22B. In the past two weeks, was the water from your main source not available for at least one full day?",
-        blank=True,
-    )
-    HH_22C = models.TextField(
-        "HH_22C. Do you do anything to make the water safer to drink?", blank=True
-    )
-    HH_22D = models.TextField(
-        "HH_22D. What do you usually do to make the water safer to drink?", blank=True
-    )
-    HH_22E = models.TextField(
-        "HH_22E. How do you store your drinking water? ", blank=True
-    )
+    HH_20 = models.TextField("HH_20. Is this housing unit occupied by one or more households?", blank=True)
+    HH_21 = models.TextField("HH_21. How many households occupy this housing unit?", blank=True)
+    HH_22 = models.TextField("HH_22. What is the main source of water for drinking for this household?", blank=True, )
+    HH_22A = models.TextField("HH_22A. In the last month, has there been any time when your household did not have sufficient quantities of drinking water when needed?", blank=True)
+    HH_22B = models.TextField("HH_22B. In the past two weeks, was the water from your main source not available for at least one full day?",)
+    HH_22C = models.TextField("HH_22C. Do you do anything to make the water safer to drink?", blank=True)
+    HH_22D = models.TextField("HH_22D. What do you usually do to make the water safer to drink?", blank=True)
+    HH_22E = models.TextField("HH_22E. How do you store your drinking water? ", blank=True)
     HH_22F = models.TextField("HH_22F. Other (Specify)", blank=True)
-    HH_23 = models.TextField(
-        "HH_23. What is the main source of water supply for other purposes such as cooking and handwashing? ",
-        blank=True,
-    )
-    HH_24 = models.TextField(
-        "HH_24. How many rooms does this housing unit have excluding passage ways, verandas, lobbies, bathrooms and toilet rooms?",
-        blank=True,
-    )
-    HH_25 = models.TextField(
-        "HH_25. How many living rooms and bedrooms does this housing unit have?",
-        blank=True,
-    )
-    HH_26 = models.TextField(
-        "HH_26. How many rooms are used for sleeping in this housing unit?", blank=True
-    )
-    HH_27 = models.TextField(
-        "HH_27. How many persons usually sleep in the housing unit, including those that are not part of the household?",
-        blank=True,
-    )
-    HH_28 = models.TextField(
-        "HH_28. Does this housing unit have a bathoom?", blank=True
-    )
-    HH_29 = models.TextField(
-        "HH_29. What is the main type of toilet used by members of this household?",
-        blank=True,
-    )
+    HH_23 = models.TextField("HH_23. What is the main source of water supply for other purposes such as cooking and handwashing? ", blank=True,)
+    HH_24 = models.TextField("HH_24. How many rooms does this housing unit have excluding passage ways, verandas, lobbies, bathrooms and toilet rooms?", blank=True)
+    HH_25 = models.TextField("HH_25. How many living rooms and bedrooms does this housing unit have?", blank=True)
+    HH_26 = models.TextField("HH_26. How many rooms are used for sleeping in this housing unit?", blank=True)
+    HH_27 = models.TextField("HH_27. How many persons usually sleep in the housing unit, including those that are not part of the household?", blank=True,)
+    HH_28 = models.TextField("HH_28. Does this housing unit have a bathoom?", blank=True)
+    HH_29 = models.TextField("HH_29. What is the main type of toilet used by members of this household?", blank=True)
     HH_29A = models.TextField("HH_29A. Other (Specify)", blank=True)
-    HH_30 = models.TextField(
-        "HH_30. Is this toilet inside or outside the housing unit? ", blank=True
-    )
-    HH_31 = models.TextField(
-        "HH_31. Is this toilet exclusively used by members of this household?",
-        blank=True,
-    )
-    HH_31A = models.TextField(
-        "31_31A. Including your own household, how many households use this toilet facility?",
-        blank=True,
-    )
-    HH_32 = models.TextField(
-        "HH_32. Does this housing unit have a kitchen?", blank=True
-    )
-    HH_33 = models.TextField(
-        "HH_33. What is the main source of energy for lighting for this household?",
-        blank=True,
-    )
+    HH_30 = models.TextField("HH_30. Is this toilet inside or outside the housing unit? ", blank=True)
+    HH_31 = models.TextField("HH_31. Is this toilet exclusively used by members of this household?", blank=True)
+    HH_31A = models.TextField("31_31A. Including your own household, how many households use this toilet facility?", blank=True)
+    HH_32 = models.TextField("HH_32. Does this housing unit have a kitchen?", blank=True)
+    HH_33 = models.TextField("HH_33. What is the main source of energy for lighting for this household?", blank=True)
     HH_33A = models.TextField("HH_33A. Other (Specify)", blank=True)
-    HH_34 = models.TextField(
-        "HH_34. What is the main source of energy for cooking for this household?",
-        blank=True,
-    )
+    HH_34 = models.TextField("HH_34. What is the main source of energy for cooking for this household?", blank=True)
     HH_34A = models.TextField("HH_34A. Other (Specify)", blank=True)
-    HH_35 = models.TextField(
-        "HH_35. What is the main source of energy for heating for this household?",
-        blank=True,
-    )
+    HH_35 = models.TextField("HH_35. What is the main source of energy for heating for this household?", blank=True)
     HH_35A = models.TextField("HH_35A. Other (Specify)", blank=True)
 
-    HH_36_group = models.TextField(
-        "HH_36. Does your household have/own any of the following?", blank=True
-    )
+    HH_36_group = models.TextField("HH_36. Does your household have/own any of the following?", blank=True)
     HH_36_Bed = models.TextField("Bed", blank=True)
     HH_36_Blanket = models.TextField("Blanket", blank=True)
     HH_36_Table = models.TextField("Table", blank=True)
@@ -154,16 +125,10 @@ class Household(models.Model):
     HH_36_Radio = models.TextField("Radio", blank=True)
     HH_36_Non_smart_Television = models.TextField("Non_smart Television", blank=True)
     HH_36_Smart_Television = models.TextField("Smart Television", blank=True)
-    HH_36_Desktop_Laptop_Computer = models.TextField(
-        "Desktop/Laptop Computer", blank=True
-    )
+    HH_36_Desktop_Laptop_Computer = models.TextField("Desktop/Laptop Computer", blank=True)
     HH_36_Landline = models.TextField("Landline", blank=True)
-    HH_36_Access_to_internet_away_from_home = models.TextField(
-        "Access to internet away from home", blank=True
-    )
-    HH_36_Access_to_internet_at_Home = models.TextField(
-        "Access to internet at Home", blank=True
-    )
+    HH_36_Access_to_internet_away_from_home = models.TextField("Access to internet away from home", blank=True)
+    HH_36_Access_to_internet_at_Home = models.TextField("Access to internet at Home", blank=True)
     HH_36_Generator = models.TextField("Generator", blank=True)
     HH_36_Wheelbarrow = models.TextField("Wheelbarrow", blank=True)
     HH_36_Bicycle = models.TextField("Bicycle", blank=True)
@@ -180,10 +145,7 @@ class Household(models.Model):
     HH_36_Hammer_Mill = models.TextField("Hammer Mill", blank=True)
     HH_36_Agricultural_Land = models.TextField("Agricultural Land", blank=True)
 
-    HH_37 = models.TextField(
-        "HH_37. Does this household own any livestock, herds, other farm animals, or poultry?",
-        blank=True,
-    )
+    HH_37 = models.TextField("HH_37. Does this household own any livestock, herds, other farm animals, or poultry?",blank=True)
     HH_37A_animals_group = models.TextField(
         "HH_37A. How many of the following animals does this household own?", blank=True
     )
@@ -196,40 +158,20 @@ class Household(models.Model):
     HH_37A_chicken = models.TextField("Chicken", blank=True)
     HH_37A_pigs = models.TextField("Pigs", blank=True)
     HH_37A_rabbits_other_poultry = models.TextField("Rabbits/Other poultry", blank=True)
-    HH_38 = models.TextField(
-        "HH_38. How is the household refuse (garbage) disposed?", blank=True
-    )
+    HH_38 = models.TextField("HH_38. How is the household refuse (garbage) disposed?", blank=True)
     HH_38A = models.TextField("HH_38A. Other (Specify)", blank=True)
-    HH_39 = models.TextField(
-        "HH_39. Is this housing unit owned by any member of this household?", blank=True
-    )
+    HH_39 = models.TextField("HH_39. Is this housing unit owned by any member of this household?", blank=True)
     HH_40 = models.TextField("HH_40. How was this housing unit acquired?", blank=True)
-    HH_41 = models.TextField(
-        "HH_41. Is this housing unit provided free by the employer,friend or relative of any menber of this household? ",
-        blank=True,
-    )
-    HH_42 = models.TextField(
-        "HH_42. Is this housing unit rented from the employer of any member of this household?",
-        blank=True,
-    )
-    HH_43 = models.TextField(
-        "HH_43. Who is the employer that provides the housing unit", blank=True
-    )
-    HH_44 = models.TextField(
-        "HH_44. From whom is this housing unit rented? ", blank=True
-    )
-    HH_15 = models.TextField(
-        "HH_15. How how long do you intend to stay in this area? Or at this householouhsehold?",
-        blank=True,
-    )
-    visits = models.TextField("INTERVIEWER VISITS", blank=True)
-    next_visit_date = models.TextField("Next Visit Date", blank=True)
-    result_list = models.TextField("Result", blank=True)
-    hh_gps = models.TextField("GPS Cordinates for the Household", blank=True)
-    submit_time = models.TextField("nan", blank=True)
-    end = models.TextField("nan", blank=True)
+    HH_41 = models.TextField("HH_41. Is this housing unit provided free by the employer,friend or relative of any menber of this household? ", blank=True)
+    HH_42 = models.TextField("HH_42. Is this housing unit rented from the employer of any member of this household?", blank=True)
+    HH_43 = models.TextField("HH_43. Who is the employer that provides the housing unit", blank=True)
+    HH_44 = models.TextField("HH_44. From whom is this housing unit rented? ", blank=True)
+    HH_15 = models.TextField("HH_15. How how long do you intend to stay in this area? Or at this householouhsehold?", blank=True)    
+    
     history = HistoricalRecords()
 
+    def __str__(self):
+        return f"Household ({self.province}-{self.district}-{self.ward}-{self.hhn}-{self.hhn})"
 
 class HouseholdMember(models.Model):
     household = models.ForeignKey(

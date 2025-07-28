@@ -1,5 +1,5 @@
 from .death import Death
-from .household_census import Household, HouseholdMember
+from .household_census import SRSClusterLocation, Household, HouseholdMember
 from .odk_reference import ODKFormChoice
 from .pregnancy import Pregnancy
 from .pregnancy_outcome import PregnancyOutcome
@@ -13,7 +13,8 @@ from .verbal_autopsy import (
     questions_to_autodetect_duplicates,
 )
 
-__all__ = [    "Household",
+__all__ = [ "SRSClusterLocation",
+    "Household",
     "HouseholdMember",
     "Pregnancy",
     "PregnancyOutcome",
