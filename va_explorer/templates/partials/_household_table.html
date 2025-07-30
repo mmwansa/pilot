@@ -30,7 +30,7 @@
           <td>{{ h.ward|default:"-" }}</td>
           <td>{{ h.locality_name|default:"-" }}</td>
           <td>{{ h.respondent|default:"Unknown" }}</td>
-          <td><a class="btn btn-primary" href="{% url 'va_data_management:household_show' id=h.id %}">View</a></td>
+          <td><a class="btn btn-primary" href="{% url 'va_data_management:household_detail' id=h.id %}">View</a></td>
           {% if va_data_cleanup and perms.va_data_cleanup.download %}
             <td>
               <a class="btn btn-primary" href="{% url 'data_cleanup:household_download' h.id %}">
