@@ -22,6 +22,9 @@ class SRSClusterLocation(MP_Node):
         return self.get_parent().id if self.get_parent() else None
 
 class Household(models.Model):
+    # UUID-style primary key (string)
+    key = models.CharField(max_length=100, unique=True, db_index=True)
+
     cluster = models.ForeignKey("SRSClusterLocation", on_delete=models.SET_NULL, null=True, blank=True)    
     
     # Metadata and geo/admin data
@@ -163,8 +166,13 @@ class Household(models.Model):
         return f"Household ({self.province}-{self.district}-{self.ward}-{self.hhn}-{self.hhn})"
 
 class HouseholdMember(models.Model):
+    parent_key = models.CharField(max_length=100, db_index=True)
     household = models.ForeignKey(
-        "va_data_management.Household", on_delete=models.CASCADE, related_name="members"
+        Household,
+        to_field='key',
+        db_column='parent_key',
+        on_delete=models.CASCADE,
+        related_name='members',
     )
 
     HH_03 = models.TextField("HH-03. Household Member Details", blank=True, null=True)
