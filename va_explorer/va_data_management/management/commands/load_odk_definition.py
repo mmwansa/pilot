@@ -7,7 +7,7 @@ from va_explorer.va_data_management.models import ODKFormChoice
 from va_explorer.va_data_management.utils.loading import normalize_string, normalize_value
 
 FORM_ID_MAP = {
-    "E_HOUSEHOLD": "household",
+    "BASELINE_CENSUS": "household",
     "E_PREGNANCY": "pregnancy",
     "E_PREGNANCY_OUTCOME": "pregnancy-outcome",
     "E_DEATH": "death",
