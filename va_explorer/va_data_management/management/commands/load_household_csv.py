@@ -30,16 +30,17 @@ class Command(BaseCommand):
 
         odk_map_columns = [
             'consent', 'household', 'household_type',
-            'HH_04', 'HH_05', 'HH_06', 'HH_09', 'HH_11', 'HH_12', 'HH_13', 'HH_14', 'HH_16', 'HH_17', 'HH_18',
-            'HH_19', 'HH_20', 'HH_22', 'HH_22A', 'HH_22B', 'HH_22C', 'HH_22D', 'HH_22E', 'HH_23', 'HH_28', 'HH_29',
-            'HH_30', 'HH_31', 'HH_32', 'HH_33', 'HH_34', 'HH_35', 'HH_36_Bed', 'HH_36_Blanket', 'HH_36_Table',
-            'HH_36_Sofa', 'HH_36_Stove', 'HH_36_Fridge', 'HH_36_Decorder', 'HH_36_Radio', 'HH_36_Non_smart_Television',
-            'HH_36_Smart_Television', 'HH_36_Desktop_Laptop_Computer', 'HH_36_Landline', 'HH_36_Access_to_internet_away_from_home',
-            'HH_36_Access_to_internet_at_Home', 'HH_36_Generator', 'HH_36_Wheelbarrow', 'HH_36_Bicycle',
-            'HH_36_Motor_Vehicle', 'HH_36_Motorcycle', 'HH_36_Scotch_Cart', 'HH_36_Motorised_Boat',
-            'HH_36_Non-motorised_Boat', 'HH_36_Fishing_net', 'HH_36_Grain_Grinder', 'HH_36_Hoe', 'HH_36_Plough',
-            'HH_36_Tractor', 'HH_36_Hammer_Mill', 'HH_36_Agricultural_Land', 'HH_38', 'HH_39',
-            'HH_40', 'HH_41', 'HH_42', 'HH_43', 'HH_44', 'HH_45', 'HH_46', 'HH_47', 'HH_48', 'visits', 'result_list'
+            'HH_16', 'HH_17', 'HH_18', 'HH_19', 'HH_20', 'HH_22', 'HH_22A', 'HH_22B', 'HH_22C', 
+            'HH_22D', 'HH_22E', 'HH_23', 'HH_28', 'HH_29', 'HH_30', 'HH_31', 'HH_32', 'HH_33', 
+            'HH_34', 'HH_35', 'HH_36_Bed', 'HH_36_Blanket', 'HH_36_Table', 'HH_36_Sofa', 
+            'HH_36_Stove', 'HH_36_Fridge', 'HH_36_Decorder', 'HH_36_Radio', 'HH_36_Non_smart_Television',
+            'HH_36_Smart_Television', 'HH_36_Desktop_Laptop_Computer', 'HH_36_Landline', 
+            'HH_36_Access_to_internet_away_from_home', 'HH_36_Access_to_internet_at_Home', 
+            'HH_36_Generator', 'HH_36_Wheelbarrow', 'HH_36_Bicycle', 'HH_36_Motor_Vehicle', 
+            'HH_36_Motorcycle', 'HH_36_Scotch_Cart', 'HH_36_Motorised_Boat', 'HH_36_Non-motorised_Boat', 
+            'HH_36_Fishing_net', 'HH_36_Grain_Grinder', 'HH_36_Hoe', 'HH_36_Plough', 'HH_36_Tractor', 
+            'HH_36_Hammer_Mill', 'HH_36_Agricultural_Land', 'HH_38', 'HH_39', 'HH_40', 'HH_41', 
+            'HH_42', 'HH_43', 'HH_44', 'HH_45', 'HH_46', 'HH_47', 'HH_48', 'visits', 'result_list'
         ]
         odk_map_columns = [c.strip() for c in odk_map_columns]
 

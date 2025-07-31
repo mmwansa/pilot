@@ -111,12 +111,7 @@ def load_odk_csv_to_model(
     # Map ODK code values to labels
     for col in odk_map_columns:
         if col in df.columns and col in odk_map:
-            if verbose:
-                print(f"Mapping csv column '{col}' with odk_map keys {list(odk_map[col].keys())}")
-                print("BEFORE:", df[col].unique())
             df[col] = df[col].map(lambda v, c=col: lookup_label(c, v))
-            if verbose:
-                print("AFTER:", df[col].unique())
         elif col not in df.columns and verbose:
             print(f"Column '{col}' not in DataFrame")
         elif col not in odk_map and verbose:

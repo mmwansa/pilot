@@ -64,12 +64,11 @@ class Household(models.Model):
     supervisor = models.TextField("Supervisor", blank=True, null=True)
     consent = models.TextField("Did respondent give consent?", blank=True, null=True)
     
-    # Housing and asset indicators
+    # Household details
     HH_01 = models.TextField("HH-01. Name of Head of Household ", blank=True, null=True)
     HH_02 = models.TextField("HH-02. Please give me the number or persons who usually live in this household and the visitors who stayed here last night", blank=True, null=True)
-    HH_04 = models.TextField("HH-04. What is the relationship of to the head of the household? ", blank=True, null=True)
-    HH_05 = models.TextField("HH-05. Is member male or Female?", blank=True, null=True)
-    HH_06 = models.TextField("HH-06. Indicate member's Membership Status", blank=True, null=True)
+    
+    # Housing and asset indicators
     HH_16 = models.TextField("HH-16. TYPE OF HOUSING", blank=True, null=True)
     HH_16A = models.TextField("HH-61A. Other (Specify)", blank=True, null=True)
     HH_17 = models.TextField("HH-17. What is the main type of material used for the roof?", blank=True, null=True)
@@ -82,16 +81,16 @@ class Household(models.Model):
     HH_21 = models.TextField("HH-21. How many households occupy this housing unit?", blank=True, null=True)
     HH_22 = models.TextField("HH-22. What is the main source of water for drinking for this household?", blank=True, )
     HH_22A = models.TextField("HH-22A. In the last month, has there been any time when your household did not have sufficient quantities of drinking water when needed?", blank=True, null=True)
-    HH_22B = models.TextField("HH-22B. In the past two weeks, was the water from your main source not available for at least one full day?",)
+    HH_22B = models.TextField("HH-22B. In the past two weeks, was the water from your main source not available for at least one full day?", blank=True, null=True)
     HH_22C = models.TextField("HH-22C. Do you do anything to make the water safer to drink?", blank=True, null=True)
     HH_22D = models.TextField("HH-22D. What do you usually do to make the water safer to drink?", blank=True, null=True)
     HH_22E = models.TextField("HH-22E. How do you store your drinking water? ", blank=True, null=True)
     HH_22F = models.TextField("HH-22F. Other (Specify)", blank=True, null=True)
-    HH_23 = models.TextField("HH-23. What is the main source of water supply for other purposes such as cooking and handwashing? ", blank=True,)
+    HH_23 = models.TextField("HH-23. What is the main source of water supply for other purposes such as cooking and handwashing? ", blank=True, null=True)
     HH_24 = models.TextField("HH-24. How many rooms does this housing unit have excluding passage ways, verandas, lobbies, bathrooms and toilet rooms?", blank=True, null=True)
     HH_25 = models.TextField("HH-25. How many living rooms and bedrooms does this housing unit have?", blank=True, null=True)
     HH_26 = models.TextField("HH-26. How many rooms are used for sleeping in this housing unit?", blank=True, null=True)
-    HH_27 = models.TextField("HH-27. How many persons usually sleep in the housing unit, including those that are not part of the household?", blank=True,)
+    HH_27 = models.TextField("HH-27. How many persons usually sleep in the housing unit, including those that are not part of the household?", blank=True, null=True)
     HH_28 = models.TextField("HH-28. Does this housing unit have a bathoom?", blank=True, null=True)
     HH_29 = models.TextField("HH-29. What is the main type of toilet used by members of this household?", blank=True, null=True)
     HH_29A = models.TextField("HH-29A. Other (Specify)", blank=True, null=True)
@@ -137,10 +136,8 @@ class Household(models.Model):
     HH_36_Hammer_Mill = models.TextField("Hammer Mill", blank=True, null=True)
     HH_36_Agricultural_Land = models.TextField("Agricultural Land", blank=True, null=True)
 
-    HH_37 = models.TextField("HH-37. Does this household own any livestock, herds, other farm animals, or poultry?",blank=True, null=True)
-    HH_37A_animals_group = models.TextField(
-        "HH_37A. How many of the following animals does this household own?", blank=True
-    )
+    HH_37 = models.TextField("HH-37. Does this household own any livestock, herds, other farm animals, or poultry?", blank=True, null=True)
+    HH_37A_animals_group = models.TextField("HH_37A. How many of the following animals does this household own?", blank=True, null=True)
     HH_37A_traditional_cattle = models.TextField("Traditional Cattle", blank=True, null=True)
     HH_37A_diary_cattle = models.TextField("Dairy Cattle", blank=True, null=True)
     HH_37A_horses_donkeys_mule = models.TextField("Hourses/Donkeys/Mule", blank=True, null=True)
@@ -166,7 +163,6 @@ class Household(models.Model):
         return f"Household ({self.province}-{self.district}-{self.ward}-{self.hhn}-{self.hhn})"
 
 class HouseholdMember(models.Model):
-    parent_key = models.CharField(max_length=100, db_index=True)
     household = models.ForeignKey(
         Household,
         to_field='key',
@@ -179,31 +175,16 @@ class HouseholdMember(models.Model):
     first_name = models.TextField("First name", blank=True, null=True)
     last_name = models.TextField("Last name", blank=True, null=True)
     fullname = models.TextField("nan", blank=True, null=True)
-    HH_04 = models.TextField(
-        "HH_04. What is the relationship of him/her to the head of the household? ",
-        blank=True,
-    )
-    HH_05 = models.TextField("HH-05. Is he/she male or Female?", blank=True, null=True)
+    HH_04 = models.TextField("HH-04. What is the relationship to the head of the household? ", blank=True, null=True)            
+    HH_05 = models.TextField("HH-05. Is member male or Female?", blank=True, null=True)    
     HH_06 = models.TextField("HH-06. Indicte his/her Membership Status", blank=True, null=True)
     HH_07 = models.TextField("HH-07. What is his/her Date of Birth?", blank=True, null=True)
-    HH_08 = models.TextField(
-        "HH_08. How old was he/she at the last birthday?", blank=True
-    )
-    HH_09 = models.TextField(
-        "HH_09. What is his/her current marital status?", blank=True
-    )
-    HH_10 = models.TextField(
-        "HH_10. How old was he/she when he/she first got married/started cohabiting/living together?",
-        blank=True,
-    )
+    HH_08 = models.TextField("HH_08. How old was he/she at the last birthday?", blank=True)
+    HH_09 = models.TextField("HH_09. What is his/her current marital status?", blank=True)
+    HH_10 = models.TextField("HH_10. How old was he/she when he/she first got married/started cohabiting/living together?", blank=True)
     HH_11 = models.TextField("HH-11. What is his/her Nationality status", blank=True, null=True)
-    HH_12 = models.TextField(
-        "HH_12. Does he/she have any of the following medical conditions?", blank=True
-    )
-    HH_13 = models.TextField(
-        "HH_13. In the past two weeks, has he/she experienced any of the following Infectious Health Conditions?                    ",
-        blank=True,
-    )
+    HH_12 = models.TextField("HH_12. Does he/she have any of the following medical conditions?", blank=True)
+    HH_13 = models.TextField("HH_13. In the past two weeks, has he/she experienced any of the following Infectious Health Conditions?", blank=True)
     HH_14 = models.TextField("HH-14. Is he/she currently pregnant?", blank=True, null=True)
 
     def __str__(self):
