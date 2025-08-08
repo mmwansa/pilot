@@ -9,7 +9,7 @@ from django.db.models import Count, Max, Q
 from simple_history.utils import bulk_create_with_history
 
 from va_explorer.users.utils.demo_users import make_field_workers_for_facilities
-from va_explorer.va_data_management.models import Location, VerbalAutopsy
+from va_explorer.va_data_management.models import Location, VerbalAutopsy, SRSClusterLocation
 from va_explorer.va_data_management.utils.date_parsing import parse_date
 from va_explorer.va_data_management.utils.location_assignment import (
     assign_va_location,
@@ -111,12 +111,7 @@ def load_odk_csv_to_model(
     # Map ODK code values to labels
     for col in odk_map_columns:
         if col in df.columns and col in odk_map:
-            if verbose:
-                print(f"Mapping csv column '{col}' with odk_map keys {list(odk_map[col].keys())}")
-                print("BEFORE:", df[col].unique())
             df[col] = df[col].map(lambda v, c=col: lookup_label(c, v))
-            if verbose:
-                print("AFTER:", df[col].unique())
         elif col not in df.columns and verbose:
             print(f"Column '{col}' not in DataFrame")
         elif col not in odk_map and verbose:
@@ -140,6 +135,17 @@ def load_odk_csv_to_model(
             "PositiveSmallIntegerField",
         ]
     ]
+
+    # Handle ForeignKey: cluster → SRSClusterLocation
+    if "cluster" in df.columns:
+        cluster_map = {
+            str(loc.code): loc for loc in SRSClusterLocation.objects.exclude(code__isnull=True)
+        }
+
+        def get_cluster_instance(code):
+            return cluster_map.get(str(code).strip())
+
+        df["cluster"] = df["cluster"].apply(get_cluster_instance)
 
     def nan_to_none_for_intfields(row, int_fields):
         return {

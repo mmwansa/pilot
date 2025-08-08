@@ -1,0 +1,32 @@
+{% load va_explorer_tags %}
+
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th><a href="?{% sort_url 'id' direction='-' %}">ID</a></th>      
+      <th><a href="?{% sort_url 'first_name' direction='-' %}">First Name</a></th>
+      <th><a href="?{% sort_url 'last_name' direction='-' %}">Surname</a></th>
+      <th><a href="?{% sort_url 'HH_05' direction='-' %}">Sex</a></th>
+      <th><a href="?{% sort_url 'HH_08' direction='-' %}">Age</a></th>
+      <th><a href="?{% sort_url 'HH_04' direction='-' %}">Relationship to Head</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if object_list %}
+      {% for member in object_list %}
+        <tr>
+          <td>{{ member.id }}</td>
+            <td>{{ member.first_name|default:"-" }}</td>
+            <td>{{ member.last_name|default:"-" }}</td>
+            <td>{{ member.HH_05|default:"-" }}</td>
+            <td>{{ member.HH_08|default:"-" }}</td>
+            <td>{{ member.HH_04|default:"-" }}</td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="7">There are no household members to display.</td>
+      </tr>
+    {% endif %}
+  </tbody>
+</table>

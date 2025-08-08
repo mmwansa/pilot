@@ -43,9 +43,9 @@ class HouseholdDetail(CustomAuthMixin, PermissionRequiredMixin, HouseholdAccessM
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["id"] = self.object.id
-
         history = self.object.history.all().reverse()
         context["history"] = history
+        context["form"] = HouseholdForm(instance=self.object)  
         return context
 
 

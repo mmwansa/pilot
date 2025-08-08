@@ -186,23 +186,6 @@ class HouseholdFilter(FilterSet):
         widget=TextInput(attrs={"class": "form-text"}),
     )
 
-    respondent = CharFilter(
-        method="filter_respondent_fuzzy",
-        label="Respondent",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    hhn = CharFilter(
-        field_name="hhn",
-        lookup_expr="icontains",
-        label="Household Number (HHN)",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
-    hun = CharFilter(
-        field_name="hun",
-        lookup_expr="icontains",
-        label="Housing Unit Number (HUN)",
-        widget=TextInput(attrs={"class": "form-text"}),
-    )
     only_errors = BooleanFilter(
         method="filter_errors",
         label="Only Errors",

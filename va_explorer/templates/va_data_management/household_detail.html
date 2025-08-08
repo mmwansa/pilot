@@ -8,7 +8,10 @@
 {% block content %}
 <ul class="nav nav-tabs tab-spacing" id="myTab" role="tablist">
   <li class="nav-item">
-    <a class="nav-link active" id="record-tab" data-toggle="tab" href="#record" role="tab" aria-controls="record" aria-selected="true">Record</a>
+    <a class="nav-link active" id="record-tab" data-toggle="tab" href="#record" role="tab" aria-controls="record" aria-selected="true">Household</a>
+  </li>
+   <li class="nav-item">
+    <a class="nav-link" id="members-tab" data-toggle="tab" href="#members" role="tab" aria-controls="members" aria-selected="false">Members</a>
   </li>
   <li class="nav-item">
     <a class="nav-link" id="issues-tab" data-toggle="tab" href="#issues" role="tab" aria-controls="issues" aria-selected="false">Issues</a>
@@ -73,6 +76,39 @@
       </table>
     </div>
   </div>
+  <div class="tab-pane fade" id="members" role="tabpanel" aria-labelledby="members-tab">
+    <div class="row mt-4">
+      {% if object.members.all %}
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>First Name</th>
+              <th>Surname</th>
+              <th>Sex</th>
+              <th>Age</th>
+              <th>Relationship to Head</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for member in object.members.all %}
+              <tr>
+                <td>{{ member.id }}</td>
+                <td>{{ member.first_name|default:"-" }}</td>
+                <td>{{ member.last_name|default:"-" }}</td>
+                <td>{{ member.HH_05|default:"-" }}</td>
+                <td>{{ member.HH_08|default:"-" }}</td>
+                <td>{{ member.HH_04|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mx-3">There are no household members listed for this household.</p>
+      {% endif %}
+    </div>
+  </div>
+
   <div class="tab-pane fade" id="issues" role="tabpanel" aria-labelledby="issues-tab">
     <div class="row mt-4">
       {% if errors %}
@@ -149,7 +185,7 @@
 <div class="flt-action-backdrop"></div>
 <div class="flt-action-btn child to-top" data-subitem="3"><i class="fas fa-caret-up"></i></div>
 <div class="flt-action-btn child to-bottom" data-subitem="2"><i class="fas fa-caret-down"></i></div>
-<a href="{% url 'va_data_management:household_index' %}">
+<a href="{% url 'va_data_management:households' %}">
   <div class="flt-action-btn child" data-subitem="1"><i class="fas fa-angle-double-left"></i></div>
 </a>
 <div class="flt-action-btn" id="main-fab"><i class="fas fa-sort"></i></div>
