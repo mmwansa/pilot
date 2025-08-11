@@ -1,13 +1,26 @@
 {% extends "base.html" %}
 {% load static i18n %}
-{% include "home/_dashboard_numbers.html" %}
 
 {% block content %}
 <div class="row mt-4">
   <div class="col">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" id="homeTabs" role="tablist">
-      <!-- ... tabs as before ... -->
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-1-tab" data-bs-toggle="tab" data-bs-target="#tab-1" type="button" role="tab" aria-controls="tab-1" aria-selected="true">
+          Overview
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-2-tab" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab" aria-controls="tab-2" aria-selected="false">
+          Actions
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-3-tab" data-bs-toggle="tab" data-bs-target="#tab-3" type="button" role="tab" aria-controls="tab-3" aria-selected="false">
+          VA Statistics
+        </button>
+      </li>
     </ul>
 
     <div class="tab-content mt-4" id="homeTabsContent">
@@ -16,7 +29,7 @@
           <div class="row mb-3">
             <!-- Two large cards -->
             <div class="col-md-6 mb-3">
-              <div class="card shadow-sm h-100" style="border-radius: 1rem;">
+              <div class="card shadow-sm" style="height:200px; font-size:xx-large; border-radius: 1rem; background-color: #cae7b7ff;">
                 <div class="card-body">
                   <h5 class="card-title">Total Number of EAs ever visited:</h5>
                   <p class="card-text"><span class="count-up" data-target="{{ total_eas }}">0</span></p>
@@ -24,7 +37,7 @@
               </div>
             </div>
             <div class="col-md-6 mb-3">
-              <div class="card shadow-sm h-100" style="border-radius: 1rem;">
+              <div class="card shadow-sm" style="height:200px; font-size:xx-large; border-radius: 1rem; background-color: #b7e0e7ff;">
                 <div class="card-body">
                   <h5 class="card-title">Total Number of people counted:</h5>
                   <p class="card-text"><span class="count-up" data-target="{{ total_people }}">0</span></p>
@@ -35,7 +48,7 @@
           <div class="row">
             <!-- Four small cards -->
             <div class="col-md-3 mb-3">
-              <div class="card shadow-sm h-100" style="border-radius: 0.75rem;">
+              <div class="card shadow-sm " style="height:300px; font-size:x-large; border-radius: 0.75rem; background-color: #b7e0e7ff;">
                 <div class="card-body">
                   <h6 class="card-title">Pregnancies</h6>
                   <p class="card-text">Total: <span class="count-up" data-target="{{ total_pregnancies }}">0</span></p>
@@ -44,7 +57,7 @@
               </div>
             </div>
             <div class="col-md-3 mb-3">
-              <div class="card shadow-sm h-100" style="border-radius: 0.75rem;">
+              <div class="card shadow-sm " style="height:300px; font-size:x-large; border-radius: 0.75rem; background-color: #d9e7b7ff;">
                 <div class="card-body">
                   <h6 class="card-title">Pregnancy Outcomes</h6>
                   <p class="card-text">Total: <span class="count-up" data-target="{{ total_preg_outcomes }}">0</span></p>
@@ -53,7 +66,7 @@
               </div>
             </div>
             <div class="col-md-3 mb-3">
-              <div class="card shadow-sm h-100" style="border-radius: 0.75rem;">
+              <div class="card shadow-sm " style="height:300px; font-size:x-large; border-radius: 0.75rem; background-color: #d3b7e7ff;">
                 <div class="card-body">
                   <h6 class="card-title">Deaths</h6>
                   <p class="card-text">Total: <span class="count-up" data-target="{{ total_deaths }}">0</span></p>
@@ -62,7 +75,7 @@
               </div>
             </div>
             <div class="col-md-3 mb-3">
-              <div class="card shadow-sm h-100" style="border-radius: 0.75rem;">
+              <div class="card shadow-sm " style="height:300px; font-size:x-large; border-radius: 0.75rem; background-color: #b7e0e7ff;">
                 <div class="card-body">
                   <h6 class="card-title">Verbal Autopsies</h6>
                   <p class="card-text">Total: <span class="count-up" data-target="{{ total_vas }}">0</span></p>
@@ -73,7 +86,14 @@
           </div>
         </div>
       </div>
-      <!-- ... other tabs ... -->
+      <div class="tab-pane fade" id="tab-2" role="tabpanel" aria-labelledby="tab-2-tab">
+        <h2>Actions</h2>
+        <p>Here you can place quick actions, links, or summaries relevant to your users.</p>
+      </div>
+      <div class="tab-pane fade" id="tab-3" role="tabpanel" aria-labelledby="tab-3-tab">
+        <h2>VA Statistics</h2>
+        <p>VA statistics content goes here.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -106,5 +126,7 @@
       });
     });
   </script>
+  <!-- Ensure Bootstrap JS is loaded for tabs to work -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   {{ block.super }}
-{% endblock %}
+  {% endblock %}
