@@ -24,6 +24,18 @@ class Index(CustomAuthMixin, TemplateView):
                 [location.name for location in user.location_restrictions.all()]
             )
 
+        # Add your dashboard numbers here
+        context["total_eas"] = 23890
+        context["total_people"] = 33890
+        context["total_pregnancies"] = 3400
+        context["today_pregnancies"] = 209
+        context["total_preg_outcomes"] = 5099
+        context["today_preg_outcomes"] = 692
+        context["total_deaths"] = 2348
+        context["today_deaths"] = 689
+        context["total_vas"] = 7339
+        context["today_vas"] = 808
+
         return context
 
 
@@ -56,3 +68,5 @@ trends_endpoint_view = Trends.as_view()
 
 class About(CustomAuthMixin, TemplateView):
     template_name = "home/about.html"
+    
+    
