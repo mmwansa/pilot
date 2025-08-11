@@ -806,3 +806,6 @@ table thead th,
 
   
 
+.smaller-cards {
+    height:300px; border-radius: 0.75rem;
+}

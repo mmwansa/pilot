@@ -25,14 +25,75 @@
 
     <!-- Tab panes -->
     <div class="tab-content mt-4" id="homeTabsContent">
+      <!-- Overview Tab with Dashboard Cards -->
       <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="tab-1-tab">
-        <h2>Overview</h2>
-        <p>Welcome to the ZNPHI VA CMS Home. Use the tabs to navigate between Overview, Actions, and VA Statistics.</p>
+        <div class="container-fluid ">
+          <div class="row mb-3">
+            <!-- Two large cards -->
+            <div class="col-md-6 mb-3">
+              <div class="card shadow-sm " style="height:200px; font-size:xx-large; border-radius: 1rem; background-color: #cae7b7ff;">
+                <div class="card-body">
+                  <h5 class="card-title">Total Number of EAs ever visited:</h5>
+                  <p class="card-text"> 23890 </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="card shadow-sm " style="height:200px; font-size:xx-large;  border-radius: 1rem; background-color: #e7e1b7ff;">
+                <div class="card-body">
+                  <h5 class="card-title">Total Number of people counted:</h5>
+                  <p class="card-text"> 33890 </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row smaller-cards">
+            <!-- Four small cards -->
+            <div class="col-md-3 mb-3">
+              <div class="card shadow-sm" style="height:300px; border-radius: 0.75rem; background-color: #cdb7e7ff;">
+                <div class="card-body">
+                  <h6 class="card-title">Pregnancies</h6>
+                  <p class="card-text">Total: 3400</p>
+                  <p class="card-text">Today: 209</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card shadow-sm" style="height:300px; border-radius: 0.75rem; background-color: #d4a3daff;">
+                <div class="card-body">
+                  <h6 class="card-title">Pregnancy Outcomes</h6>
+                  <p class="card-text">Total: 5099</p>
+                  <p class="card-text">Today: 692</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card shadow-sm" style="height:300px; border-radius: 0.75rem; background-color: #e38a8aff;">
+                <div class="card-body">
+                  <h6 class="card-title">Deaths</h6>
+                  <p class="card-text">Total: 2348</p>
+                  <p class="card-text">Today: 689</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card shadow-sm" style="height:300px; border-radius: 0.75rem; background-color: #adb6eaff;">
+                <div class="card-body">
+                  <h6 class="card-title">Verbal Autopsies</h6>
+                  <p class="card-text">Total: 7339</p>
+                  <p class="card-text">Today: 808</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+      <!-- Actions Tab -->
       <div class="tab-pane fade" id="tab-2" role="tabpanel" aria-labelledby="tab-2-tab">
         <h2>Actions</h2>
         <p>Here you can place quick actions, links, or summaries relevant to your users.</p>
       </div>
+      <!-- VA Statistics Tab -->
       <div class="tab-pane fade" id="tab-3" role="tabpanel" aria-labelledby="tab-3-tab">
         {% include 'partials/_va_update_stats.html' %}
         {% if not user.is_fieldworker %}
@@ -174,6 +235,7 @@
 {% endblock %}
 
 {% block page_scripts %}
+
   <script src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
   <script src="{% static 'js/home.js' %}"></script>
   <!-- Ensure Bootstrap JS is loaded for tabs to work -->
