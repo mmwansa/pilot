@@ -32,7 +32,7 @@ class Index(CustomAuthMixin, TemplateView):
         context["total_preg_outcomes"] = 5099
         context["today_preg_outcomes"] = 692
         context["total_deaths"] = 2348
-        context["today_deaths"] = 689
+        context["today_deaths"] = 989
         context["total_vas"] = 7339
         context["today_vas"] = 808
 
