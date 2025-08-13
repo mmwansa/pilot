@@ -27,9 +27,9 @@ figure {
   --h2height: 20px;
 } */
 
-main {
+#dashboardApp {
   height: 95vh; /* Let height adjust naturally */
-  max-width: 100%; /* Control shrink size */
+  max-width: 80%; /* Control shrink size */
   margin: 0 auto; /* Center on page */
   font-size: .88rem;
   padding: 10px 0 10px 0;
@@ -401,10 +401,7 @@ input {
   text-align: left;
 }
 
-.container {
-  width: 95vw !important;
-  max-width: 95vw !important;
-}
+
 
 body {
   padding-bottom: 0;

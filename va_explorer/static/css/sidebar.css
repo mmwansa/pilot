@@ -31,3 +31,94 @@
   margin: 0;
   padding: 0;
 }
+
+/* --- Sidebar transitions & mobile behavior --- */
+.sidebar-container {
+  transition: width 0.25s ease, transform 0.25s ease;
+  will-change: transform, width;
+}
+
+/* Smooth label fade when collapsing */
+.sidebar-container .nav-label {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  white-space: nowrap;
+}
+
+/* Icon-only collapsed look (desktop) */
+.sidebar-container.collapsed {
+  width: 60px !important;
+  min-width: 60px !important;
+}
+.sidebar-container.collapsed .nav-label,
+.sidebar-container.collapsed .section-title,
+.sidebar-container.collapsed .collapse-caret {
+  display: none !important;
+}
+.sidebar-container.collapsed .sidebar-toggle {
+  text-align: center;
+}
+
+/* Rotate caret when expanded */
+.collapsible-header[aria-expanded="true"] .collapse-caret {
+  transform: rotate(180deg);
+  transition: transform 0.18s ease;
+}
+
+/* --- Mobile (<=995px) --- */
+@media screen and (max-width: 995px) {
+  /* Sidebar slides off-canvas by default */
+  .sidebar-container {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 250px;
+    transform: translateX(-100%);
+    background-color: var(--sidebar-bg, #f0f1f6);
+    z-index: 2000;
+    overflow-y: auto;
+  }
+
+  /* Visible when `.open` applied by JS */
+  .sidebar-container.open {
+    transform: translateX(0);
+  }
+
+  /* Keep collapsed width from applying on mobile (we use open/close) */
+  .sidebar-container.collapsed {
+    width: 250px !important;
+    min-width: 250px !important;
+  }
+
+  /* Make the toggle button always reachable on mobile */
+  .sidebar-toggle {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 2100;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #dcdcdc;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+
+  /* Overlay (hidden by default) */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1900;
+    background-color: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+  .sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+  }
+}

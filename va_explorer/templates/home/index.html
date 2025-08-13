@@ -14,16 +14,23 @@
           Overview
         </button>
       </li>
-      <li class="nav-item" role="presentation">
+      {% comment %} <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-2-tab" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab" aria-controls="tab-2" aria-selected="false">
           Actions
         </button>
-      </li>
+      </li> {% endcomment %}
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-3-tab" data-bs-toggle="tab" data-bs-target="#tab-3" type="button" role="tab" aria-controls="tab-3" aria-selected="false">
           VA Statistics
         </button>
       </li>
+
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-4-tab" data-bs-toggle="tab" data-bs-target="#tab-4" type="button" role="tab" aria-controls="tab-4" aria-selected="false">
+          Maps and Charts
+        </button>
+      </li>
+
     </ul>
 
     <!-- Tab panes -->
@@ -228,6 +235,14 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="tab-pane fade" id="tab-4" role="tabpanel" aria-labelledby="tab-4-tab">
+        <h2>Maps and Charts</h2>
+       
+        {% include "../va_analytics/dashboard2.html" %}
+          
+          
       </div>
     </div>
   </div>
