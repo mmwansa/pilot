@@ -30,6 +30,8 @@
   {% endblock %}
 
   <!-- Custom styles for sidebar layout -->
+  <!-- JQuery must be loaded first in head in order for  -->
+  <script src="{% static 'vendor/jquery-3.5.1/jquery.min.js' %}"></script>
 </head>
 
 <body>
@@ -71,7 +73,7 @@
 
   {% block modal %}{% endblock modal %}
 
-  <script src="{% static 'vendor/jquery-3.5.1/jquery.min.js' %}"></script>
+
   <script src="{% static 'vendor/popper-1.14.3/popper.min.js' %}"></script>
   <script src="{% static 'vendor/bootstrap-4.3.1/bootstrap.min.js' %}"></script>
   <script src="{% static 'js/project.js' %}"></script>

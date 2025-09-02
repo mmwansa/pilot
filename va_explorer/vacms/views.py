@@ -14,33 +14,8 @@ from django.views.generic import (
 
 # Create your views here.
 from va_explorer.vacms.cmsmodels.events import Event
-from va_explorer.vacms.cmsmodels.cms import Staff
 from va_explorer.vacms.forms.forms import ScheduleDeathForm
 from va_explorer.va_data_management.models import Death
-
-
-# staff
-class StaffListView(ListView):
-    model = Staff
-    template_name = "va_cms/staff_list.html"
-
-
-class StaffCreateView(CreateView):
-    model = Staff
-    fields = "__all__"
-    template_name = "va_cms/staff_create.html"
-
-
-class StaffUpdateView(UpdateView):
-    model = Staff
-    fields = "__all__"
-    template_name = "va_cms/staff_update.html"
-
-
-class StaffDetailView(DetailView):
-    model = Staff
-    fields = "__all__"
-    template_name = "va_cms/staff_detail.html"
 
 
 # event
@@ -102,30 +77,33 @@ def EventCreateDeathView(request, death):
             context = {
                 "message": f"d={minterview_scheduled_date},s={mva_interview_staff.id},n={minterview_contact_name},t={minterview_contact_tel},c={minterview_comments}",
             }
-            
+
             deathDetail = Death.objects.get(id=death)
 
             newEvent = Event.objects.create(
-                death = deathDetail,
-                event_type = 3,
-                event_status = 4,
+                death=deathDetail,
+                event_type=3,
+                event_status=4,
                 interview_scheduled_date=minterview_scheduled_date,
                 va_interview_staff=mva_interview_staff,
                 interview_contact_name=minterview_contact_name,
                 interview_contact_tel=minterview_contact_tel,
                 interview_comments=minterview_comments,
             )
-            
+
             newEvent.save()
-            
-            return redirect(reverse('cms-event-list'))
-          
-            '''
+
+            deathDetail.eventid = newEvent.id
+            deathDetail.save()
+
+            return redirect(reverse("cms-event-list"))
+
+            """
               return HttpResponse(
                 json.dumps(context), status=200, content_type="application/json"
             )
             
-            '''
+            """
             # return render(request, "va_cms/event_death_create.html", context)
         else:
             # Form is invalid, re-render with errors

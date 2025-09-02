@@ -1,8 +1,9 @@
 from django.contrib import messages
+import csv
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     CreateView,
@@ -17,6 +18,8 @@ from ..utils.mixins import CustomAuthMixin, UserDetailViewMixin
 from .forms import (
     ExtendedUserCreationForm,
     UserChangePasswordForm,
+    UserImportForm,
+    UserPasswordUpdateForm,
     UserSetPasswordForm,
     UserUpdateForm,
 )
@@ -57,6 +60,130 @@ class UserCreateView(
 user_create_view = UserCreateView.as_view()
 
 
+def UserImportView(request):
+
+    if request.method == "POST":
+
+        form = UserImportForm(request.POST, request.FILES)
+
+        if form.is_valid():
+
+            # Process the uploaded file
+            uploaded_file = form.cleaned_data['file']
+            group = form.cleaned_data["groups"]
+            
+            # Basic validation
+            if not uploaded_file.name.endswith('.csv'):
+                messages.error(request, 'File is not a CSV type.')
+                return redirect(reverse("users:index"))
+
+            # Read the CSV file
+            decoded_file = uploaded_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file)
+
+            # Process each row of the CSV
+            importcsv = True
+            userList = []
+            
+            for row in reader:
+                
+                user = User()
+                user.email = row["Email"]
+                user.name = row["Name"]
+                user.mobile1 = row["Mobile1"]
+                user.mobile2 = row["Mobile2"]
+                user.address= row["Address"]
+                user.password = row["Password"]
+                
+                try:
+                    userDetail = User.objects.get(email=user.email)
+                    messages.error(request, f"The specified user '{user.email}' already exists!")
+                    importcsv = False
+                    break
+                except User.DoesNotExist:
+                    userList.append(user)
+            
+            if importcsv: 
+
+                total = 0   
+                for user in userList:
+                    user.set_password(user.password)
+                    user.save()
+                    user.groups.set([group])
+                    total += 1
+
+                messages.success(request, f'User CSV file uploaded and processed successfully and {total}/{len(userList)} user(s) imported.')
+            
+
+            return redirect(reverse("users:index"))
+
+        else:
+            # Form is invalid, re-render with errors
+            return render(request, "users/user_import.html", {"form": form})
+    else:
+
+        return render(
+            request,
+            "users/user_import.html",
+            {"form": UserImportForm()},
+        )
+
+
+def UserPasswordUpdateView(request, pk):
+
+    if request.method == "POST":
+
+        form = UserPasswordUpdateForm(request.POST)
+
+        if form.is_valid():
+            # Process the valid data from form.cleaned_data
+            password1 = form.cleaned_data["password1"]
+        
+            try:
+                userDetail = User.objects.get(id=pk)
+                
+                userDetail.set_password(password1)
+                userDetail.has_valid_password = True
+                userDetail.save()
+                
+                messages.success(request, 'The user password has been updated successfully.')
+                
+            except User.DoesNotExist:
+                messages.error(request, 'The specified user cannot be found!')
+                
+            return redirect(reverse("users:index"))
+
+
+        else:
+            # Form is invalid, re-render with errors
+            return render(request, "users/user_update_password.html", {"form": form})
+    else:
+
+        initials = {"id": pk}
+
+        try:
+            userDetail = User.objects.get(id=pk)
+            initials = {
+                "id": pk,
+                "name": userDetail.name,
+                "email": userDetail.email,
+                "mobile1": userDetail.mobile1,
+                "mobile2": userDetail.mobile2,
+            }
+            
+            if userDetail.is_superuser:
+                messages.error(request, 'You cannot edit the password for a super user')
+                return redirect(reverse("users:index"))
+        except User.DoesNotExist:
+            initials = {}
+
+        return render(
+            request,
+            "users/user_update_password.html",
+            {"form": UserPasswordUpdateForm(initial=initials)},
+        )
+
+        
 class UserDetailView(CustomAuthMixin, UserDetailViewMixin, DetailView):
     login_url = reverse_lazy("account_login")
     model = User

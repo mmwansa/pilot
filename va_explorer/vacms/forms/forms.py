@@ -1,6 +1,6 @@
 from django import forms
-from va_explorer.vacms.cmsmodels.cms import Staff
-
+from va_explorer.users.models import User
+from bootstrap_datepicker_plus.widgets import DatePickerInput
 
 class ScheduleDeathForm(forms.Form):
     id = forms.CharField(
@@ -31,9 +31,10 @@ class ScheduleDeathForm(forms.Form):
     interview_scheduled_date = forms.DateField(
         label="VA Interview Scheduled Date",
         required=True,
+        widget=DatePickerInput()
     )
     va_interview_staff = forms.ModelChoiceField(
-        label="VA Interview Staff", queryset=Staff.objects.all(), required=True
+        label="VA Interview Staff", queryset=User.objects.filter(groups__name='Mortality Surveillance Officer'), required=True
     )
     interview_contact_name = forms.CharField(
         max_length=255, label="VA Interview Contact Name", required=False

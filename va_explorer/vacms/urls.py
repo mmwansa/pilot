@@ -1,10 +1,6 @@
 # blog/urls.py
 from django.urls import path
 from va_explorer.vacms.views import (
-    StaffListView,
-    StaffCreateView,
-    StaffDetailView,
-    StaffUpdateView,
     EventListView,
     EventListScheduledView,
     EventListCompletedView,
@@ -19,11 +15,6 @@ from va_explorer.vacms.views import (
 )
 
 urlpatterns = [
-    # staff
-    path("staff/list", StaffListView.as_view(), name="cms-staff-list"),
-    path("staff/create", StaffCreateView.as_view(), name="cms-staff-create"),
-    path("staff/update/<int:pk>", StaffUpdateView.as_view(), name="cms-staff-update"),
-    path("staff/detail/<int:pk>", StaffDetailView.as_view(), name="cms-staff-detail"),
     # event
     path("event/list", EventListView.as_view(), name="cms-event-list"),
     path(

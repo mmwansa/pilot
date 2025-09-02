@@ -58,4 +58,7 @@
   {% if perms.users.view_user %}
     <a href="{% url 'users:index' %}" class="btn btn-primary">Back</a>
   {% endif %}
+  {% if perms.users.change_user %}
+    <a href="{% url 'users:update_password' pk=user.pk %}" class="btn btn-primary" role="button">Edit Password</a>
+   {%  endif %}
 {% endblock content %}

@@ -55,6 +55,11 @@ class User(AbstractUser):
 
     email = models.EmailField(_("email address"), unique=True)
     name = models.CharField(_("Name of User"), blank=True, max_length=255)
+    #start new fields for case management
+    mobile1 = models.CharField(_("Mobile 1"), blank=True, max_length=255)
+    mobile2 = models.CharField(_("Mobile 2"), blank=True, max_length=255)
+    address = models.CharField(_("Address"), blank=True, max_length=255)
+    #end new fields
     has_valid_password = models.BooleanField(
         _("The user has a user-defined password"), default=False
     )
@@ -143,7 +148,7 @@ class User(AbstractUser):
     objects = CustomUserManager()
 
     def __str__(self):
-        return self.email
+        return f'{self.name} - {self.email}'
 
     def get_absolute_url(self):
         """Get url for user's detail view.
