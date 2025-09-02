@@ -41,6 +41,28 @@ GROUPS_PERMISSIONS = {
         VerbalAutopsy: ["view_verbalautopsy"],
         DataCleanup: [],
     },
+    "Mortality Surveillance Officer": {
+        Dashboard: ["view_dashboard", "download_data", "view_pii", "supervise_users"],
+        User: ["add_user", "change_user", "delete_user", "view_user"],
+        VerbalAutopsy: [
+            "change_verbalautopsy",
+            "view_verbalautopsy",
+            "delete_verbalautopsy",
+            "bulk_delete",
+        ],
+        DataCleanup: ["view_datacleanup", "download", "bulk_download"],
+    },
+    "Community Surveillance Officer": {
+        Dashboard: ["view_dashboard", "download_data", "view_pii", "supervise_users"],
+        User: ["add_user", "change_user", "delete_user", "view_user"],
+        VerbalAutopsy: [
+            "change_verbalautopsy",
+            "view_verbalautopsy",
+            "delete_verbalautopsy",
+            "bulk_delete",
+        ],
+        DataCleanup: ["view_datacleanup", "download", "bulk_download"],
+    },
 }
 
 

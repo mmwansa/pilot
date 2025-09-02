@@ -1,7 +1,6 @@
 from django.db import models
 from django.urls import reverse
 
-from va_explorer.vacms.cmsmodels.cms import Staff
 from va_explorer.va_data_management.models import (
     Death,
     Pregnancy,
@@ -9,6 +8,8 @@ from va_explorer.va_data_management.models import (
     Household,
     VerbalAutopsy,
 )
+
+from va_explorer.users.models import User
 
 
 class Event(models.Model):
@@ -29,19 +30,19 @@ class Event(models.Model):
         VA_INTERVIEW_ON_HOLD = 6, "VA Interview On Hold"
 
     data_collection_staff = models.ForeignKey(
-        Staff,
+        User,
         related_name="data_collection_events",  # Changed from "staff"
         null=True,
         on_delete=models.RESTRICT,
-        help_text="Foreign key to the Staff.",
+        help_text="Foreign key to the User.",
     )
 
     va_interview_staff = models.ForeignKey(
-        Staff,
+        User,
         related_name="va_interview_events",  # Changed from "staff"
         null=True,
         on_delete=models.RESTRICT,
-        help_text="Foreign key to the Staff.",
+        help_text="Foreign key to the User.",
     )
 
     death = models.ForeignKey(
@@ -132,7 +133,7 @@ class Event(models.Model):
     data_collect_contact_tel = models.CharField("Data Collection Contact Phone",max_length=255, blank=True, null=True)
     data_collect_comments = models.TextField("Data Collection Comments",max_length=255, blank=True, null=True)
 
-    interview_proposed_date = models.DateField("VA Interview Proposed Date",blank=True, null=True,)
+    interview_proposed_date = models.DateField("VA Interview Proposed Date",blank=True, null=True)
     interview_scheduled_date = models.DateField("VA Interview Scheduled Date",blank=False, null=True)
     interview_complete_date = models.DateField("VA Interview Complete Date",blank=False, null=True)
     interview_contact_name = models.CharField("VA Interview Contact Name",max_length=255, blank=True, null=True)

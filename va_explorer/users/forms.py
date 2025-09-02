@@ -183,11 +183,16 @@ class ExtendedUserCreationForm(UserCommonFields, UserCreationForm):
     password1 = None
     password2 = None
 
+ 
     class Meta:
         model = User
         fields = [
             "name",
             "email",
+            "mobile1",
+            "mobile2",
+            "address",
+            "password",
             "group",
             "view_pii",
             "download_data",
@@ -237,8 +242,13 @@ class ExtendedUserCreationForm(UserCommonFields, UserCreationForm):
         if user:
             user.email = self.cleaned_data["email"]
             user.name = self.cleaned_data["name"]
-
-            password = get_random_string(length=16)
+            user.mobile1 = self.cleaned_data["mobile1"]
+            user.mobile2 = self.cleaned_data["mobile2"]
+            user.address= self.cleaned_data["address"]
+            user.password = self.cleaned_data["password"]
+            
+            #password = get_random_string(length=16)
+            password = user.password
             user.set_password(password)
 
             # location_restrictions = get_location_restrictions(self.cleaned_data)
@@ -260,6 +270,10 @@ class ExtendedUserCreationForm(UserCommonFields, UserCreationForm):
                 "" * 20
                 + f"Created user with email {user.email} and temp. password {password}"
             )
+            
+            #prevent sending of emails
+            email_confirmation = False
+            
             if email_confirmation:
                 try:
                     get_adapter().send_new_user_mail(self.request, user, password)
@@ -279,12 +293,15 @@ class UserUpdateForm(UserCommonFields, forms.ModelForm):
     Similar to UserCreationForm but adds is_active field to allow an administrator
     to mark a user account as inactive
     """
-
+    
     class Meta:
         model = User
         fields = [
             "name",
             "email",
+            "mobile1",
+            "mobile2",
+            "address",
             "is_active",
             "group",
             "view_pii",
@@ -327,6 +344,46 @@ class UserUpdateForm(UserCommonFields, forms.ModelForm):
             user = process_user_data(user, self.cleaned_data)
 
         return user
+    
+class UserPasswordUpdateForm(forms.Form):
+    id = forms.CharField(
+        label="User ID",
+        required=True,
+        widget=forms.TextInput(attrs={"readonly": "readonly"}),
+    )
+    name = forms.CharField(
+        label="Name",
+        required=True,
+        widget=forms.TextInput(attrs={"readonly": "readonly"}),
+    )
+    email = forms.CharField(
+        label="Email",
+        required=True,
+        widget=forms.TextInput(attrs={"readonly": "readonly"}),
+    )
+    mobile1 = forms.CharField(
+        label="Mobile 1",
+        required=False,
+        widget=forms.TextInput(attrs={"readonly": "readonly"}),
+    )
+    mobile2 = forms.CharField(
+        label="Mobile 2",
+        required=False,
+        widget=forms.TextInput(attrs={"readonly": "readonly"}),
+    )
+    password1 = SetPasswordField(
+        label="New Password",
+        help_text=password_validation.password_validators_help_text_html(),
+    )
+    password2 = PasswordField(label="New Password (again)")
+
+    #
+    def clean(self):
+        password1 = self.cleaned_data["password1"]
+        password2 = self.cleaned_data["password2"]
+        if not password1 == password2:
+            raise forms.ValidationError("The provided passwords do not match")
+
 
 
 class UserSetPasswordForm(PasswordVerificationMixin, forms.Form):
@@ -339,12 +396,6 @@ class UserSetPasswordForm(PasswordVerificationMixin, forms.Form):
         If we do not want this dependency, we can write our own clean method to
         ensure the 2 typed-in passwords match.
     """
-
-    password1 = SetPasswordField(
-        label="New Password",
-        help_text=password_validation.password_validators_help_text_html(),
-    )
-    password2 = PasswordField(label="New Password (again)")
 
     def save(self, user):
         user.set_password(self.cleaned_data["password1"])
@@ -392,3 +443,13 @@ class UserChangePasswordForm(PasswordVerificationMixin, forms.Form):
         user.save()
 
         return user
+
+class UserImportForm(forms.Form):
+    
+    groups = forms.ModelChoiceField(
+            queryset=Group.objects.all(),
+            widget=forms.Select,
+            required=True,
+            label="Groups"
+        )
+    file = forms.FileField()

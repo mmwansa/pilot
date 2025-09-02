@@ -1,6 +1,7 @@
 from django.urls import path
-
 from va_explorer.users.views import (
+    UserImportView,
+    UserPasswordUpdateView,
     user_change_password_view,
     user_create_view,
     user_detail_view,
@@ -19,4 +20,6 @@ urlpatterns = [
     path("<int:pk>/", view=user_detail_view, name="detail"),
     path("set_password/", view=user_set_password_view, name="set_password"),
     path("change_password/", view=user_change_password_view, name="change_password"),
+    path("import/", UserImportView, name="import"),
+    path("update_password/<int:pk>/", UserPasswordUpdateView, name="update_password"),
 ]

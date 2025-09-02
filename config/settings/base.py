@@ -95,6 +95,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_pivot",
     "corsheaders",
+    "bootstrap_datepicker_plus",#required for date picker to work properly
 ] 
 
 LOCAL_APPS = [
