@@ -3,31 +3,102 @@
 {% block content %}
 
 <div class="row mt-4">
+  <div>
+    <h3>
+      About VACMS
+    </h3>
+    <p>
+      Verbal Autopsy & Case Management System (VACMS) is a web application built to support the Sample Registration
+      System (SRS) project at the Zambia National Public Health Institute (ZNPHI). This project is a fork of the <a
+        href="https://github.com/VA-Explorer/">VA Explorer</a> (VAE) project, licensed by The MITRE Corporation under
+      Apache 2.0.
+    </p>
+  </div>
 
-  <p>Verbal Autopsy & Case Management System (VA CMS) is a web application built to demonstrate verbal autopsy data management and analysis capabilities and act as a foundation for exploring new concepts. This prototype represents a work-in-progress, and is expected to mature in response to feedback from users and subject matter experts. VA Explorer currently supports the following functionality at various degrees of maturity:</p>
+  <div>
+    <h3>
+      Key Functionality
+    </h3>
 
-<ul>
-  <li>User account management, including:</li>
-  <ul>
-    <li>Creation/disabling of user accounts by administrators</li>
-    <li>Password management for individual users</li>
-  </ul>
-  <li>User access controls, including:</li>
-  <ul>
-    <li>Role-based access with the following roles: administrators, data managers, data viewers, and field workers</li>
-    <li>Assignment to one or more geographic areas for geographical-level scoping of data</li>
-  </ul>
-  <li>Loading of verbal autopsy questionnaire data</li>
-  <li>Assignment of cause of death using InterVA5 algorithm (Note: relies on external pyCrossVA and InterVA5 services)</li>
-  <li>Exploration of cause of death data via a dynamic, visualization-based dashboard that includes:</li>
-  <ul>
-    <li>A dynamic heatmap showing geographical trends, with zoom capabilities to hone in on regions of interest</li>
-    <li>Cause of death plots for chosen regions</li>
-    <li>Death distributions by age, gender, and place of death for chosen regions</li>
-    <li>Trends over time for chosen regions</li>
-  </ul>
-</ul>
 
+    <ul>
+      <li>User account management, including:</li>
+      <ul>
+        <li>Creation/disabling of user accounts by administrators</li>
+        <li>Password management for individual users</li>
+      </ul>
+      <li>User access controls, including:</li>
+      <ul>
+        <li>Role-based access with the following roles: administrators, data managers, data viewers, and field workers
+        </li>
+        <li>Assignment to one or more geographic areas for geographical-level scoping of data</li>
+      </ul>
+      <li>Case management and follow-up, including event tracking and VA scheduling</li>
+      <li>Loading of event and verbal autopsy questionnaire data</li>
+      <li>Assignment of cause of death using InterVA5 algorithm (Note: relies on external pyCrossVA and InterVA5
+        services)
+      </li>
+      <li>Exploration of cause of death data via a dynamic, visualization-based dashboard that includes:</li>
+      <ul>
+        <li>A dynamic heatmap showing geographical trends, with zoom capabilities to hone in on regions of interest</li>
+        <li>Cause of death plots for chosen regions</li>
+        <li>Death distributions by age, gender, and place of death for chosen regions</li>
+        <li>Trends over time for chosen regions</li>
+      </ul>
+    </ul>
+  </div>
+
+  <div>
+    <h3>
+      Copyright & License
+    </h3>
+
+    <p>
+      Copyright &copy; 2025 Zambia National Public Health Institute.
+    </p>
+
+    <p>
+      Available publicly via <a href="https://opensource.org/license/apache-2-0">Apache License, Version 2.0</a>. VACMS
+      also includes external software that is available under a variety of licenses. See <a
+        href="https://github.com/VA-Explorer/va_explorer/blob/main/LICENSE">LICENSE</a> for full license text(s).
+    </p>
+
+    <p>
+      Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+      on
+      an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+      specific language governing permissions and limitations under the License.
+    </p>
+  </div>
+
+  <div>
+    <h3>
+      Security & Privacy
+    </h3>
+    <p>
+      VACMS uses open-source third-party libraries from well-known and/or reputable sources. ZNPHI does not vet the
+      security of those software libraries. If security concerns you, you or your organization may want to review the
+      third-party libraries and their source code on GitHub.
+    </p>
+
+  </div>
+
+  <div>
+    <h3>
+      Acknowledgments
+    </h3>
+    <p>
+      This project relies on contributions from the community, in addition to other existing open source libraries,
+      without which VACMS would not be possible. Portions of this code, therefore, are copyright and licensed by the
+      respective developers, which include, but may not be limited to:
+    <ul>
+      <li>The MITRE Corporation for initial development on <a href="https://github.com/VA-Explorer/">VA Explorer</a>
+      </li>
+      <li>Samuel Clark and the <a href="https://openva.net/">openVA team</a> for cause of death algorithm development
+      </li>
+      <li>CDC Foundation for development of DHIS-2 integration</li>
+      </p>
+  </div>
 </div>
 
 {% endblock %}
