@@ -6,6 +6,13 @@ class Death(models.Model):
     #new field  for event from cms. Null if va interview not scheduled
     eventid = models.TextField("Event ID", blank=True, null=True)
     
+    # Persist the CSV key so we can dedupe reliably
+    key = models.TextField(unique=True, db_index=True, null=True, blank=True)
+    
+    #new field  for event from cms. Null if va interview not scheduled
+    eventid = models.TextField("Event ID", blank=True, null=True)
+
+    
     deviceid = models.TextField("Device ID", blank=True, null=True)
     today = models.TextField("Date Recorded", blank=True, null=True)
     start = models.TextField("Form Start Time", blank=True, null=True)

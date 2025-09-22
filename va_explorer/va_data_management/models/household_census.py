@@ -2,6 +2,9 @@ from django.db import models
 from treebeard.mp_tree import MP_Node
 from simple_history.models import HistoricalRecords
 
+from django.contrib.contenttypes.fields import GenericRelation
+from va_explorer.va_data_management.models.data_quality import DataQualityIssueMember
+
 class SRSClusterLocation(MP_Node):
     name = models.TextField()
     location_type = models.TextField()  # e.g., "province", "district", etc.
@@ -25,7 +28,14 @@ class Household(models.Model):
     # UUID-style primary key (string)
     key = models.CharField(max_length=100, unique=True, db_index=True)
 
-    cluster = models.ForeignKey("SRSClusterLocation", on_delete=models.SET_NULL, null=True, blank=True)    
+    cluster = models.ForeignKey("SRSClusterLocation", on_delete=models.SET_NULL, null=True, blank=True)
+
+    dq_members = GenericRelation(
+        DataQualityIssueMember,
+        content_type_field="content_type",
+        object_id_field="object_id",
+        related_query_name="household",
+    )    
     
     # Metadata and geo/admin data
     submission_date = models.TextField(blank=True, null=True)
@@ -189,3 +199,42 @@ class HouseholdMember(models.Model):
 
     def __str__(self):
         return f"({self.household.hhn}){self.first_name} {self.last_name}"
+
+
+class HouseholdDuplicate(models.Model):
+    """
+    A group of Household rows that appear to be duplicates by a specific rule.
+    We keep a stable signature so repeated runs can upsert cleanly.
+    """
+    KIND_EXACT = "exact_fields"
+    KIND_TIME = "ea_hun_hhn_time"
+    KIND_ADMIN = "admin_hun_hhn"
+    KIND_CHOICES = [
+        (KIND_EXACT, "Exact fields"),
+        (KIND_TIME, "EA+HUN+HHN within time window"),
+        (KIND_ADMIN, "Admin + HUN/HHN identical"),
+    ]
+
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES, db_index=True)
+    # Human-meaningful keys that defined the grouping; JSON so we can store EA/HUN/HHN etc.
+    keys = models.JSONField(default=dict, blank=True)
+    # Extra run details e.g., window, first_seen, last_seen, counts.
+    details = models.JSONField(default=dict, blank=True)
+
+    # Stable unique signature over (kind + members + keys) to dedupe upserts.
+    signature = models.CharField(max_length=64, unique=True, db_index=True)
+
+    # The households in this duplicate group.
+    households = models.ManyToManyField("va_data_management.Household", related_name="duplicate_groups")
+
+    # Lifecycle
+    resolved = models.BooleanField(default=False, help_text="Manually resolved or no longer detected.")
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Household duplicate group"
+        verbose_name_plural = "Household duplicate groups"
+
+    def __str__(self):
+        return f"[{self.kind}] size={self.households.count()} sig={self.signature[:8]}"

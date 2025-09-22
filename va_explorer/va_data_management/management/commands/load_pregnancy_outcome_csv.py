@@ -42,6 +42,28 @@ class Command(BaseCommand):
         df = pd.read_csv(csv_file)
         df = normalize_dataframe_columns(df, PregnancyOutcome)
 
+        # Ensure `key` exists
+        if "key" not in df.columns:
+            raise CommandError("The CSV must include a 'key' column to enforce uniqueness.")
+        
+        # Drop rows with missing/blank keys (cannot dedupe reliably)
+        before_nonnull = len(df)
+        df = df[df["key"].notna() & (df["key"].astype(str).str.strip() != "")]
+        dropped_blank = before_nonnull - len(df)
+
+        # Intra-file de-duplication by key
+        before_dupes = len(df)
+        df = df.sort_values("key").drop_duplicates(subset=["key"], keep="last")
+        intrafile_dupes = before_dupes - len(df)
+
+        # Filter out keys that already exist in DB
+        existing_keys = set(
+            PregnancyOutcome.objects.values_list("key", flat=True).exclude(key__isnull=True)
+        )
+        before_existing_filter = len(df)
+        df = df[~df["key"].astype(str).isin(existing_keys)]
+        skipped_existing = before_existing_filter - len(df)
+
         # Map EA → SRSClusterLocation.name → code
         ea_to_code_map = {
             loc.name.strip(): loc.code
@@ -76,5 +98,20 @@ class Command(BaseCommand):
             verbose=True
         )
 
-        PregnancyOutcome.objects.bulk_create(objects)
-        self.stdout.write(self.style.SUCCESS(f"Successfully imported {len(objects)} pregnancy outcome records."))
+        # Bulk create (DB has unique index on key for safety)
+        created = 0
+        if objects:
+            # ignore_conflicts handles any race conditions (same key inserted by another process)
+            PregnancyOutcome.objects.bulk_create(objects, ignore_conflicts=True)
+            created = len(objects)
+
+        self.stdout.write(
+            "Imported {created} pregnancy outcomes "
+            "(skipped {skipped_existing} existing, {intrafile_dupes} intra-file duplicates, "
+            "dropped {dropped_blank} blank-key rows).".format(
+                created=created,
+                skipped_existing=skipped_existing,
+                intrafile_dupes=intrafile_dupes,
+                dropped_blank=dropped_blank,
+            )
+        )
