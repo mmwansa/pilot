@@ -10,6 +10,11 @@ from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.models import Household
 from va_explorer.va_data_management.forms import HouseholdForm
 from va_explorer.va_data_management.filters import HouseholdFilter
+from django.contrib.contenttypes.models import ContentType
+from va_explorer.va_data_management.models.data_quality import (
+    DataQualityIssue,
+    DataQualityIssueMember,
+)
 
 
 class HouseholdAccessMixin(SingleObjectMixin):
@@ -46,8 +51,22 @@ class HouseholdDetail(CustomAuthMixin, PermissionRequiredMixin, HouseholdAccessM
         history = self.object.history.all().reverse()
         context["history"] = history
         context["form"] = HouseholdForm(instance=self.object)  
-        return context
 
+        # Fetch issues via reverse relation through members
+        ct = ContentType.objects.get_for_model(Household)
+        dq_issues = (
+            DataQualityIssue.objects
+            .filter(members__content_type=ct, members__object_id=self.object.id)
+            .order_by("-detected_at")
+            .distinct()
+        )
+        context["dq_issues"] = list(dq_issues)
+        context["dq_issues_counts"] = {
+            "open": dq_issues.filter(status="open").count(),
+            "resolved": dq_issues.filter(status="resolved").count(),
+            "muted": dq_issues.filter(status="muted").count(),
+        }
+        return context
 
 class HouseholdEdit(CustomAuthMixin, PermissionRequiredMixin, HouseholdAccessMixin, SuccessMessageMixin, UpdateView):
     permission_required = "va_data_management.change_household"
