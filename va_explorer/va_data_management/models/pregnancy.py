@@ -7,6 +7,7 @@ class Pregnancy(models.Model):
      # Persist the CSV key so we can dedupe reliably
     key = models.TextField(unique=True, db_index=True, null=True, blank=True)
 
+    submissiondate = models.TextField(blank=True, null=True)
     deviceid = models.TextField(blank=True)
     today = models.TextField(blank=True)
     start = models.TextField(blank=True)

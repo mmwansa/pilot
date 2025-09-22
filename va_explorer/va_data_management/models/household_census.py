@@ -38,7 +38,7 @@ class Household(models.Model):
     )    
     
     # Metadata and geo/admin data
-    submission_date = models.TextField(blank=True, null=True)
+    submissiondate = models.TextField(blank=True, null=True)
     deviceid = models.TextField("nan", blank=True, null=True)
     today = models.TextField("nan", blank=True, null=True)
     start = models.TextField("nan", blank=True, null=True)

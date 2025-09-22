@@ -13,6 +13,7 @@ class PregnancyOutcome(models.Model):
     # Store pregnancy id as a text (or UUID) field, not as a foreign key
     pregnancy_id = models.TextField("Pregnancy ID", blank=True, null=True)
 
+    submissiondate = models.TextField(blank=True, null=True)
     deviceid = models.TextField("nan", blank=True, null=True)
     today = models.TextField("nan", blank=True, null=True)
     start = models.TextField("nan", blank=True, null=True)
