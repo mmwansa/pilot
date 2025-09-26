@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.views.generic import TemplateView, View
 
+from va_explorer.home.dashboard_metrics import get_homepage_metrics
 from va_explorer.home.va_trends import get_trends_data
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.utils.loading import get_va_summary_stats
@@ -15,6 +16,7 @@ class Index(CustomAuthMixin, TemplateView):
         user = self.request.user
 
         context.update(get_va_summary_stats(user.verbal_autopsies()))
+        context.update(get_homepage_metrics())
 
         context["locations"] = "All Regions"
         if user.location_restrictions.count() > 0:
