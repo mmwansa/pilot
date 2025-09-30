@@ -3,7 +3,8 @@ from django.core.exceptions import ValidationError
 from django.forms import Select, TextInput
 from django_filters import BooleanFilter, CharFilter, DateFilter, FilterSet
 from fuzzywuzzy import fuzz
-from .models import VerbalAutopsy, Pregnancy, Household,  PregnancyOutcome, Death
+
+from .models import VerbalAutopsy, Pregnancy, Household, PregnancyOutcome, Death
 
 
 TRUE_FALSE_CHOICES = (
@@ -12,8 +13,8 @@ TRUE_FALSE_CHOICES = (
 )
 
 
-def validate_integer(value):
-    if not value.isdigit():
+def validate_integer(value: str):
+    if not str(value).isdigit():
         raise ValidationError(
             ("%(value)s is invalid or negative. Please enter only numbers"),
             params={"value": value},
@@ -24,6 +25,9 @@ class DateInput(forms.DateInput):
     input_type = "date"
 
 
+# =========================
+# Verbal Autopsy (VA) list
+# =========================
 class VAFilter(FilterSet):
     id = CharFilter(
         field_name="id",
@@ -92,11 +96,15 @@ class VAFilter(FilterSet):
         return queryset
 
     def filter_errors(self, queryset, name, value):
+        # Keep as-is for VA: project-specific relation "coding_issues"
         if value:
-            return queryset.filter(coding_issues__severity="error")
+            return queryset.filter(coding_issues__severity="error").distinct()
         return queryset
 
 
+# =========================
+# Pregnancy list
+# =========================
 class PregnancyFilter(FilterSet):
     province = CharFilter(
         field_name="province",
@@ -153,6 +161,9 @@ class PregnancyFilter(FilterSet):
         return queryset
 
 
+# =========================
+# Household list
+# =========================
 class HouseholdFilter(FilterSet):
     # Simple text and icontains filters
     province = CharFilter(
@@ -194,24 +205,42 @@ class HouseholdFilter(FilterSet):
 
     class Meta:
         model = Household
-        fields = []  # Explicit field list if you want to limit, otherwise empty
+        fields = []  # keep explicit and empty to avoid auto-building conflicting filters
 
+    # --- Fix for your error: define the method referenced by `only_errors` ---
+    def filter_errors(self, queryset, name, value):
+        """
+        When True, return households that have related DataQualityIssue(s) that are OPEN.
+        Uses the GenericRelation `dq_members` on Household -> DataQualityIssueMember -> issue.
+        """
+        if not value:
+            return queryset
+        return queryset.filter(
+            dq_members__issue__status="open"
+        ).distinct()
+
+    # Optional: fuzzy respondent search across Household.respondent and related members
+    # (Not wired to a filter control; add a CharFilter(method='filter_respondent_fuzzy') if desired.)
     def filter_respondent_fuzzy(self, queryset, name, value):
         if value:
             threshold = 75
-            households = queryset.values("member_id", "respondent", "first_name", "last_name")
-            matches = [
-                h["member_id"]
-                for h in households
-                if fuzz.token_set_ratio(
-                    value,
-                    " ".join([str(h.get("respondent") or ""), str(h.get("first_name") or ""), str(h.get("last_name") or "")])
-                ) > threshold
-            ]
-            return queryset.filter(member_id__in=matches)
+            # Combine respondent (from Household) and names (from related HouseholdMember)
+            households = queryset.values("id", "respondent")
+            # Build a set of household IDs matching fuzzy respondent;
+            # if you need member names too, consider annotating or joining separately.
+            matches = []
+            for row in households:
+                hay = str(row.get("respondent") or "").strip()
+                if hay and fuzz.token_set_ratio(value, hay) > threshold:
+                    matches.append(row["id"])
+            if matches:
+                return queryset.filter(id__in=matches)
         return queryset
 
 
+# =========================
+# Pregnancy Outcome list
+# =========================
 class PregnancyOutcomeFilter(FilterSet):
     province = CharFilter(
         field_name="province",
@@ -236,7 +265,7 @@ class PregnancyOutcomeFilter(FilterSet):
         lookup_expr="icontains",
         label="Enumerator",
         widget=TextInput(attrs={"class": "form-text"}),
-    )        
+    )
     outcome_type = CharFilter(
         field_name="po_group",
         lookup_expr="icontains",
@@ -281,6 +310,9 @@ class PregnancyOutcomeFilter(FilterSet):
         return queryset
 
 
+# =========================
+# Death list
+# =========================
 class DeathFilter(FilterSet):
     province = CharFilter(
         field_name="province",
@@ -318,7 +350,6 @@ class DeathFilter(FilterSet):
         label="Latest Date of Death",
         widget=DateInput(attrs={"class": "form-date datepicker"}),
     )
-
 
     class Meta:
         model = Death

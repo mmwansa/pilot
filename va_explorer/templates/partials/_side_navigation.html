@@ -236,25 +236,106 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function toggleSection(header) {
-      const targetId = header.getAttribute("data-target");
-      const section = document.getElementById(targetId);
-      const expanded = header.getAttribute("aria-expanded") === "true";
-      section.style.display = expanded ? "none" : "block";
-      header.setAttribute("aria-expanded", expanded ? "false" : "true");
-    }
+document.addEventListener("DOMContentLoaded", function () {
+  const sidebar = document.getElementById("sidebar");
+  const sidebarToggle = document.getElementById("sidebarToggle");
+  const sidebarOverlay = document.getElementById("sidebarOverlay");
+  const headers = document.querySelectorAll(".collapsible-header");
 
-    document.querySelectorAll(".collapsible-header").forEach((header) => {
-      header.addEventListener("click", function () {
-        toggleSection(header);
-      });
-      header.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          toggleSection(header);
-        }
-      });
+  // --- Initialize collapsible sections with saved state ---
+  headers.forEach(header => {
+    const targetId = header.getAttribute("data-target");
+    const section = document.getElementById(targetId);
+
+    // Load saved state (if any), else use existing aria-expanded
+    const saved = localStorage.getItem("sa_section_" + targetId);
+    const initiallyExpanded = saved !== null ? (saved === "true")
+      : (header.getAttribute("aria-expanded") === "true");
+
+    header.setAttribute("aria-expanded", initiallyExpanded ? "true" : "false");
+    if (section) section.style.display = initiallyExpanded ? "block" : "none";
+
+    // Click + keyboard handlers
+    header.addEventListener("click", () => {
+      const isExpanded = header.getAttribute("aria-expanded") === "true";
+      header.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+      if (section) section.style.display = isExpanded ? "none" : "block";
+      localStorage.setItem("sa_section_" + targetId, (!isExpanded).toString());
+    });
+
+    header.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        header.click();
+      }
     });
   });
+
+  // --- Restore sidebar collapsed state on desktop ---
+  if (localStorage.getItem("sa_sidebarCollapsed") === "true") {
+    sidebar.classList.add("collapsed");
+  }
+
+  // Helper to update the toggle icon (fa-bars <-> fa-times)
+  function updateToggleIcon() {
+    const icon = sidebarToggle.querySelector("i");
+    if (!icon) return;
+
+    if (window.innerWidth <= 995) {
+      // mobile: show X when open, bars when closed
+      if (sidebar.classList.contains("open")) {
+        icon.classList.remove("fa-bars");
+        icon.classList.add("fa-times");
+      } else {
+        icon.classList.remove("fa-times");
+        icon.classList.add("fa-bars");
+      }
+    } else {
+      // desktop: show X when expanded (not collapsed), bars when collapsed
+      if (sidebar.classList.contains("collapsed")) {
+        icon.classList.remove("fa-times");
+        icon.classList.add("fa-bars");
+      } else {
+        icon.classList.remove("fa-bars");
+        icon.classList.add("fa-times");
+      }
+    }
+  }
+
+  // --- Toggle behavior ---
+  sidebarToggle.addEventListener("click", function () {
+    if (window.innerWidth <= 995) {
+      // Mobile: open/close the off-canvas sidebar (don't change collapsed state)
+      const isNowOpen = sidebar.classList.toggle("open");
+      sidebarOverlay.classList.toggle("active", isNowOpen);
+    } else {
+      // Desktop: collapse/expand (icon-only)
+      const isCollapsed = sidebar.classList.toggle("collapsed");
+      localStorage.setItem("sa_sidebarCollapsed", isCollapsed.toString());
+    }
+    updateToggleIcon();
+  });
+
+  // Clicking overlay closes the mobile sidebar
+  sidebarOverlay.addEventListener("click", function () {
+    sidebar.classList.remove("open");
+    this.classList.remove("active");
+    updateToggleIcon();
+  });
+
+  // Update icon on resize (keeps visual state consistent)
+  window.addEventListener("resize", function () {
+    // If resizing to desktop, ensure overlay/open classes are cleared
+    if (window.innerWidth > 995) {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.remove("active");
+    }
+    updateToggleIcon();
+  });
+
+  // initial icon set
+  updateToggleIcon();
+});
 </script>
+
+
