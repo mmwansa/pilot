@@ -120,6 +120,8 @@ body {
   margin-bottom: 10px;
   padding-bottom: 0px;
   
+
+  
 }
 
 .auth-logo {
@@ -806,3 +808,23 @@ table thead th,
 
   
 
+.smaller-cards {
+    height:300px; border-radius: 0.75rem;
+}
+
+/* Add this to your sidebar.css or here for demo */
+.sidebar-container.collapsed {
+  width: 60px !important;
+  min-width: 60px !important;
+  transition: width 0.2s;
+}
+.sidebar-container.collapsed .nav-label,
+.sidebar-container.collapsed .section-title {
+  display: none !important;
+}
+.sidebar-container.collapsed .collapse-caret {
+  display: none !important;
+}
+.sidebar-container {
+  transition: width 0.2s;
+}

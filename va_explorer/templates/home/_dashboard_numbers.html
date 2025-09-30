@@ -1,0 +1,30 @@
+{# filepath: va_explorer/templates/home/_dashboard_numbers.html #}
+{% comment %} This file only defines variables for use in the dashboard {% endcomment %}
+{% with
+  total_eas=23890
+  total_people=33890
+  total_pregnancies=3400
+  today_pregnancies=209
+  total_preg_outcomes=5099
+  today_preg_outcomes=692
+  total_deaths=2348
+  today_deaths=689
+  total_vas=7339
+  today_vas=808
+%}
+  {% block dashboard_numbers %}
+    {% with
+      total_eas=total_eas
+      total_people=total_people
+      total_pregnancies=total_pregnancies
+      today_pregnancies=today_pregnancies
+      total_preg_outcomes=total_preg_outcomes
+      today_preg_outcomes=today_preg_outcomes
+      total_deaths=total_deaths
+      today_deaths=today_deaths
+      total_vas=total_vas
+      today_vas=today_vas
+    %}
+    {% endwith %}
+  {% endblock %}
+{% endwith %}

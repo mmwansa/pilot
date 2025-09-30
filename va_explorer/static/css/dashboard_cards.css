@@ -1,0 +1,117 @@
+/* === KPI Cards (modern) === */
+:root{
+  --brand-green: #009140;
+  --brand-red: #eb0335;
+  --brand-orange: #e67816;
+  --brand-black: #111;
+  --brand-white: #fff;
+
+  --text-muted: #60646c;
+  --border: #e9ecef;
+  --shadow-sm: 0 1px 2px rgba(17,17,17,.06), 0 2px 8px rgba(17,17,17,.05);
+  --shadow-md: 0 6px 22px rgba(17,17,17,.10), 0 18px 36px rgba(17,17,17,.06);
+  --radius: 16px;
+  --ring: 0 0 0 3px rgba(0,145,64,.18);
+}
+
+/* base card look */
+.card.kpi{
+  position: relative;
+  background: var(--brand-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* top accent bar */
+.card.kpi::before{
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--brand-green), var(--brand-orange));
+  opacity: .9;
+  z-index: 1;
+}
+
+/* hover / focus */
+.card.kpi:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(0,0,0,.06);
+}
+.card.kpi:focus-within{
+  box-shadow: var(--shadow-md), var(--ring);
+  outline: none;
+}
+
+/* content typographic polish */
+.card.kpi .card-title{
+  font-size: .9rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  margin-bottom: .25rem;
+}
+.card.kpi .card-text{
+  margin: 0;
+  color: var(--brand-black);
+}
+.card.kpi .card-body{
+  padding: 18px 18px 16px;
+}
+
+/* big numbers */
+.card.kpi .count-up{
+  display: inline-block;
+  font-weight: 700;
+  font-size: clamp(1.25rem, 1.5vw + 0.35rem, 1.8rem);
+  line-height: 1.05;
+}
+
+/* size helpers (optional) */
+.kpi--lg .card-body{ min-height: 120px; }
+.kpi--tall .card-body{ min-height: 200px; }
+
+/* single-color accent variants (optional) */
+.card.kpi.kpi--green::before{ background: var(--brand-green); }
+.card.kpi.kpi--red::before{ background: var(--brand-red); }
+.card.kpi.kpi--orange::before{ background: var(--brand-orange); }
+.card.kpi.kpi--black::before{ background: var(--brand-black); }
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .card.kpi{ transition: none; }
+  .card.kpi:hover{ transform: none; }
+}
+
+/* Keep KPI titles on one line; ellipsize if too long */
+.card.kpi .card-title{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Compact variant for tighter right padding (Pregnancy Outcomes card) */
+.card.kpi.kpi--outcomes .card-body{
+  padding-right: 10px;   /* was 18px */
+}
+
+/* On wider screens we can tighten a bit more */
+@media (min-width: 992px){
+  .card.kpi.kpi--outcomes .card-body{
+    padding-right: 8px;
+  }
+}
+
+/* On very small screens, allow wrapping for readability */
+@media (max-width: 575.98px){
+  .card.kpi .card-title{
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
