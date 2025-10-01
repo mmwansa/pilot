@@ -1,9 +1,11 @@
 import re
 from collections import defaultdict
+from datetime import timedelta
 from io import BytesIO
 
 import pandas as pd
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 
 from config.celery_app import app
 from config.settings.base import env
@@ -20,6 +22,52 @@ from va_explorer.va_data_management.utils.odk import (
     pyodk_download_definition,
     pyodk_download_table,
 )
+
+
+def _iter_odk_sync_schedules():
+    """Yield Celery schedules based on the configured ODK sync options."""
+    schedules = []
+
+    interval_raw = env("ODK_SYNC_INTERVAL_MINUTES", default=None)
+    if interval_raw not in (None, ""):
+        try:
+            interval = int(interval_raw)
+        except (TypeError, ValueError) as exc:
+            raise ImproperlyConfigured(
+                "ODK_SYNC_INTERVAL_MINUTES must be an integer number of minutes."
+            ) from exc
+        if interval <= 0:
+            raise ImproperlyConfigured(
+                "ODK_SYNC_INTERVAL_MINUTES must be a positive integer."
+            )
+        schedules.append(timedelta(minutes=interval))
+
+    cron_entries = env.list("ODK_SYNC_CRONTAB", default=["0 0 * * *"])
+    for expr in cron_entries:
+        expression = expr.strip()
+        if not expression:
+            continue
+        parts = expression.split()
+        if len(parts) != 5:
+            raise ImproperlyConfigured(
+                "Each ODK_SYNC_CRONTAB entry must have five fields: minute, "
+                "hour, day_of_month, month_of_year, and day_of_week."
+            )
+        minute, hour, day_of_month, month_of_year, day_of_week = parts
+        schedules.append(
+            crontab(
+                minute=minute,
+                hour=hour,
+                day_of_month=day_of_month,
+                month_of_year=month_of_year,
+                day_of_week=day_of_week,
+            )
+        )
+
+    if not schedules:
+        schedules.append(crontab(hour=0, minute=0))
+
+    return schedules
 
 
 def load_definition_from_bytes(form_name: str, content: bytes) -> int:
@@ -83,12 +131,10 @@ def setup_periodic_tasks(sender, **kwargs):
         name="Run Coding Algorithms daily",
     )
 
-    # Import forms and data from ODK daily at 00:00
-    sender.add_periodic_task(
-        crontab(hour=0, minute=0),
-        import_odk_forms.s(),
-        name="Import ODK forms",
-    )
+    # Import forms and data from ODK according to the configured schedule(s)
+    for index, schedule in enumerate(_iter_odk_sync_schedules(), start=1):
+        name = "Import ODK forms" if index == 1 else f"Import ODK forms #{index}"
+        sender.add_periodic_task(schedule, import_odk_forms.s(), name=name)
 
 
 # Result of tasks need to be json serializable so return dicts.
