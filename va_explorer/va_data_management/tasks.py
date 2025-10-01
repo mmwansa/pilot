@@ -83,9 +83,9 @@ def setup_periodic_tasks(sender, **kwargs):
         name="Run Coding Algorithms daily",
     )
 
-    # Import forms and data from ODK daily at 01:00
+    # Import forms and data from ODK daily at 00:00
     sender.add_periodic_task(
-        crontab(hour=1, minute=0),
+        crontab(hour=0, minute=0),
         import_odk_forms.s(),
         name="Import ODK forms",
     )
@@ -162,8 +162,7 @@ def import_from_kobo():
     }
 
 
-@app.task()
-def import_odk_forms():
+def _sync_odk_forms():
     """Download ODK form definitions and data using pyODK."""
     forms = {
         "household": env("ODK_HOUSEHOLD_FORM_ID", default=""),
@@ -183,3 +182,14 @@ def import_odk_forms():
             num = import_dataframe_records(name, df)
             results[name] = num
     return results
+
+
+@app.task()
+def import_odk_forms():
+    """Celery task wrapper around the pyODK synchronization pipeline."""
+    return _sync_odk_forms()
+
+
+def sync_odk_forms():
+    """Expose the pyODK sync pipeline for synchronous callers."""
+    return _sync_odk_forms()
