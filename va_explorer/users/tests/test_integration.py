@@ -9,6 +9,7 @@ from va_explorer.tests.factories import (
     NewUserFactory,
     UserFactory,
 )
+from va_explorer.va_data_management.models import SRSClusterLocation
 from va_explorer.users.forms import ExtendedUserCreationForm, UserUpdateForm
 
 pytestmark = pytest.mark.django_db
@@ -28,7 +29,10 @@ def retrieve_password_from_email_body(body):
 # A utility method to create and return a new user via the ExtendedUserCreationForm
 def create_and_return_a_new_user(rf, proto_user):
     group = GroupFactory.create()
-    location = LocationFactory.create()
+    LocationFactory.create(name="Integration Province", location_type="province")
+    srs_location = SRSClusterLocation.add_root(
+        name="Integration Province", location_type="province"
+    )
 
     form = ExtendedUserCreationForm(
         {
@@ -36,7 +40,7 @@ def create_and_return_a_new_user(rf, proto_user):
             "email": proto_user.email,
             "group": group,
             "geographic_access": "location-specific",
-            "location_restrictions": [location],
+            "location_restrictions": [srs_location],
         }
     )
 

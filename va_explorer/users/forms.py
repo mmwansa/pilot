@@ -17,7 +17,8 @@ from django.forms import (
 )
 from django.utils.crypto import get_random_string
 
-from va_explorer.va_data_management.models import Location
+from va_explorer.users.utils.location_mapping import map_srs_clusters_to_locations
+from va_explorer.va_data_management.models import Location, SRSClusterLocation
 
 # from allauth.account.utils import send_email_confirmation, setup_user_email
 
@@ -69,7 +70,16 @@ def validate_location_access(form, geographic_access, location_restrictions, gro
 def process_user_data(user, cleaned_data):
     # set user location restrictions
     location_restrictions = get_location_restrictions(cleaned_data)
-    user.location_restrictions.set(location_restrictions)
+
+    if (
+        "location_restrictions" in cleaned_data
+        and cleaned_data["location_restrictions"]
+    ):
+        clusters = cleaned_data["location_restrictions"]
+        mapped_locations = map_srs_clusters_to_locations(clusters)
+        user.location_restrictions.set(mapped_locations)
+    else:
+        user.location_restrictions.set(location_restrictions)
 
     # set user group
     group = cleaned_data["group"]
@@ -135,7 +145,7 @@ class UserCommonFields(forms.ModelForm):
     )
     location_restrictions = ModelMultipleChoiceField(
         # Don't include 'Unknown' or Root/Country node in options
-        queryset=Location.objects.all()
+        queryset=SRSClusterLocation.objects.all()
         .exclude(Q(location_type="country") | Q(name="Unknown"))
         .order_by("path"),
         widget=LocationRestrictionsSelectMultiple(

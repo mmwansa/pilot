@@ -15,7 +15,8 @@ from django.views.generic.edit import FormView
 
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.constants import PII_FIELDS, REDACTED_STRING
-from va_explorer.va_data_management.models import Location
+from va_explorer.users.utils.location_mapping import map_srs_clusters_to_locations
+from va_explorer.va_data_management.models import Location, SRSClusterLocation
 from va_explorer.va_export.forms import VADownloadForm
 
 
@@ -68,16 +69,14 @@ class VaApi(CustomAuthMixin, View):
             # if location query, filter down VAs within chosen location's jurisdiction
             loc_query = params.get("locations", None)
             if loc_query:
-                id_list = loc_query.split(",")
+                id_list = [int(pk) for pk in loc_query.split(",") if pk]
+                clusters = SRSClusterLocation.objects.filter(pk__in=id_list)
+                location_qs = map_srs_clusters_to_locations(clusters)
 
-                # also add location descendants to id list
-                locations_cache = Location.objects.filter(pk__in=id_list)
-                for location in locations_cache:
-                    id_list.extend(
-                        location.get_descendants().values_list("id", flat=True)
-                    )
-
-                matching_vas = matching_vas.filter(location__id__in=id_list)
+                if location_qs.exists():
+                    matching_vas = matching_vas.filter(location__in=location_qs)
+                else:
+                    matching_vas = matching_vas.none()
 
             # =========DATE FILTER LOGIC===================#
             # if start/end dates specified, filter to only VAs within time range
