@@ -14,7 +14,12 @@ from va_explorer.tests.factories import (
 )
 from va_explorer.users.models import User
 from va_explorer.va_data_management.constants import REDACTED_STRING
-from va_explorer.va_data_management.models import CauseOfDeath, Location, VerbalAutopsy
+from va_explorer.va_data_management.models import (
+    CauseOfDeath,
+    Location,
+    SRSClusterLocation,
+    VerbalAutopsy,
+)
 from va_explorer.va_export.forms import VADownloadForm
 
 pytestmark = pytest.mark.django_db
@@ -57,6 +62,16 @@ def build_test_db():
         path_string=f"{province.name} Province/District2 District/Empty Facility",
     )
 
+    srs_province = SRSClusterLocation.add_root(
+        name=province.name, location_type="province"
+    )
+    srs_district1 = srs_province.add_child(name="District1", location_type="district")
+    srs_district2 = srs_province.add_child(name="District2", location_type="district")
+    srs_facility_a = srs_district1.add_child(name="Facility1", location_type="facility")
+    srs_facility_b = srs_district2.add_child(name="Facility1", location_type="facility")
+    srs_facility_c = srs_district2.add_child(name="Facility2", location_type="facility")
+    srs_empty = srs_district2.add_child(name="Empty Facility", location_type="facility")
+
     # create VAs
     va1 = VerbalAutopsyFactory.create(location=facility_a, Id10023="2019-01-01")
     va2 = VerbalAutopsyFactory.create(location=facility_b, Id10023="2019-01-03")
@@ -79,6 +94,21 @@ def build_test_db():
 
     # build a non-admin user that can download but can't view pii
     UserFactory.create(name="no_pii", groups=[non_admin_group])
+
+    return {
+        "province": province,
+        "district1": district1,
+        "facility_a": facility_a,
+        "facility_b": facility_b,
+        "facility_c": facility_c,
+        "srs_province": srs_province,
+        "srs_district1": srs_district1,
+        "srs_district2": srs_district2,
+        "srs_facility_a": srs_facility_a,
+        "srs_facility_b": srs_facility_b,
+        "srs_facility_c": srs_facility_c,
+        "srs_empty": srs_empty,
+    }
 
 
 class TestAPIView:
@@ -136,7 +166,7 @@ class TestAPIView:
             f.close()
 
     def test_download_csv_with_no_matching_vas(self, user: User):
-        build_test_db()
+        test_data = build_test_db()
         # only download data from "No VA Facility", which will have no matching VAs
         no_va_facility = Location.objects.get(name="Empty Facility")
 
@@ -144,7 +174,8 @@ class TestAPIView:
         c.force_login(user=user)
 
         response = c.post(
-            POST_URL, data={"format": "csv", "locations": no_va_facility.pk}
+            POST_URL,
+            data={"format": "csv", "locations": test_data["srs_empty"].pk},
         )
         assert response.status_code == 200
 
@@ -166,7 +197,7 @@ class TestAPIView:
             f.close()
 
     def test_download_json_with_no_matching_vas(self, user: User):
-        build_test_db()
+        test_data = build_test_db()
         # only download data from "No VA Facility", which will have no matching VAs
         no_va_facility = Location.objects.get(name="Empty Facility")
 
@@ -174,7 +205,8 @@ class TestAPIView:
         c.force_login(user=user)
 
         response = c.post(
-            POST_URL, data={"format": "json", "locations": no_va_facility.pk}
+            POST_URL,
+            data={"format": "json", "locations": test_data["srs_empty"].pk},
         )
         assert response.status_code == 200
 
@@ -197,7 +229,7 @@ class TestAPIView:
             f.close()
 
     def test_location_filtering(self, user: User):
-        build_test_db()
+        test_data = build_test_db()
         # only download data from location a
         province = Location.objects.get(location_type="province")
         facility_1 = Location.objects.get(
@@ -207,7 +239,10 @@ class TestAPIView:
         c = Client()
         c.force_login(user=user)
 
-        response = c.post(POST_URL, data={"format": "csv", "locations": facility_1.pk})
+        response = c.post(
+            POST_URL,
+            data={"format": "csv", "locations": test_data["srs_facility_a"].pk},
+        )
         assert response.status_code == 200
 
         # Django 3.2 has response.headers. For now, we'll access them per below
@@ -279,7 +314,7 @@ class TestAPIView:
             f.close()
 
     def test_combined_filter_csv(self, user: User):
-        build_test_db()
+        test_data = build_test_db()
         # 1. Download from facility A after 1/1/2020 with COD_a in CSV format.
         # Assert only VA 4 is downloaded
         start_date = "2020-01-01"
@@ -292,7 +327,7 @@ class TestAPIView:
         query_data = {
             "format": "csv",
             "start_date": start_date,
-            "locations": loc_a.pk,
+            "locations": test_data["srs_facility_a"].pk,
             "causes": cod_name,
         }
 
@@ -317,7 +352,7 @@ class TestAPIView:
             f.close()
 
     def test_combined_filter_json(self, user: User):
-        build_test_db()
+        test_data = build_test_db()
         # 2. Download data from facility A from before 2020 with COD b in
         # JSON format. Assert only VA 1 is downloaded
         # NOTE: assumes records are stored in a wrapper with 'count' and 'record' keys.
@@ -333,7 +368,7 @@ class TestAPIView:
         query_data = {
             "format": "json",
             "end_date": end_date,
-            "locations": loc_a.pk,
+            "locations": test_data["srs_facility_a"].pk,
             "causes": cod_name,
         }
 
@@ -391,7 +426,7 @@ class TestAPIView:
     def test_download_via_form(self, user: User):
         build_test_db()
         # filter by id of last location in test db
-        loc_id = Location.objects.last().pk
+        loc_id = SRSClusterLocation.objects.last().pk
         download_form = VADownloadForm(
             {
                 "action": "download",

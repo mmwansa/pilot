@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.forms import DateField, ModelMultipleChoiceField, Select, SelectMultiple
 
 from va_explorer.users.forms import LocationRestrictionsSelectMultiple
-from va_explorer.va_data_management.models import CauseOfDeath, Location
+from va_explorer.va_data_management.models import CauseOfDeath, SRSClusterLocation
 
 
 # load COD options for export form
@@ -46,7 +46,7 @@ class VADownloadForm(forms.Form):
 
     locations = ModelMultipleChoiceField(
         # Don't include 'Unknown' or Root/Country node in options
-        queryset=Location.objects.all()
+        queryset=SRSClusterLocation.objects.all()
         .exclude(Q(location_type="country") | Q(name="Unknown"))
         .order_by("path"),
         widget=LocationRestrictionsSelectMultiple(

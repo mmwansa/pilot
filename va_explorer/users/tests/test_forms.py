@@ -10,6 +10,7 @@ from va_explorer.tests.factories import (
     NewUserFactory,
     UserFactory,
 )
+from va_explorer.va_data_management.models import SRSClusterLocation
 from va_explorer.users.forms import (
     ExtendedUserCreationForm,
     UserChangePasswordForm,
@@ -18,6 +19,14 @@ from va_explorer.users.forms import (
 )
 
 pytestmark = pytest.mark.django_db
+
+
+def create_matching_srs_location(name="Test Location", location_type="province"):
+    location = LocationFactory.create(name=name, location_type=location_type)
+    srs_location = SRSClusterLocation.add_root(
+        name=name, location_type=location_type
+    )
+    return location, srs_location
 
 
 class TestUserCreationForm:
@@ -46,7 +55,7 @@ class TestUserCreationForm:
         # A user with proto_user params does not exist yet.
         proto_user = NewUserFactory.build()
         group = GroupFactory.create()
-        location = LocationFactory.create()
+        _, srs_location = create_matching_srs_location()
 
         form = ExtendedUserCreationForm(
             {
@@ -54,7 +63,7 @@ class TestUserCreationForm:
                 "email": proto_user.email,
                 "group": group,
                 "geographic_access": "location-specific",
-                "location_restrictions": [location],
+                "location_restrictions": [srs_location],
             }
         )
 
@@ -90,7 +99,7 @@ class TestUserCreationForm:
         # A user with existing_user params exists already.
         existing_user = NewUserFactory.create()
         group = GroupFactory.create()
-        location = LocationFactory.create()
+        _, srs_location = create_matching_srs_location()
 
         form = ExtendedUserCreationForm(
             {
@@ -98,7 +107,7 @@ class TestUserCreationForm:
                 "email": existing_user.email,
                 "group": group,
                 "geographic_access": "location-specific",
-                "location_restrictions": [location],
+                "location_restrictions": [srs_location],
             }
         )
 
@@ -149,7 +158,7 @@ class TestUserCreationForm:
         # A user with proto_user params does not exist yet.
         proto_user = NewUserFactory.build()
         group = GroupFactory.create()
-        location = LocationFactory.create()
+        _, srs_location = create_matching_srs_location()
 
         form = ExtendedUserCreationForm(
             {
@@ -157,7 +166,7 @@ class TestUserCreationForm:
                 "email": proto_user.email,
                 "group": group,
                 "geographic_access": "national",
-                "location_restrictions": [location],
+                "location_restrictions": [srs_location],
             }
         )
 
@@ -189,7 +198,7 @@ class TestUserCreationForm:
 class TestUserUpdateForm:
     def test_valid_form(self, rf: RequestFactory):
         new_group = GroupFactory.create()
-        location = LocationFactory.create()
+        _, srs_location = create_matching_srs_location()
 
         form = UserUpdateForm(
             {
@@ -198,7 +207,7 @@ class TestUserUpdateForm:
                 "group": new_group,
                 "is_active": False,
                 "geographic_access": "location-specific",
-                "location_restrictions": [location],
+                "location_restrictions": [srs_location],
             }
         )
 
@@ -261,7 +270,7 @@ class TestUserUpdateForm:
     def test_group_required(self):
         # A user with proto_user params does not exist yet.
         proto_user = NewUserFactory.build()
-        location = LocationFactory.create()
+        _, srs_location = create_matching_srs_location()
 
         form = UserUpdateForm(
             {
@@ -269,7 +278,7 @@ class TestUserUpdateForm:
                 "email": proto_user.email,
                 "group": "",
                 "geographic_access": "location-specific",
-                "location_restrictions": [location],
+                "location_restrictions": [srs_location],
             }
         )
 
