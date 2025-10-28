@@ -1,241 +1,557 @@
-cluster,province,district,constituency,ward,residence,ea,status
-1,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012008,Active
-2,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012019,
-3,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012031,
-4,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012042,
-5,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012053,
-6,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012064,
-7,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012075,
-8,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012087,
-9,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012098,
-10,Lusaka,Lusaka,Chawama,Chawama,Urban,5051012109,
-11,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042011,
-12,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042024,
-13,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042038,
-14,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042051,
-15,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042065,
-16,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042078,
-17,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042092,
-18,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042105,
-19,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042119,
-20,Lusaka,Lusaka,Chawama,Nkoloma,Urban,5051042132,
-21,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012003,
-22,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012012,
-23,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012021,
-24,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012031,
-25,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012040,
-26,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012049,
-27,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012058,
-28,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012067,
-29,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012076,
-30,Lusaka,Lusaka,Kabwata,Chilenje,Urban,5052012085,
-31,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042005,
-32,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042011,
-33,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042017,
-34,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042024,
-35,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042030,
-36,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042036,
-37,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042042,
-38,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042049,
-39,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042055,
-40,Lusaka,Lusaka,Kabwata,Kamwala,Urban,5052042061,
-41,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022011,
-42,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022023,
-43,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022035,
-44,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022047,
-45,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022059,
-46,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022071,
-47,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022083,
-48,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022095,
-49,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022107,
-50,Lusaka,Lusaka,Kanyama,Garden park,Urban,5053022119,
-51,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032013,
-52,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032031,
-53,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032049,
-54,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032068,
-55,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032086,
-56,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032104,
-57,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032123,
-58,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032141,
-59,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032159,
-60,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,5053032177,
-61,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042003,
-62,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042024,
-63,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042044,
-64,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042065,
-65,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042086,
-66,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042107,
-67,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042128,
-68,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042149,
-69,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042170,
-70,Lusaka,Lusaka,Kanyama,Kanyama,Urban,5053042191,
-71,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052011,
-72,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052025,
-73,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052040,
-74,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052054,
-75,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052069,
-76,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052083,
-77,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052098,
-78,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052112,
-79,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052127,
-80,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,5053052141,
-81,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012001,
-82,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012004,
-83,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012006,
-84,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012009,
-85,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012011,
-86,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012014,
-87,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012016,
-88,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012019,
-89,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012021,
-90,Lusaka,Lusaka,Lusaka central,Independence,Urban,5054012024,
-91,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022004,
-92,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022018,
-93,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022032,
-94,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022046,
-95,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022059,
-96,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022073,
-97,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022087,
-98,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022101,
-99,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022115,
-100,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,5054022128,
-101,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012002,
-102,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012005,
-103,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012008,
-104,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012011,
-105,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012014,
-106,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012017,
-107,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012020,
-108,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012023,
-109,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012026,
-110,Lusaka,Lusaka,Mandevu,Chaisa,Urban,5055012029,
-111,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032006,
-112,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032014,
-113,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032022,
-114,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032030,
-115,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032039,
-116,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032047,
-117,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032055,
-118,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032063,
-119,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032071,
-120,Lusaka,Lusaka,Mandevu,Kabanana,Urban,5055032080,
-121,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042017,
-122,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042035,
-123,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042053,
-124,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042071,
-125,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042089,
-126,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042107,
-127,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042125,
-128,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042143,
-129,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042161,
-130,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,5055042179,
-131,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072006,
-132,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072016,
-133,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072025,
-134,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072035,
-135,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072044,
-136,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072054,
-137,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072063,
-138,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072073,
-139,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072082,
-140,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,5055072092,
-141,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082002,
-142,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082013,
-143,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082023,
-144,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082034,
-145,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082044,
-146,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082055,
-147,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082066,
-148,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082076,
-149,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082087,
-150,Lusaka,Lusaka,Mandevu,Roma,Urban,5055082097,
-151,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012002,
-152,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012008,
-153,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012014,
-154,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012020,
-155,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012026,
-156,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012033,
-157,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012039,
-158,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012045,
-159,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012051,
-160,Lusaka,Lusaka,Matero,Kapwepwe,Urban,5056012057,
-161,Lusaka,Lusaka,Matero,Lima,Urban,5056022010,
-162,Lusaka,Lusaka,Matero,Lima,Urban,5056022020,
-163,Lusaka,Lusaka,Matero,Lima,Urban,5056022030,
-164,Lusaka,Lusaka,Matero,Lima,Urban,5056022040,
-165,Lusaka,Lusaka,Matero,Lima,Urban,5056022051,
-166,Lusaka,Lusaka,Matero,Lima,Urban,5056022061,
-167,Lusaka,Lusaka,Matero,Lima,Urban,5056022071,
-168,Lusaka,Lusaka,Matero,Lima,Urban,5056022081,
-169,Lusaka,Lusaka,Matero,Lima,Urban,5056022091,
-170,Lusaka,Lusaka,Matero,Lima,Urban,5056022101,
-171,Lusaka,Lusaka,Matero,Matero,Urban,5056032002,
-172,Lusaka,Lusaka,Matero,Matero,Urban,5056032010,
-173,Lusaka,Lusaka,Matero,Matero,Urban,5056032018,
-174,Lusaka,Lusaka,Matero,Matero,Urban,5056032027,
-175,Lusaka,Lusaka,Matero,Matero,Urban,5056032035,
-176,Lusaka,Lusaka,Matero,Matero,Urban,5056032043,
-177,Lusaka,Lusaka,Matero,Matero,Urban,5056032051,
-178,Lusaka,Lusaka,Matero,Matero,Urban,5056032059,
-179,Lusaka,Lusaka,Matero,Matero,Urban,5056032068,
-180,Lusaka,Lusaka,Matero,Matero,Urban,5056032076,
-181,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042006,
-182,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042016,
-183,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042026,
-184,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042036,
-185,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042046,
-186,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042056,
-187,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042065,
-188,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042075,
-189,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042085,
-190,Lusaka,Lusaka,Matero,Muchinga,Urban,5056042095,
-191,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052001,
-192,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052012,
-193,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052023,
-194,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052034,
-195,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052044,
-196,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052055,
-197,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052066,
-198,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052077,
-199,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052088,
-200,Lusaka,Lusaka,Matero,Mwembeshi,Urban,5056052098,
-201,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032012,
-202,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032026,
-203,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032040,
-204,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032053,
-205,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032067,
-206,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032080,
-207,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032094,
-208,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032108,
-209,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032121,
-210,Lusaka,Lusaka,Munali,Kalikiliki,Urban,5057032135,
-211,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042002,
-212,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042008,
-213,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042015,
-214,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042022,
-215,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042028,
-216,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042035,
-217,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042042,
-218,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042049,
-219,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042055,
-220,Lusaka,Lusaka,Munali,Kalingalinga,Urban,5057042062,
-221,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052003,
-222,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052013,
-223,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052023,
-224,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052033,
-225,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052042,
-226,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052052,
-227,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052062,
-228,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052072,
-229,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052082,
-230,Lusaka,Lusaka,Munali,Mtendere,Urban,5057052091,
-231,Lusaka,Lusaka,Munali,Munali,Urban,5057062005,
-232,Lusaka,Lusaka,Munali,Munali,Urban,5057062013,
-233,Lusaka,Lusaka,Munali,Munali,Urban,5057062021,
-234,Lusaka,Lusaka,Munali,Munali,Urban,5057062030,
-235,Lusaka,Lusaka,Munali,Munali,Urban,5057062038,
-236,Lusaka,Lusaka,Munali,Munali,Urban,5057062047,
-237,Lusaka,Lusaka,Munali,Munali,Urban,5057062055,
-238,Lusaka,Lusaka,Munali,Munali,Urban,5057062063,
-239,Lusaka,Lusaka,Munali,Munali,Urban,5057062072,
-240,Lusaka,Lusaka,Munali,Munali,Urban,5057062080,
+cluster,province,district,constituency,ward,residence,ea,is_active
+1,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012008,TRUE
+2,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012019,TRUE
+3,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012031,TRUE
+4,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012042,TRUE
+5,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012053,TRUE
+6,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012064,TRUE
+7,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012075,TRUE
+8,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012087,TRUE
+9,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012098,TRUE
+10,Lusaka,Lusaka,Chawama,Chawama,Urban,05051012109,TRUE
+11,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042011,TRUE
+12,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042024,TRUE
+13,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042038,TRUE
+14,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042051,TRUE
+15,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042065,TRUE
+16,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042078,TRUE
+17,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042092,TRUE
+18,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042105,TRUE
+19,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042119,TRUE
+20,Lusaka,Lusaka,Chawama,Nkoloma,Urban,05051042132,TRUE
+21,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012003,TRUE
+22,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012012,TRUE
+23,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012021,TRUE
+24,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012031,TRUE
+25,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012040,TRUE
+26,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012049,TRUE
+27,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012058,TRUE
+28,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012067,TRUE
+29,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012076,TRUE
+30,Lusaka,Lusaka,Kabwata,Chilenje,Urban,05052012085,TRUE
+31,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042005,TRUE
+32,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042011,TRUE
+33,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042017,TRUE
+34,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042024,TRUE
+35,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042030,TRUE
+36,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042036,TRUE
+37,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042042,TRUE
+38,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042049,TRUE
+39,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042055,TRUE
+40,Lusaka,Lusaka,Kabwata,Kamwala,Urban,05052042061,TRUE
+41,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022011,TRUE
+42,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022023,TRUE
+43,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022035,TRUE
+44,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022047,TRUE
+45,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022059,TRUE
+46,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022071,TRUE
+47,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022083,TRUE
+48,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022095,TRUE
+49,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022107,TRUE
+50,Lusaka,Lusaka,Kanyama,Garden park,Urban,05053022119,TRUE
+51,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032013,TRUE
+52,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032031,TRUE
+53,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032049,TRUE
+54,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032068,TRUE
+55,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032086,TRUE
+56,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032104,TRUE
+57,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032123,TRUE
+58,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032141,TRUE
+59,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032159,TRUE
+60,Lusaka,Lusaka,Kanyama,Harry mwanga nkumbula,Urban,05053032177,TRUE
+61,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042003,TRUE
+62,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042024,TRUE
+63,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042044,TRUE
+64,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042065,TRUE
+65,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042086,TRUE
+66,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042107,TRUE
+67,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042128,TRUE
+68,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042149,TRUE
+69,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042170,TRUE
+70,Lusaka,Lusaka,Kanyama,Kanyama,Urban,05053042191,TRUE
+71,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052011,TRUE
+72,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052025,TRUE
+73,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052040,TRUE
+74,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052054,TRUE
+75,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052069,TRUE
+76,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052083,TRUE
+77,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052098,TRUE
+78,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052112,TRUE
+79,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052127,TRUE
+80,Lusaka,Lusaka,Kanyama,Makeni villa,Urban,05053052141,TRUE
+81,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012001,TRUE
+82,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012004,TRUE
+83,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012006,TRUE
+84,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012009,TRUE
+85,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012011,TRUE
+86,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012014,TRUE
+87,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012016,TRUE
+88,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012019,TRUE
+89,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012021,TRUE
+90,Lusaka,Lusaka,Lusaka central,Independence,Urban,05054012024,TRUE
+91,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022004,TRUE
+92,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022018,TRUE
+93,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022032,TRUE
+94,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022046,TRUE
+95,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022059,TRUE
+96,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022073,TRUE
+97,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022087,TRUE
+98,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022101,TRUE
+99,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022115,TRUE
+100,Lusaka,Lusaka,Lusaka central,Kabulonga,Urban,05054022128,TRUE
+101,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012002,TRUE
+102,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012005,TRUE
+103,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012008,TRUE
+104,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012011,TRUE
+105,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012014,TRUE
+106,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012017,TRUE
+107,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012020,TRUE
+108,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012023,TRUE
+109,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012026,TRUE
+110,Lusaka,Lusaka,Mandevu,Chaisa,Urban,05055012029,TRUE
+111,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032006,TRUE
+112,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032014,TRUE
+113,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032022,TRUE
+114,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032030,TRUE
+115,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032039,TRUE
+116,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032047,TRUE
+117,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032055,TRUE
+118,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032063,TRUE
+119,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032071,TRUE
+120,Lusaka,Lusaka,Mandevu,Kabanana,Urban,05055032080,TRUE
+121,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042017,TRUE
+122,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042035,TRUE
+123,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042053,TRUE
+124,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042071,TRUE
+125,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042089,TRUE
+126,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042107,TRUE
+127,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042125,TRUE
+128,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042143,TRUE
+129,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042161,TRUE
+130,Lusaka,Lusaka,Mandevu,Mpulungu,Urban,05055042179,TRUE
+131,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072006,TRUE
+132,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072016,TRUE
+133,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072025,TRUE
+134,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072035,TRUE
+135,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072044,TRUE
+136,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072054,TRUE
+137,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072063,TRUE
+138,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072073,TRUE
+139,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072082,TRUE
+140,Lusaka,Lusaka,Mandevu,Raphael chota,Urban,05055072092,TRUE
+141,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082002,TRUE
+142,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082013,TRUE
+143,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082023,TRUE
+144,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082034,TRUE
+145,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082044,TRUE
+146,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082055,TRUE
+147,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082066,TRUE
+148,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082076,TRUE
+149,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082087,TRUE
+150,Lusaka,Lusaka,Mandevu,Roma,Urban,05055082097,TRUE
+151,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012002,TRUE
+152,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012008,TRUE
+153,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012014,TRUE
+154,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012020,TRUE
+155,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012026,TRUE
+156,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012033,TRUE
+157,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012039,TRUE
+158,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012045,TRUE
+159,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012051,TRUE
+160,Lusaka,Lusaka,Matero,Kapwepwe,Urban,05056012057,TRUE
+161,Lusaka,Lusaka,Matero,Lima,Urban,05056022010,TRUE
+162,Lusaka,Lusaka,Matero,Lima,Urban,05056022020,TRUE
+163,Lusaka,Lusaka,Matero,Lima,Urban,05056022030,TRUE
+164,Lusaka,Lusaka,Matero,Lima,Urban,05056022040,TRUE
+165,Lusaka,Lusaka,Matero,Lima,Urban,05056022051,TRUE
+166,Lusaka,Lusaka,Matero,Lima,Urban,05056022061,TRUE
+167,Lusaka,Lusaka,Matero,Lima,Urban,05056022071,TRUE
+168,Lusaka,Lusaka,Matero,Lima,Urban,05056022081,TRUE
+169,Lusaka,Lusaka,Matero,Lima,Urban,05056022091,TRUE
+170,Lusaka,Lusaka,Matero,Lima,Urban,05056022101,TRUE
+171,Lusaka,Lusaka,Matero,Matero,Urban,05056032002,TRUE
+172,Lusaka,Lusaka,Matero,Matero,Urban,05056032010,TRUE
+173,Lusaka,Lusaka,Matero,Matero,Urban,05056032018,TRUE
+174,Lusaka,Lusaka,Matero,Matero,Urban,05056032027,TRUE
+175,Lusaka,Lusaka,Matero,Matero,Urban,05056032035,TRUE
+176,Lusaka,Lusaka,Matero,Matero,Urban,05056032043,TRUE
+177,Lusaka,Lusaka,Matero,Matero,Urban,05056032051,TRUE
+178,Lusaka,Lusaka,Matero,Matero,Urban,05056032059,TRUE
+179,Lusaka,Lusaka,Matero,Matero,Urban,05056032068,TRUE
+180,Lusaka,Lusaka,Matero,Matero,Urban,05056032076,TRUE
+181,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042006,TRUE
+182,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042016,TRUE
+183,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042026,TRUE
+184,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042036,TRUE
+185,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042046,TRUE
+186,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042056,TRUE
+187,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042065,TRUE
+188,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042075,TRUE
+189,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042085,TRUE
+190,Lusaka,Lusaka,Matero,Muchinga,Urban,05056042095,TRUE
+191,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052001,TRUE
+192,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052012,TRUE
+193,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052023,TRUE
+194,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052034,TRUE
+195,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052044,TRUE
+196,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052055,TRUE
+197,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052066,TRUE
+198,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052077,TRUE
+199,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052088,TRUE
+200,Lusaka,Lusaka,Matero,Mwembeshi,Urban,05056052098,TRUE
+201,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032012,TRUE
+202,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032026,TRUE
+203,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032040,TRUE
+204,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032053,TRUE
+205,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032067,TRUE
+206,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032080,TRUE
+207,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032094,TRUE
+208,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032108,TRUE
+209,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032121,TRUE
+210,Lusaka,Lusaka,Munali,Kalikiliki,Urban,05057032135,TRUE
+211,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042002,TRUE
+212,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042008,TRUE
+213,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042015,TRUE
+214,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042022,TRUE
+215,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042028,TRUE
+216,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042035,TRUE
+217,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042042,TRUE
+218,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042049,TRUE
+219,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042055,TRUE
+220,Lusaka,Lusaka,Munali,Kalingalinga,Urban,05057042062,TRUE
+221,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052003,TRUE
+222,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052013,TRUE
+223,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052023,TRUE
+224,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052033,TRUE
+225,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052042,TRUE
+226,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052052,TRUE
+227,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052062,TRUE
+228,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052072,TRUE
+229,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052082,TRUE
+230,Lusaka,Lusaka,Munali,Mtendere,Urban,05057052091,TRUE
+231,Lusaka,Lusaka,Munali,Munali,Urban,05057062005,TRUE
+232,Lusaka,Lusaka,Munali,Munali,Urban,05057062013,TRUE
+233,Lusaka,Lusaka,Munali,Munali,Urban,05057062021,TRUE
+234,Lusaka,Lusaka,Munali,Munali,Urban,05057062030,TRUE
+235,Lusaka,Lusaka,Munali,Munali,Urban,05057062038,TRUE
+236,Lusaka,Lusaka,Munali,Munali,Urban,05057062047,TRUE
+237,Lusaka,Lusaka,Munali,Munali,Urban,05057062055,TRUE
+238,Lusaka,Lusaka,Munali,Munali,Urban,05057062063,TRUE
+239,Lusaka,Lusaka,Munali,Munali,Urban,05057062072,TRUE
+240,Lusaka,Lusaka,Munali,Munali,Urban,05057062080,TRUE
+241,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011001,TRUE
+242,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011004,TRUE
+243,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011007,TRUE
+244,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011010,TRUE
+245,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011013,TRUE
+246,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011016,TRUE
+247,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011019,TRUE
+248,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011022,TRUE
+249,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011025,TRUE
+250,Lusaka,Chongwe,Chongwe,Chainda,Rural,05021011028,TRUE
+251,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031003,TRUE
+252,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031005,TRUE
+253,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031008,TRUE
+254,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031011,TRUE
+255,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031013,TRUE
+256,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031016,TRUE
+257,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031018,TRUE
+258,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031021,TRUE
+259,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031024,TRUE
+260,Lusaka,Chongwe,Chongwe,Chinkuli,Rural,05021031026,TRUE
+261,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042001,TRUE
+262,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042010,TRUE
+263,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042019,TRUE
+264,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042028,TRUE
+265,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042037,TRUE
+266,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042046,TRUE
+267,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042054,TRUE
+268,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042064,TRUE
+269,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042073,TRUE
+270,Lusaka,Chongwe,Chongwe,Chongwe,Urban,05021042082,TRUE
+271,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051001,TRUE
+272,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051003,TRUE
+273,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051005,TRUE
+274,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051007,TRUE
+275,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051008,TRUE
+276,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051010,TRUE
+277,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051012,TRUE
+278,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051014,TRUE
+279,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051016,TRUE
+280,Lusaka,Chongwe,Chongwe,Kanakantapa,Rural,05021051018,TRUE
+281,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081001,TRUE
+282,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081002,TRUE
+283,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081003,TRUE
+284,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081004,TRUE
+285,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081005,TRUE
+286,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081006,TRUE
+287,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081007,TRUE
+288,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081008,TRUE
+289,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081009,TRUE
+290,Lusaka,Chongwe,Chongwe,Kasenga,Rural,05021081010,TRUE
+291,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111001,TRUE
+292,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111002,TRUE
+293,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111004,TRUE
+294,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111006,TRUE
+295,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111007,TRUE
+296,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111009,TRUE
+297,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111010,TRUE
+298,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111012,TRUE
+299,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111014,TRUE
+300,Lusaka,Chongwe,Chongwe,Lwimba,Rural,05021111015,TRUE
+301,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122008,TRUE
+302,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122018,TRUE
+303,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122028,TRUE
+304,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122038,TRUE
+305,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122048,TRUE
+306,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122058,TRUE
+307,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122068,TRUE
+308,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122078,TRUE
+309,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122088,TRUE
+310,Lusaka,Chongwe,Chongwe,Madido,Urban,05021122098,TRUE
+311,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131002,TRUE
+312,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131003,TRUE
+313,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131005,TRUE
+314,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131006,TRUE
+315,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131008,TRUE
+316,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131009,TRUE
+317,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131011,TRUE
+318,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131012,TRUE
+319,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131014,TRUE
+320,Lusaka,Chongwe,Chongwe,Manyika,Rural,05021131015,TRUE
+321,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191001,TRUE
+322,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191002,TRUE
+323,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191003,TRUE
+324,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191004,TRUE
+325,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191005,TRUE
+326,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191006,TRUE
+327,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191007,TRUE
+328,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191008,TRUE
+329,Lusaka,Chongwe,Chongwe,Njolwe,Rural,05021191009,TRUE
+330,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211002,TRUE
+331,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211006,TRUE
+332,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211011,TRUE
+333,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211015,TRUE
+334,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211020,TRUE
+335,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211024,TRUE
+336,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211029,TRUE
+337,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211033,TRUE
+338,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211038,TRUE
+339,Lusaka,Chongwe,Chongwe,Palabana,Rural,05021211042,TRUE
+340,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012044,TRUE
+341,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012001,TRUE
+342,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012004,TRUE
+343,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012006,TRUE
+344,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012009,TRUE
+345,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012011,TRUE
+346,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012014,TRUE
+347,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012016,TRUE
+348,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012019,TRUE
+349,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012021,TRUE
+350,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012023,TRUE
+351,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012026,TRUE
+352,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012029,TRUE
+353,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012032,TRUE
+354,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012034,TRUE
+355,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012037,TRUE
+356,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012039,TRUE
+357,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012042,TRUE
+358,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012046,TRUE
+359,Southern,Chirundu,Chirundu,Chirundu,Urban,09021012049,TRUE
+360,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022004,TRUE
+361,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022005,TRUE
+362,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022006,TRUE
+363,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022008,TRUE
+364,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022001,TRUE
+365,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022002,TRUE
+366,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022003,TRUE
+367,Southern,Chirundu,Chirundu,Chirundu west,Urban,09021022007,TRUE
+368,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051001,TRUE
+369,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051002,TRUE
+370,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051003,TRUE
+371,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051004,TRUE
+372,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051005,TRUE
+373,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051006,TRUE
+374,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051007,TRUE
+375,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051008,TRUE
+376,Southern,Chirundu,Chirundu,Kapululira,Rural,09021051009,TRUE
+377,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081001,TRUE
+378,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081002,TRUE
+379,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081003,TRUE
+380,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081004,TRUE
+381,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081005,TRUE
+382,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081007,TRUE
+383,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081008,TRUE
+384,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081009,TRUE
+385,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081010,TRUE
+386,Southern,Chirundu,Chirundu,Mushungu,Rural,09021081011,TRUE
+387,Southern,Chirundu,Chirundu,Njame,Rural,09021101001,TRUE
+388,Southern,Chirundu,Chirundu,Njame,Rural,09021101002,TRUE
+389,Southern,Chirundu,Chirundu,Njame,Rural,09021101004,TRUE
+390,Southern,Chirundu,Chirundu,Njame,Rural,09021101005,TRUE
+391,Southern,Chirundu,Chirundu,Njame,Rural,09021101006,TRUE
+392,Southern,Chirundu,Chirundu,Njame,Rural,09021101007,TRUE
+393,Southern,Chirundu,Chirundu,Njame,Rural,09021101008,TRUE
+394,Southern,Chirundu,Chirundu,Njame,Rural,09021101009,TRUE
+395,Southern,Chirundu,Chirundu,Njame,Rural,09021101010,TRUE
+396,Southern,Chirundu,Chirundu,Njame,Rural,09021101011,TRUE
+397,Southern,Kazungula,Katombola,Kanchele,Rural,09071031003,TRUE
+398,Southern,Kazungula,Katombola,Kanchele,Rural,09071031006,TRUE
+399,Southern,Kazungula,Katombola,Kanchele,Rural,09071031010,TRUE
+400,Southern,Kazungula,Katombola,Kanchele,Rural,09071031014,TRUE
+401,Southern,Kazungula,Katombola,Kanchele,Rural,09071031017,TRUE
+402,Southern,Kazungula,Katombola,Kanchele,Rural,09071031021,TRUE
+403,Southern,Kazungula,Katombola,Kanchele,Rural,09071031025,TRUE
+404,Southern,Kazungula,Katombola,Kanchele,Rural,09071031029,TRUE
+405,Southern,Kazungula,Katombola,Kanchele,Rural,09071031032,TRUE
+406,Southern,Kazungula,Katombola,Kanchele,Rural,09071031036,TRUE
+407,Southern,Kazungula,Katombola,Katapazi,Rural,09071041002,TRUE
+408,Southern,Kazungula,Katombola,Katapazi,Rural,09071041003,TRUE
+409,Southern,Kazungula,Katombola,Katapazi,Rural,09071041004,TRUE
+410,Southern,Kazungula,Katombola,Katapazi,Rural,09071041006,TRUE
+411,Southern,Kazungula,Katombola,Katapazi,Rural,09071041007,TRUE
+412,Southern,Kazungula,Katombola,Katapazi,Rural,09071041008,TRUE
+413,Southern,Kazungula,Katombola,Katapazi,Rural,09071041009,TRUE
+414,Southern,Kazungula,Katombola,Katapazi,Rural,09071041011,TRUE
+415,Southern,Kazungula,Katombola,Katapazi,Rural,09071041012,TRUE
+416,Southern,Kazungula,Katombola,Katapazi,Rural,09071041013,TRUE
+417,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061003,TRUE
+418,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061006,TRUE
+419,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061010,TRUE
+420,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061014,TRUE
+421,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061017,TRUE
+422,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061021,TRUE
+423,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061025,TRUE
+424,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061028,TRUE
+425,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061032,TRUE
+426,Southern,Kazungula,Katombola,Kazungula central,Rural,09071061036,TRUE
+427,Southern,Kazungula,Katombola,Mandia,Rural,09071071001,TRUE
+428,Southern,Kazungula,Katombola,Mandia,Rural,09071071002,TRUE
+429,Southern,Kazungula,Katombola,Mandia,Rural,09071071004,TRUE
+430,Southern,Kazungula,Katombola,Mandia,Rural,09071071005,TRUE
+431,Southern,Kazungula,Katombola,Mandia,Rural,09071071006,TRUE
+432,Southern,Kazungula,Katombola,Mandia,Rural,09071071007,TRUE
+433,Southern,Kazungula,Katombola,Mandia,Rural,09071071008,TRUE
+434,Southern,Kazungula,Katombola,Mandia,Rural,09071071010,TRUE
+435,Southern,Kazungula,Katombola,Mandia,Rural,09071071011,TRUE
+436,Southern,Kazungula,Katombola,Mandia,Rural,09071071012,TRUE
+437,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101002,TRUE
+438,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101003,TRUE
+439,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101005,TRUE
+440,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101006,TRUE
+441,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101008,TRUE
+442,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101009,TRUE
+443,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101011,TRUE
+444,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101012,TRUE
+445,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101014,TRUE
+446,Southern,Kazungula,Katombola,Musokotwane,Rural,09071101015,TRUE
+447,Southern,Kazungula,Katombola,Nguba,Rural,09071111002,TRUE
+448,Southern,Kazungula,Katombola,Nguba,Rural,09071111004,TRUE
+449,Southern,Kazungula,Katombola,Nguba,Rural,09071111007,TRUE
+450,Southern,Kazungula,Katombola,Nguba,Rural,09071111009,TRUE
+451,Southern,Kazungula,Katombola,Nguba,Rural,09071111012,TRUE
+452,Southern,Kazungula,Katombola,Nguba,Rural,09071111014,TRUE
+453,Southern,Kazungula,Katombola,Nguba,Rural,09071111017,TRUE
+454,Southern,Kazungula,Katombola,Nguba,Rural,09071111019,TRUE
+455,Southern,Kazungula,Katombola,Nguba,Rural,09071111022,TRUE
+456,Southern,Kazungula,Katombola,Nguba,Rural,09071111024,TRUE
+457,Southern,Kazungula,Katombola,Nyawa,Rural,09071131003,TRUE
+458,Southern,Kazungula,Katombola,Nyawa,Rural,09071131006,TRUE
+459,Southern,Kazungula,Katombola,Nyawa,Rural,09071131009,TRUE
+460,Southern,Kazungula,Katombola,Nyawa,Rural,09071131012,TRUE
+461,Southern,Kazungula,Katombola,Nyawa,Rural,09071131015,TRUE
+462,Southern,Kazungula,Katombola,Nyawa,Rural,09071131018,TRUE
+463,Southern,Kazungula,Katombola,Nyawa,Rural,09071131021,TRUE
+464,Southern,Kazungula,Katombola,Nyawa,Rural,09071131024,TRUE
+465,Southern,Kazungula,Katombola,Nyawa,Rural,09071131027,TRUE
+466,Southern,Kazungula,Katombola,Nyawa,Rural,09071131029,TRUE
+467,Southern,Kazungula,Katombola,Simango,Rural,09071161001,TRUE
+468,Southern,Kazungula,Katombola,Simango,Rural,09071161002,TRUE
+469,Southern,Kazungula,Katombola,Simango,Rural,09071161004,TRUE
+470,Southern,Kazungula,Katombola,Simango,Rural,09071161005,TRUE
+471,Southern,Kazungula,Katombola,Simango,Rural,09071161006,TRUE
+472,Southern,Kazungula,Katombola,Simango,Rural,09071161008,TRUE
+473,Southern,Kazungula,Katombola,Simango,Rural,09071161009,TRUE
+474,Southern,Kazungula,Katombola,Simango,Rural,09071161011,TRUE
+475,Southern,Kazungula,Katombola,Simango,Rural,09071161012,TRUE
+476,Southern,Kazungula,Katombola,Simango,Rural,09071161013,TRUE
+477,Southern,Namwala,Namwala,Baambwe,Rural,09111011001,TRUE
+478,Southern,Namwala,Namwala,Baambwe,Rural,09111011002,TRUE
+479,Southern,Namwala,Namwala,Baambwe,Rural,09111011004,TRUE
+480,Southern,Namwala,Namwala,Baambwe,Rural,09111011005,TRUE
+481,Southern,Namwala,Namwala,Baambwe,Rural,09111011007,TRUE
+482,Southern,Namwala,Namwala,Baambwe,Rural,09111011008,TRUE
+483,Southern,Namwala,Namwala,Baambwe,Rural,09111011010,TRUE
+484,Southern,Namwala,Namwala,Baambwe,Rural,09111011011,TRUE
+485,Southern,Namwala,Namwala,Baambwe,Rural,09111011013,TRUE
+486,Southern,Namwala,Namwala,Baambwe,Rural,09111011014,TRUE
+487,Southern,Namwala,Namwala,Itapa,Rural,09111041002,TRUE
+488,Southern,Namwala,Namwala,Itapa,Rural,09111041004,TRUE
+489,Southern,Namwala,Namwala,Itapa,Rural,09111041006,TRUE
+490,Southern,Namwala,Namwala,Itapa,Rural,09111041008,TRUE
+491,Southern,Namwala,Namwala,Itapa,Rural,09111041010,TRUE
+492,Southern,Namwala,Namwala,Itapa,Rural,09111041012,TRUE
+493,Southern,Namwala,Namwala,Itapa,Rural,09111041014,TRUE
+494,Southern,Namwala,Namwala,Itapa,Rural,09111041016,TRUE
+495,Southern,Namwala,Namwala,Itapa,Rural,09111041018,TRUE
+496,Southern,Namwala,Namwala,Itapa,Rural,09111041019,TRUE
+497,Southern,Namwala,Namwala,Kantengwa,Rural,09111061001,TRUE
+498,Southern,Namwala,Namwala,Kantengwa,Rural,09111061003,TRUE
+499,Southern,Namwala,Namwala,Kantengwa,Rural,09111061004,TRUE
+500,Southern,Namwala,Namwala,Kantengwa,Rural,09111061005,TRUE
+501,Southern,Namwala,Namwala,Kantengwa,Rural,09111061007,TRUE
+502,Southern,Namwala,Namwala,Kantengwa,Rural,09111061008,TRUE
+503,Southern,Namwala,Namwala,Kantengwa,Rural,09111061010,TRUE
+504,Southern,Namwala,Namwala,Kantengwa,Rural,09111061011,TRUE
+505,Southern,Namwala,Namwala,Kantengwa,Rural,09111061012,TRUE
+506,Southern,Namwala,Namwala,Kantengwa,Rural,09111061014,TRUE
+507,Southern,Namwala,Namwala,Mandondo,Rural,09111081001,TRUE
+508,Southern,Namwala,Namwala,Mandondo,Rural,09111081003,TRUE
+509,Southern,Namwala,Namwala,Mandondo,Rural,09111081005,TRUE
+510,Southern,Namwala,Namwala,Mandondo,Rural,09111081008,TRUE
+511,Southern,Namwala,Namwala,Mandondo,Rural,09111081010,TRUE
+512,Southern,Namwala,Namwala,Mandondo,Rural,09111081012,TRUE
+513,Southern,Namwala,Namwala,Mandondo,Rural,09111081014,TRUE
+514,Southern,Namwala,Namwala,Mandondo,Rural,09111081017,TRUE
+515,Southern,Namwala,Namwala,Mandondo,Rural,09111081019,TRUE
+516,Southern,Namwala,Namwala,Mandondo,Rural,09111081021,TRUE
+517,Southern,Namwala,Namwala,Moobola,Rural,09111101001,TRUE
+518,Southern,Namwala,Namwala,Moobola,Rural,09111101004,TRUE
+519,Southern,Namwala,Namwala,Moobola,Rural,09111101007,TRUE
+520,Southern,Namwala,Namwala,Moobola,Rural,09111101010,TRUE
+521,Southern,Namwala,Namwala,Moobola,Rural,09111101012,TRUE
+522,Southern,Namwala,Namwala,Moobola,Rural,09111101015,TRUE
+523,Southern,Namwala,Namwala,Moobola,Rural,09111101018,TRUE
+524,Southern,Namwala,Namwala,Moobola,Rural,09111101020,TRUE
+525,Southern,Namwala,Namwala,Moobola,Rural,09111101023,TRUE
+526,Southern,Namwala,Namwala,Moobola,Rural,09111101026,TRUE
+527,Southern,Namwala,Namwala,Nakamboma,Rural,09111111002,TRUE
+528,Southern,Namwala,Namwala,Nakamboma,Rural,09111111005,TRUE
+529,Southern,Namwala,Namwala,Nakamboma,Rural,09111111007,TRUE
+530,Southern,Namwala,Namwala,Nakamboma,Rural,09111111010,TRUE
+531,Southern,Namwala,Namwala,Nakamboma,Rural,09111111012,TRUE
+532,Southern,Namwala,Namwala,Nakamboma,Rural,09111111015,TRUE
+533,Southern,Namwala,Namwala,Nakamboma,Rural,09111111018,TRUE
+534,Southern,Namwala,Namwala,Nakamboma,Rural,09111111020,TRUE
+535,Southern,Namwala,Namwala,Nakamboma,Rural,09111111023,TRUE
+536,Southern,Namwala,Namwala,Nakamboma,Rural,09111111025,TRUE
+537,Southern,Namwala,Namwala,Namusonde,Rural,09111131002,TRUE
+538,Southern,Namwala,Namwala,Namusonde,Rural,09111131003,TRUE
+539,Southern,Namwala,Namwala,Namusonde,Rural,09111131004,TRUE
+540,Southern,Namwala,Namwala,Namusonde,Rural,09111131006,TRUE
+541,Southern,Namwala,Namwala,Namusonde,Rural,09111131007,TRUE
+542,Southern,Namwala,Namwala,Namusonde,Rural,09111131008,TRUE
+543,Southern,Namwala,Namwala,Namusonde,Rural,09111131009,TRUE
+544,Southern,Namwala,Namwala,Namusonde,Rural,09111131011,TRUE
+545,Southern,Namwala,Namwala,Namusonde,Rural,09111131012,TRUE
+546,Southern,Namwala,Namwala,Namusonde,Rural,09111131013,TRUE
+547,Southern,Namwala,Namwala,Ndema,Rural,09111151001,TRUE
+548,Southern,Namwala,Namwala,Ndema,Rural,09111151002,TRUE
+549,Southern,Namwala,Namwala,Ndema,Rural,09111151004,TRUE
+550,Southern,Namwala,Namwala,Ndema,Rural,09111151005,TRUE
+551,Southern,Namwala,Namwala,Ndema,Rural,09111151007,TRUE
+552,Southern,Namwala,Namwala,Ndema,Rural,09111151008,TRUE
+553,Southern,Namwala,Namwala,Ndema,Rural,09111151010,TRUE
+554,Southern,Namwala,Namwala,Ndema,Rural,09111151011,TRUE
+555,Southern,Namwala,Namwala,Ndema,Rural,09111151013,TRUE
+556,Southern,Namwala,Namwala,Ndema,Rural,09111151014,TRUE
