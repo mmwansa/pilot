@@ -7,6 +7,7 @@ from django.contrib.auth.models import AbstractUser, Permission
 from django.db import models
 from django.db.models import ManyToManyField
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 # from allauth.account.models import EmailAddress
@@ -181,6 +182,14 @@ class User(AbstractUser):
         if self.original_password != self.password:
             UserPasswordHistory.remember_password(self)
 
+    @property
+    def unread_messages(self):
+        return self.messages.unread()
+
+    @property
+    def mailbox_unread_count(self):
+        return self.unread_messages.count()
+
 
 class UserPasswordHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -190,3 +199,46 @@ class UserPasswordHistory(models.Model):
     @classmethod
     def remember_password(cls, user):
         cls(user=user, old_password=user.password).save()
+
+
+class UserMessageQuerySet(models.QuerySet):
+    def unread(self):
+        return self.filter(read_at__isnull=True)
+
+
+class UserMessageManager(models.Manager.from_queryset(UserMessageQuerySet)):
+    pass
+
+
+class UnreadUserMessageManager(UserMessageManager):
+    def get_queryset(self):
+        return super().get_queryset().unread()
+
+
+class UserMessage(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="messages", related_query_name="message"
+    )
+    subject = models.CharField(max_length=255, blank=True)
+    body = models.TextField()
+    metadata = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(blank=True, null=True)
+
+    objects = UserMessageManager()
+    unread = UnreadUserMessageManager()
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        subject = self.subject or _("Message")
+        return f"{subject} ({self.user})"
+
+    def mark_read(self):
+        if self.read_at is None:
+            self.read_at = timezone.now()
+            self.save(update_fields=["read_at"])
+
+    def get_absolute_url(self):
+        return reverse("users:message_detail", kwargs={"pk": self.pk})
