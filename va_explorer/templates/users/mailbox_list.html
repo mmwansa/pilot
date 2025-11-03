@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Mailbox" %}{% endblock %}
+{% block heading %}{% trans "Mailbox" %}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">{% trans "Messages" %}</h5>
+    <a href="{% url 'users:mailbox' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fas fa-sync"></i> {% trans "Refresh" %}
+    </a>
+  </div>
+  <div class="list-group list-group-flush">
+    {% if object_list %}
+      {% for message in object_list %}
+        <a href="{{ message.get_absolute_url }}" class="list-group-item list-group-item-action">
+          <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1 {% if not message.read_at %}font-weight-bold{% endif %}">{{ message.subject|default:_("Message") }}</h5>
+            <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
+          </div>
+          <p class="mb-1 text-muted">{{ message.body|truncatechars:160 }}</p>
+          {% if message.read_at %}
+            <small class="text-muted"><i class="fas fa-envelope-open"></i> {% trans "Read" %}</small>
+          {% else %}
+            <small class="text-danger font-weight-bold"><i class="fas fa-envelope"></i> {% trans "Unread" %}</small>
+          {% endif %}
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="list-group-item text-center text-muted">
+        <i class="fas fa-inbox fa-2x mb-2"></i>
+        <p class="mb-0">{% trans "You're all caught up!" %}</p>
+      </div>
+    {% endif %}
+  </div>
+  {% if is_paginated %}
+  <div class="card-footer">
+    <nav aria-label="{% trans 'Mailbox navigation' %}">
+      <ul class="pagination mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="{% trans 'Previous' %}">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+        {% endif %}
+
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ paginator.num_pages }}</span></li>
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="{% trans 'Next' %}">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

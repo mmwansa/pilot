@@ -1,5 +1,5 @@
-from django.contrib import messages
 import csv
+from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -254,6 +254,37 @@ class UserUpdateView(
 
 
 user_update_view = UserUpdateView.as_view()
+
+
+class UserMessageListView(CustomAuthMixin, ListView):
+    login_url = reverse_lazy("account_login")
+    template_name = "users/mailbox_list.html"
+    context_object_name = "messages"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return self.request.user.messages.all()
+
+
+user_message_list_view = UserMessageListView.as_view()
+
+
+class UserMessageDetailView(CustomAuthMixin, DetailView):
+    login_url = reverse_lazy("account_login")
+    template_name = "users/mailbox_detail.html"
+    context_object_name = "message"
+
+    def get_queryset(self):
+        return self.request.user.messages.all()
+
+    def get_object(self, queryset=None):
+        message = super().get_object(queryset)
+        if message.read_at is None:
+            message.mark_read()
+        return message
+
+
+user_message_detail_view = UserMessageDetailView.as_view()
 
 
 class UserRedirectView(LoginRequiredMixin, RedirectView):

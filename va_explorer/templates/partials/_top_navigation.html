@@ -90,14 +90,17 @@
           </div>
         </li>
         
-        <!-- Notifications (placeholder for future implementation) -->
+        {% if request.user.is_authenticated %}
         <li class="nav-item">
-          <a class="nav-link position-relative" href="#" title="Notifications">
+          <a class="nav-link position-relative" href="{% url 'users:mailbox' %}" title="{% trans 'Notifications' %}">
             <i class="fas fa-bell"></i>
-            <span class="badge badge-danger badge-pill position-absolute" 
-                  style="top: 5px; right: 5px; font-size: 0.6rem;"></span>
+            {% if MAILBOX_UNREAD_COUNT %}
+            <span class="badge badge-danger badge-pill position-absolute"
+                  style="top: 5px; right: 5px; font-size: 0.6rem;">{{ MAILBOX_UNREAD_COUNT }}</span>
+            {% endif %}
           </a>
         </li>
+        {% endif %}
         
         <!-- Help/Support -->
         {% comment %} <li class="nav-item">
