@@ -1,10 +1,6 @@
 {% extends "base.html" %} {% block title %} All Events{% endblock %} 
-{% block heading %} All Events {% endblock %} {% block content %}
-<div class="row mt-4">
-  <a href="{% url 'cms-event-create' %}" class="btn btn-success" role="button"
-    >Create Event</a
-  >
-</div>
+{% block heading %} Scheduled Verbal Autopsies {% endblock %} {% block content %}
+
 <div class="row mt-4">
   <table class="table">
     <thead>
@@ -70,12 +66,12 @@
           >
           {% endif %}
           {% if event.event_status == 4 %}
-          <a
+          {% comment %} <a
             href="{% url 'cms-event-linkva' event.pk %}"
             class="btn btn-primary"
             role="button"
             >Link VA</a
-          >
+          > {% endcomment %}
           {% endif %}
         </td>
       </tr>
