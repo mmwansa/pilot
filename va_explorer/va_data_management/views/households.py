@@ -30,8 +30,11 @@ class Households(CustomAuthMixin, PermissionRequiredMixin, ListView):
 
     def get_queryset(self):
         # Set up filter with GET params
-        self.filter = HouseholdFilter(self.request.GET, queryset=Household.objects.all().order_by("-id"))
-        return self.filter.qs
+        self.filter = HouseholdFilter(
+            self.request.GET,
+            queryset=Household.objects.all().order_by("-id"),
+        )
+        return self.filter.qs.order_by("-id")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
