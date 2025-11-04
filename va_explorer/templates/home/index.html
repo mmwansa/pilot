@@ -31,20 +31,34 @@
     <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="tab-1-tab">
         <div class="container-fluid">
           <div class="row mb-3">
-            <!-- Two large cards -->
-            <div class="col-md-6 mb-3">
+            <!-- Three large cards -->
+            <div class="col-md-4 mb-3">
               <div class="card shadow-sm kpi kpi--lg kpi--orange">
                 <div class="card-body">
-                  <h5 class="card-title">Total Number of EAs ever visited:</h5>
-                  <p class="card-text"><span class="count-up" data-target="{{ total_eas }}">0</span></p>
+                  <h5 class="card-title">Number of clusters ever visited</h5>
+                  <p class="card-text">Today: <span class="count-up" data-target="{{ today_eas }}">0</span></p>
+                  <p class="card-text">This week: <span class="count-up" data-target="{{ week_eas }}">0</span></p>
+                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_eas }}">0</span></p>
                 </div>
               </div>
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
               <div class="card shadow-sm kpi kpi--lg kpi--orange">
                 <div class="card-body">
-                  <h5 class="card-title">Total Number of people counted:</h5>
-                  <p class="card-text"><span class="count-up" data-target="{{ total_people }}">0</span></p>
+                  <h5 class="card-title">Total number of people counted</h5>
+                  <p class="card-text">Today: <span class="count-up" data-target="{{ today_people }}">0</span></p>
+                  <p class="card-text">This week: <span class="count-up" data-target="{{ week_people }}">0</span></p>
+                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_people }}">0</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card shadow-sm kpi kpi--lg kpi--orange">
+                <div class="card-body">
+                  <h5 class="card-title">Total number of households</h5>
+                  <p class="card-text">Today: <span class="count-up" data-target="{{ today_households }}">0</span></p>
+                  <p class="card-text">This week: <span class="count-up" data-target="{{ week_households }}">0</span></p>
+                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_households }}">0</span></p>
                 </div>
               </div>
             </div>
@@ -56,7 +70,8 @@
                 <div class="card-body">
                   <h6 class="card-title">Pregnancies</h6>
                   <p class="card-text">Today: <span class="count-up" data-target="{{ today_pregnancies }}">0</span></p>
-                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_pregnancies }}">0</span></p>                  
+                  <p class="card-text">This week: <span class="count-up" data-target="{{ week_pregnancies }}">0</span></p>
+                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_pregnancies }}">0</span></p>
                 </div>
               </div>
             </div>
@@ -65,6 +80,7 @@
                 <div class="card-body">
                   <h6 class="card-title">Pregnancy Outcomes</h6>
                   <p class="card-text">Today: <span class="count-up" data-target="{{ today_preg_outcomes }}">0</span></p>
+                  <p class="card-text">This week: <span class="count-up" data-target="{{ week_preg_outcomes }}">0</span></p>
                   <p class="card-text">Total: <span class="count-up" data-target="{{ total_preg_outcomes }}">0</span></p>
                 </div>
               </div>
@@ -74,7 +90,8 @@
                 <div class="card-body">
                   <h6 class="card-title">Deaths</h6>
                   <p class="card-text">Today: <span class="count-up" data-target="{{ today_deaths }}">0</span></p>
-                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_deaths }}">0</span></p>                  
+                  <p class="card-text">This week: <span class="count-up" data-target="{{ week_deaths }}">0</span></p>
+                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_deaths }}">0</span></p>
                 </div>
               </div>
             </div>
@@ -83,7 +100,8 @@
                 <div class="card-body">
                   <h6 class="card-title">Verbal Autopsies</h6>
                   <p class="card-text">Today: <span class="count-up" data-target="{{ today_vas }}">0</span></p>
-                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_vas }}">0</span></p>                  
+                  <p class="card-text">This week: <span class="count-up" data-target="{{ week_vas }}">0</span></p>
+                  <p class="card-text">Total: <span class="count-up" data-target="{{ total_vas }}">0</span></p>
                 </div>
               </div>
             </div>
