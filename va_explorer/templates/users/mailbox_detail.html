@@ -24,8 +24,13 @@
       {% endif %}
     </div>
     <div class="message-body" style="white-space: pre-line;">
-      {{ message.body }}
+      {{ message_body|default:message.body }}
     </div>
+    {% if event_detail_url %}
+      <a class="btn btn-primary mt-3" href="{{ event_detail_url }}">
+        <i class="fas fa-external-link-alt"></i> {% trans "View scheduled VA" %}
+      </a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
