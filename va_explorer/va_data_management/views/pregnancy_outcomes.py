@@ -24,7 +24,7 @@ class PregnancyOutcomes(CustomAuthMixin, PermissionRequiredMixin, ListView):
     model = PregnancyOutcome
 
     def get_queryset(self):
-        queryset = PregnancyOutcome.objects.all()
+        queryset = PregnancyOutcome.objects.all().order_by("-id")
         # Filtering example: by district
         if self.request.GET.get("id"):
             queryset = queryset.filter(district__icontains=self.request.GET["id"])
@@ -37,7 +37,7 @@ class PregnancyOutcomes(CustomAuthMixin, PermissionRequiredMixin, ListView):
         if self.request.GET.get("date_of_delivery"):
             queryset = queryset.filter(district__icontains=self.request.GET["date_of_delivery"])
         self.filterset = PregnancyOutcomeFilter(self.request.GET, queryset=queryset)
-        return queryset
+        return self.filterset.qs.order_by("-id")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

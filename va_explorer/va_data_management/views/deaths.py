@@ -24,8 +24,11 @@ class Deaths(CustomAuthMixin, PermissionRequiredMixin, ListView):
     paginate_by = 15
 
     def get_queryset(self):
-        self.filter = DeathFilter(self.request.GET, queryset=Death.objects.all().order_by("-id"))
-        return self.filter.qs
+        self.filter = DeathFilter(
+            self.request.GET,
+            queryset=Death.objects.all().order_by("-id"),
+        )
+        return self.filter.qs.order_by("-id")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
