@@ -397,21 +397,16 @@ class UserPasswordUpdateForm(forms.Form):
 
 
 class UserSetPasswordForm(PasswordVerificationMixin, forms.Form):
-    """
-    Allows the user to set a password of their choosing after logging in with a
-    system-defined random password.
-
-    See allauth:
-        https://github.com/pennersr/django-allauth/blob/master/allauth/account/forms.py#L54
-        If we do not want this dependency, we can write our own clean method to
-        ensure the 2 typed-in passwords match.
-    """
+    password1 = SetPasswordField(
+        label="New Password",
+        help_text=password_validation.password_validators_help_text_html(),
+    )
+    password2 = PasswordField(label="New Password (again)")
 
     def save(self, user):
         user.set_password(self.cleaned_data["password1"])
         user.has_valid_password = True
         user.save()
-
         return user
 
 
