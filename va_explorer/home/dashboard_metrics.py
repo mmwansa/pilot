@@ -90,13 +90,20 @@ def _normalise_queryset(qs, key_field: str):
 
 
 def _count_recent_records(
-    qs, *, key_field: Optional[str], date_fields: Iterable[str]
-) -> tuple[int, int]:
+    qs,
+    *,
+    key_field: Optional[str],
+    date_fields: Iterable[str],
+    return_identifiers: bool = False,
+) -> tuple[int, int, int] | tuple[int, int, int, set, set]:
     """
-    Return (total, count_in_last_24h) for a queryset.
+    Return (total, count_in_last_24h, count_in_last_7_days) for a queryset.
 
     If key_field is provided, we will distinct on non-empty values of that field.
     Otherwise we use the queryset as-is (assumed already deduplicated).
+
+    When ``return_identifiers`` is ``True`` the sets of identifiers contributing to
+    the 24-hour and 7-day counts are also returned.
     """
     if key_field:
         filtered = _normalise_queryset(qs, key_field)
@@ -105,19 +112,30 @@ def _count_recent_records(
         filtered = qs
         total = filtered.count()
 
-    since = timezone.now() - timedelta(days=1)
-    recent_keys: set = set()
+    since_day = timezone.now() - timedelta(days=1)
+    since_week = timezone.now() - timedelta(days=7)
+    day_keys: set = set()
+    week_keys: set = set()
     only_fields = list(date_fields)
     if key_field:
         only_fields.append(key_field)
 
     for record in filtered.only(*only_fields):
         timestamp = _first_valid_timestamp(record, date_fields)
-        if timestamp and timestamp >= since:
-            identifier = getattr(record, key_field) if key_field else record.pk
-            recent_keys.add(identifier)
+        if not timestamp:
+            continue
 
-    return total, len(recent_keys)
+        identifier = getattr(record, key_field) if key_field else record.pk
+
+        if timestamp >= since_week:
+            week_keys.add(identifier)
+            if timestamp >= since_day:
+                day_keys.add(identifier)
+
+    if return_identifiers:
+        return total, len(day_keys), len(week_keys), day_keys, week_keys
+
+    return total, len(day_keys), len(week_keys)
 
 
 def _safe_int(value: object) -> int:
@@ -147,24 +165,52 @@ def get_homepage_metrics() -> dict[str, int]:
     # -------------------------
     # Households / clusters
     # -------------------------
-    households = _normalise_queryset(Household.objects.all(), "key")
+    households_qs = Household.objects.all()
 
-    # Total Number of EAs ever visited: count distinct, non-empty Household.ea values
-    total_eas = (
-        households.exclude(ea__isnull=True)
-        .exclude(ea="")
-        .values_list("ea", flat=True)
-        .distinct()
-        .count()
+    (
+        total_households,
+        today_households,
+        week_households,
+        today_household_keys,
+        week_household_keys,
+    ) = _count_recent_records(
+        households_qs,
+        key_field="key",
+        date_fields=("submissiondate", "start", "today"),
+        return_identifiers=True,
+    )
+
+    (
+        total_eas,
+        today_eas,
+        week_eas,
+    ) = _count_recent_records(
+        households_qs,
+        key_field="ea",
+        date_fields=("submissiondate", "start", "today"),
     )
 
     # Total Number of people counted: count rows in HouseholdMember (counting IDs)
     total_people = HouseholdMember.objects.count()
+    today_people = (
+        HouseholdMember.objects.filter(
+            household__key__in=list(today_household_keys)
+        ).count()
+        if today_household_keys
+        else 0
+    )
+    week_people = (
+        HouseholdMember.objects.filter(
+            household__key__in=list(week_household_keys)
+        ).count()
+        if week_household_keys
+        else 0
+    )
 
     # -------------------------
     # Pregnancies (use submissiondate/start/today)
     # -------------------------
-    total_pregnancies, today_pregnancies = _count_recent_records(
+    total_pregnancies, today_pregnancies, week_pregnancies = _count_recent_records(
         Pregnancy.objects.all(),
         key_field="key",
         date_fields=("submissiondate", "start", "today"),
@@ -173,7 +219,7 @@ def get_homepage_metrics() -> dict[str, int]:
     # -------------------------
     # Pregnancy Outcomes (use submissiondate/start/today)
     # -------------------------
-    total_preg_outcomes, today_preg_outcomes = _count_recent_records(
+    total_preg_outcomes, today_preg_outcomes, week_preg_outcomes = _count_recent_records(
         PregnancyOutcome.objects.all(),
         key_field="key",
         date_fields=("submissiondate", "start", "today"),
@@ -182,7 +228,7 @@ def get_homepage_metrics() -> dict[str, int]:
     # -------------------------
     # Deaths (use submissiondate/start/today)
     # -------------------------
-    total_deaths, today_deaths = _count_recent_records(
+    total_deaths, today_deaths, week_deaths = _count_recent_records(
         Death.objects.all(),
         key_field="key",
         date_fields=("submissiondate", "start", "today"),
@@ -192,7 +238,7 @@ def get_homepage_metrics() -> dict[str, int]:
     # Verbal Autopsies (canonical, non-deleted; use submissiondate/Id10012/created)
     # -------------------------
     vas_canonical = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
-    total_vas, today_vas = _count_recent_records(
+    total_vas, today_vas, week_vas = _count_recent_records(
         vas_canonical,
         key_field="instanceid",
         date_fields=("submissiondate", "Id10012", "created"),
@@ -200,13 +246,24 @@ def get_homepage_metrics() -> dict[str, int]:
 
     return {
         "total_eas": total_eas,
+        "today_eas": today_eas,
+        "week_eas": week_eas,
+        "total_households": total_households,
+        "today_households": today_households,
+        "week_households": week_households,
         "total_people": total_people,
+        "today_people": today_people,
+        "week_people": week_people,
         "total_pregnancies": total_pregnancies,
         "today_pregnancies": today_pregnancies,
+        "week_pregnancies": week_pregnancies,
         "total_preg_outcomes": total_preg_outcomes,
         "today_preg_outcomes": today_preg_outcomes,
+        "week_preg_outcomes": week_preg_outcomes,
         "total_deaths": total_deaths,
         "today_deaths": today_deaths,
+        "week_deaths": week_deaths,
         "total_vas": total_vas,
         "today_vas": today_vas,
+        "week_vas": week_vas,
     }
