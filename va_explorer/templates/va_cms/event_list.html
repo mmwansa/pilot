@@ -28,12 +28,12 @@
         <td>{{ event.comment }}</td>
         <td>{{ event.data_collection_staff.full_name }}</td>
         <td>
-          <a
+          {% comment %} <a
             href="{% url 'cms-event-update' event.pk %}"
             class="btn btn-primary"
             role="button"
             >Edit</a
-          >
+          > {% endcomment %}
           <a
             href="{% url 'cms-event-detail' event.pk %}"
             class="btn btn-primary"

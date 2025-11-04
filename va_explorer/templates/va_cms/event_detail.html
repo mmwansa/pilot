@@ -6,16 +6,16 @@
   <h2>Event Details</h2>
 </div>
 <div class="row">
-    <div class="form-group col-md-6">
+    {% comment %} <div class="form-group col-md-6">
       <label for="email">Type </label>
       <label for="email"><strong>{{ object.get_event_type_display }}</strong></label>
-    </div>
+    </div> {% endcomment %}
     <div class="form-group col-md-6">
       <label for="email">Status </label>
       <label for="email"><strong>{{ object.get_event_status_display }}</strong></label>
   </div>
 </div>
-<div class="row">
+{% comment %} <div class="row">
     <div class="form-group col-md-6">
       <label for="email">Data Collection Proposed Date </label>
       <label for="email"><strong>{{ object.data_collect_proposed_date }}</strong></label>
@@ -44,7 +44,7 @@
       <label for="email">Data Collection Comments</label>
       <label for="email"><strong>{{ object.data_collect_comments }}</strong></label>
   </div>
-</div>
+</div> {% endcomment %}
 <div class="row">
     <div class="form-group col-md-6">
       <label for="email">VA Interview Proposed Date </label>

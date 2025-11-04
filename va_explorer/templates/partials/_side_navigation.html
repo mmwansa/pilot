@@ -150,7 +150,7 @@
         data-target="case-section"
         aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
       >
-        <span class="section-title">Case Management</span>
+        <span class="section-title">Schedule Management</span>
         <i class="fas fa-chevron-down collapse-caret"></i>
       </li>
       <ul
@@ -165,10 +165,10 @@
             data-tooltip="Events"
           >
             <i class="fas fa-calendar nav-icon"></i>
-            <span class="nav-label">Events</span>
+            <span class="nav-label">Scheduled VAs</span>
           </a>
         </li>
-        <li class="nav-item">
+        {% comment %} <li class="nav-item">
           <a
             class="nav-link {% if request.resolver_match.url_name == 'cms-event-scheduled-list' %}active{% endif %}"
             href="{% url 'cms-event-scheduled-list' %}"
@@ -187,7 +187,7 @@
             <i class="fas fa-book-skull nav-icon"></i>
             <span class="nav-label">Completed Events</span>
           </a>
-        </li>
+        </li> {% endcomment %}
    
       </ul>
 
