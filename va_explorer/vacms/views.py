@@ -146,6 +146,9 @@ def EventCreateDeathView(request, death):
                 "dob": deathDetail.DE_04,
                 "sex": deathDetail.DE_05,
                 "dod": deathDetail.DE_06,
+                # Prepopulate contact name and phone from DE_28 and DE_29
+                "interview_contact_name": deathDetail.DE_28 or "",
+                "interview_contact_tel": deathDetail.DE_29 or "",
             }
         except Death.DoesNotExist:
             initials = {}
