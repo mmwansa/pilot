@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from va_explorer.tests.factories import UserFactory
 from va_explorer.users.models import UserMessage
+from va_explorer.vacms.cmsmodels.events import Event
 from va_explorer.utils.context_processors import mailbox
 
 pytestmark = pytest.mark.django_db
@@ -61,3 +62,30 @@ def test_mailbox_detail_prevents_cross_user_access(client: Client, user):
     response = client.get(message.get_absolute_url())
 
     assert response.status_code == 404
+
+
+def test_mailbox_detail_includes_event_button(client: Client, user):
+    event = Event.objects.create(
+        event_type=Event.EventType.DEATH,
+        event_status=Event.EventStatus.VA_INTERVIEW_SCHEDULED,
+    )
+
+    event_url = reverse("cms-event-detail", kwargs={"pk": event.pk})
+
+    message = UserMessage.objects.create(
+        user=user,
+        subject="Detail",
+        body=f"Full body\nView the details: http://testserver{event_url}",
+        metadata={"event_id": event.pk},
+    )
+
+    client.force_login(user)
+    response = client.get(message.get_absolute_url())
+
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert "Full body" in content
+    assert "View scheduled VA" in content
+    assert f'href="{event_url}"' in content
+    assert "http://testserver" not in content

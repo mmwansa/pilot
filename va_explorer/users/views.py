@@ -283,6 +283,35 @@ class UserMessageDetailView(CustomAuthMixin, DetailView):
             message.mark_read()
         return message
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        message = context["message"]
+        metadata = message.metadata or {}
+
+        message_body = message.body
+        cleaned_body = message_body
+
+        event_id = metadata.get("event_id") if isinstance(metadata, dict) else None
+
+        if event_id:
+            event_detail_url = reverse("cms-event-detail", kwargs={"pk": event_id})
+            context["event_detail_url"] = event_detail_url
+
+            absolute_event_url = self.request.build_absolute_uri(event_detail_url)
+            body_lines = [
+                line
+                for line in message_body.splitlines()
+                if event_detail_url not in line and absolute_event_url not in line
+            ]
+
+            cleaned_candidate = "\n".join(body_lines).strip()
+            if cleaned_candidate:
+                cleaned_body = cleaned_candidate
+
+        context["message_body"] = cleaned_body
+
+        return context
+
 
 user_message_detail_view = UserMessageDetailView.as_view()
 
