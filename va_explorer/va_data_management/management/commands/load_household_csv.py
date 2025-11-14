@@ -31,8 +31,28 @@ class Command(BaseCommand):
             raise CommandError("Definition for form 'households' has not been loaded")
 
         # --- Load CSV ---
-        df = pd.read_csv(csv_file)
+        df = pd.read_csv(csv_file, dtype=str)
         df = normalize_dataframe_columns(df, Household)
+
+        if "key" not in df.columns:
+            raise CommandError(
+                "CSV is missing required 'key' column after normalization."
+            )
+
+        # Standardize keys so we can deduplicate both against the CSV itself and the DB
+        df = df[~df["key"].isna()].copy()
+        df["key"] = df["key"].astype(str).str.strip()
+        df = df[df["key"] != ""]
+        df = df.drop_duplicates(subset="key", keep="first")
+
+        csv_keys = df["key"].unique().tolist()
+        existing_keys = set()
+        if csv_keys:
+            existing_keys = set(
+                Household.objects.filter(key__in=csv_keys).values_list("key", flat=True)
+            )
+            if existing_keys:
+                df = df[~df["key"].isin(existing_keys)]
 
         odk_map_columns = [
             "consent",
