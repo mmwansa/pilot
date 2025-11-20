@@ -22,6 +22,7 @@ from va_explorer.vacms.notifications import (
     remove_va_schedule_message,
 )
 from va_explorer.va_data_management.models import Death
+from va_explorer.users.models import UserMessage
 
 
 ALLOWED_VA_SCHEDULER_GROUPS = ("Admins", "Data Managers")
@@ -165,7 +166,30 @@ def EventCreateDeathView(request, death):
 
             newEvent.save()
 
-            ensure_va_schedule_message(newEvent, request)
+            scheduled_date = (
+                minterview_scheduled_date.strftime("%Y-%m-%d")
+                if hasattr(minterview_scheduled_date, "strftime")
+                else str(minterview_scheduled_date)
+            )
+            event_detail_url = request.build_absolute_uri(
+                reverse("cms-event-detail", kwargs={"pk": newEvent.pk})
+            )
+            deceased_name = deathDetail.DE_03 or f"Death {deathDetail.pk}"
+
+            UserMessage.objects.create(
+                user=mva_interview_staff,
+                subject="New VA scheduled",
+                body=(
+                    "A new verbal autopsy for "
+                    f"{deceased_name} has been scheduled on {scheduled_date}.\n"
+                    f"View the details: {event_detail_url}"
+                ),
+                metadata={
+                    "event_id": newEvent.pk,
+                    "death_id": deathDetail.pk,
+                    "scheduled_date": scheduled_date,
+                },
+            )
 
             deathDetail.eventid = newEvent.id
             deathDetail.save()

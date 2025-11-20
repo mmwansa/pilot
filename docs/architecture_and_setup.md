@@ -23,7 +23,7 @@ The home dashboard view aggregates summary counts, location names, and high-leve
 
 ### 2.6 Background integrations
 Data integrations live in dedicated management commands:
-- ODK Central imports run through `ODKPullService`, which handles locking, incremental state, and retries; both the scheduled Celery task and the `import_from_odk` command call the same pipeline.【F:va_explorer/va_data_management/odk/service.py†L1-L247】【F:va_explorer/va_data_management/management/commands/import_from_odk.py†L1-L125】
+- ODK Central imports authenticate with project/form identifiers, download submissions via `download_responses`, and feed them through the shared loader, ensuring mutually exclusive project/form arguments are respected.【F:va_explorer/va_data_management/management/commands/import_from_odk.py†L9-L70】
 - Kobo Toolbox imports support pagination via batch tokens and track created, ignored, overwritten, corrected, and invalid records while iterating through every page of submissions.【F:va_explorer/va_data_management/management/commands/import_from_kobo.py†L11-L71】
 - DHIS2 exports fetch coded VAs, look up COD mappings, hit the pyCrossVA transform service, and assemble entity attribute CSVs before sending them to DHIS using environment-provided credentials.【F:va_explorer/va_data_management/management/commands/run_dhis.py†L1-L120】
 - COD automation runs through `run_coding_algorithms`, which validates algorithm settings, optionally backs up and wipes prior CODs, runs the configured algorithms, and reports throughput/issues for auditing.【F:va_explorer/va_data_management/management/commands/run_coding_algorithms.py†L14-L60】
@@ -76,7 +76,7 @@ All commands are executed with `python manage.py <command> [options]` (or `./man
 | `load_death_csv <csv>` | Imports death notifications using the ODK definitions, requiring a `key`, removing duplicates/blanks, mapping select fields, and bulk inserting new rows only.【F:va_explorer/va_data_management/management/commands/load_death_csv.py†L1-L52】 |
 | `load_va_csv <csv> [--random_locations True|False]` | Loads WHO VA CSV exports directly into the `VerbalAutopsy` table via `load_records_from_dataframe`, with an optional flag to assign random locations (useful for demonstrations). It reports created/ignored/outdated rows after ingest.【F:va_explorer/va_data_management/management/commands/load_va_csv.py†L9-L29】 |
 | `load_odk_definitions [--dry-run] [--only FIELD] [--force] [--no-verbose]` | Parses the bundled XLSForms (household, pregnancy, pregnancy outcome, death) and stores every choice in `ODKFormChoice`. `--dry-run` inspects without writing, `--only` restricts to a single survey field, `--force` deletes previous choices, and `--no-verbose` silences log chatter.【F:va_explorer/va_data_management/management/commands/load_odk_definitions.py†L10-L143】 |
-| `import_from_odk [--form-id <xmlFormId>] [--project-id <id>] [--since <ISO|7d>] [--full-refresh] [--dry-run] [--no-attachments]` | Uses the shared `ODKPullService` to import submissions with locking/state; defaults to configured forms when `--form-id` is omitted and can run incremental windows via `--since` or full refreshes via `--full-refresh`.【F:va_explorer/va_data_management/management/commands/import_from_odk.py†L1-L125】 |
+| `import_from_odk [--email <value>] [--password <value>] [--project-name|--project-id] [--form-name|--form-id]` | Connects to ODK Central with either CLI args or `ODK_EMAIL/ODK_PASSWORD` env vars, fetches a specific project/form (IDs and names are mutually exclusive), and loads the responses into the VA database via the shared loader.【F:va_explorer/va_data_management/management/commands/import_from_odk.py†L9-L70】 |
 | `import_from_kobo [--token <value>] [--asset_id <value>]` | Streams Kobo Toolbox submissions in batches of 5,000 using either CLI tokens or `KOBO_API_TOKEN/KOBO_ASSET_ID`, tallying created, ignored, overwritten, corrected, and invalid rows as it iterates over every results page.【F:va_explorer/va_data_management/management/commands/import_from_kobo.py†L11-L71】 |
 
 ### 4.5 Data cleanup and demo utilities
@@ -100,7 +100,9 @@ All commands follow the same pattern:
 python manage.py load_household_csv data/households.csv
 
 # Example with options
-python manage.py import_from_odk --form-id abc --project-id 123 --since 7d --dry-run
+python manage.py import_from_odk \
+    --email user@example.org --password secret \
+    --project-id 123 --form-id abc
 ```
 When an option is marked as mutually exclusive (e.g., `--project-id` vs. `--project-name`), supply only one. Many commands support environment-variable fallbacks so secrets can be managed outside the CLI. Demo utilities guard themselves with `DJANGO_SETTINGS_MODULE=config.settings.local` to avoid accidental production use.
 

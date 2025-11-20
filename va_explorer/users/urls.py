@@ -23,13 +23,6 @@ urlpatterns = [
     path("create/", view=user_create_view, name="create"),
     path("mailbox/", view=user_message_list_view, name="mailbox"),
     path("mailbox/<int:pk>/", view=user_message_detail_view, name="message_detail"),
-    path("feedback/submit/", view=feedback_submit_view, name="feedback_submit"),
-    path("feedback/", view=feedback_mailbox_view, name="feedback_mailbox"),
-    path(
-        "feedback/<int:pk>/",
-        view=feedback_detail_view,
-        name="feedback_detail",
-    ),
     path("", view=user_index_view, name="index"),
     path("<int:pk>/", view=user_detail_view, name="detail"),
     path("set_password/", view=user_set_password_view, name="set_password"),
