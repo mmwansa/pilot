@@ -67,8 +67,8 @@
 /* big numbers */
 .card.kpi .count-up{
   display: inline-block;
-  font-weight: 700;
-  font-size: clamp(1.25rem, 1.5vw + 0.35rem, 1.8rem);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 1.5vw + 0.35rem, 1.2rem);
   line-height: 1.05;
 }
 
