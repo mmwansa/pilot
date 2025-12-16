@@ -1,0 +1,62 @@
+[
+  {
+    "province": "Lusaka Province",
+    "district": "Chongwe District",
+    "constituency": "Chongwe",
+    "ward": "Kasisi"
+  },
+  {
+    "province": "Copperbelt Province",
+    "district": "Kitwe District",
+    "constituency": "Nkana",
+    "ward": "Kamitondo"
+  },
+  {
+    "province": "Central Province",
+    "district": "Chibombo District",
+    "constituency": "Katuba",
+    "ward": "Moomba"
+  },
+  {
+    "province": "Southern Province",
+    "district": "Choma District",
+    "constituency": "Pemba",
+    "ward": "Mbabala"
+  },
+  {
+    "province": "Eastern Province",
+    "district": "Chipata District",
+    "constituency": "Chipata Central",
+    "ward": "Mchenga"
+  },
+  {
+    "province": "Western Province",
+    "district": "Mongu District",
+    "constituency": "Mongu Central",
+    "ward": "Natiyala"
+  },
+  {
+    "province": "Muchinga Province",
+    "district": "Chinsali District",
+    "constituency": "Chinsali",
+    "ward": "Lupososhi"
+  },
+  {
+    "province": "Luapula Province",
+    "district": "Mansa District",
+    "constituency": "Mansa Central",
+    "ward": "Senama"
+  },
+  {
+    "province": "Northern Province",
+    "district": "Kasama District",
+    "constituency": "Kasama Central",
+    "ward": "Mulenga"
+  },
+  {
+    "province": "North-Western Province",
+    "district": "Solwezi District",
+    "constituency": "Solwezi Central",
+    "ward": "Kimasala"
+  }
+]
