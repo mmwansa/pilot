@@ -11,6 +11,7 @@ from va_explorer.va_data_management.models import (
     Household,
     Pregnancy,
     PregnancyOutcome,
+    VerbalAutopsy,
 )
 from va_explorer.va_data_management.utils.fake_data import FakeDataGenerator
 
@@ -93,6 +94,32 @@ MODEL_CONFIGS = [
         },
         "location_fields": ["province", "district", "constituency", "ward"],
     },
+    {
+        "model": VerbalAutopsy,
+        "slug": "verbal_autopsy",
+        "field_rules": {
+            "deviceid": "identifier",
+            "instanceid": "identifier",
+            "instancename": "identifier",
+            "username": "identifier",
+            "simserial": "identifier",
+            "bid": "identifier",
+            "bid2": "identifier",
+            "bid_check": "identifier",
+            "phonenumber": "phone",
+            "hospital": "facility",
+            "Id10007": "name_full",
+            "Id10010": "name_full",
+            "Id10017": "name_full",
+            "Id10018": "name_full",
+            "Id10061": "name_full",
+            "Id10062": "name_full",
+            "Id10070": "identifier",
+            "Id10073": "identifier",
+            "geopoint": "gps",
+        },
+        "location_fields": ["province", "district", "constituency", "ward"],
+    },
 ]
 
 
@@ -119,8 +146,11 @@ class Command(BaseCommand):
         parser.add_argument(
             "--outdir",
             type=str,
-            default="exports",
-            help="Output directory for the CSV files (default: exports/ relative to BASE_DIR).",
+            default="va_explorer/static/data",
+            help=(
+                "Output directory for the CSV files "
+                "(default: va_explorer/va_explorer/static/data relative to project root)."
+            ),
         )
         parser.add_argument(
             "--write",
@@ -144,9 +174,14 @@ class Command(BaseCommand):
 
     def _resolve_output_dir(self, directory: str) -> Path:
         output_path = Path(directory)
+
+        # Resolve relative paths against the project root (cwd where manage.py is run)
         if not output_path.is_absolute():
-            output_path = Path(settings.BASE_DIR) / output_path
+            output_path = Path.cwd() / output_path
+
+        output_path.mkdir(parents=True, exist_ok=True)
         return output_path
+
 
     def _process_model(
         self,
