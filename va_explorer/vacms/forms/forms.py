@@ -62,20 +62,18 @@ class VAInterviewStatusForm(forms.ModelForm):
             "va_interview_status",
             "va_not_done_reason",
             "va_not_done_other",
-            "interview_comments",
         ]
         widgets = {
-            "interview_comments": forms.Textarea(
-                attrs={"rows": 3, "class": "form-control"}
+            "va_interview_status": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "va_not_done_reason": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "va_not_done_other": forms.Textarea(
+                attrs={"class": "form-control form-control-sm", "rows": 3}
             ),
-            "va_interview_status": forms.Select(attrs={"class": "form-select"}),
-            "va_not_done_reason": forms.Select(attrs={"class": "form-select"}),
-            "va_not_done_other": forms.TextInput(attrs={"class": "form-control"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["va_not_done_other"].label = "Comment"
+        self.fields["va_not_done_other"].label = "Other reasons (Explain)"
 
     def clean(self):
         cleaned_data = super().clean()

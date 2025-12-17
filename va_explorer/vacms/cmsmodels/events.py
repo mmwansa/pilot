@@ -39,6 +39,11 @@ class Event(models.Model):
         RELOCATED = "relocated", "Household relocated"
         DOD_OUTSIDE_PERIOD = "dod_outside_period", "Date of death outside target period"
         NON_RESIDENT = "non_resident", "Deceased not resident of EA"
+        UNAVAILABLE = "unavailable_rescheduled", "Unavailable / Rescheduled"
+        REFUSED = "refused_denied_access", "Refused / Denied Access"
+        WRONG_ADDRESS = "wrong_household_address", "Wrong Household / Address"
+        OUTSIDE_EA = "household_outside_ea", "Household Outside EA"
+        INELIGIBLE = "ineligible", "Ineligible"
         OTHER = "other", "Other"
 
     data_collection_staff = models.ForeignKey(

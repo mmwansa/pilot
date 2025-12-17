@@ -3,9 +3,12 @@
 {% block title %}Event Details{%endblock %} 
 {% block content %}
 <div class="row mt-4">
-  <h2>Scheduled VA Interview Details</h2>
+  <div class="col-12">
+    <h2>Scheduled VA Interview Details</h2>
+  </div>
 </div>
-<div class="col-lg-6 col-md-8">
+<div class="row">
+  <div class="col-lg-7 col-md-7">
   <div class="mb-3">
     <div class="text-muted">Status</div>
     <div><strong>{{ object.get_event_status_display }}</strong></div>
@@ -110,13 +113,12 @@
     <div class="text-muted">VA Interview Comments</div>
     <div><strong>{{ object.interview_comments|default:"--" }}</strong></div>
   </div>
-</div>
+  </div>
 
-{% if can_update_va_status %}
-<div class="row mt-4">
-  <div class="col-lg-6 col-md-8">
-    <h3>Update VA Interview Status</h3>
-    <form method="post">
+  {% if can_update_va_status %}
+  <div class="col-lg-5 col-md-5">
+    <h3 class="mb-3">Update VA Interview Status</h3>
+    <form method="post" class="border rounded p-3 bg-light">
       {% csrf_token %}
       {% if status_form.non_field_errors %}
       <div class="alert alert-danger">{{ status_form.non_field_errors }}</div>
@@ -126,7 +128,9 @@
         <label for="{{ status_form.va_interview_status.id_for_label }}" class="form-label">
           {{ status_form.va_interview_status.label }}
         </label>
-        {{ status_form.va_interview_status }}
+        <div>
+          {{ status_form.va_interview_status }}
+        </div>
         {% if status_form.va_interview_status.errors %}
           <div class="text-danger small">{{ status_form.va_interview_status.errors|join:", " }}</div>
         {% endif %}
@@ -154,21 +158,11 @@
       </div>
       {% endwith %}
 
-      <div class="mb-3">
-        <label for="{{ status_form.interview_comments.id_for_label }}" class="form-label">
-          {{ status_form.interview_comments.label }}
-        </label>
-        {{ status_form.interview_comments }}
-        {% if status_form.interview_comments.errors %}
-          <div class="text-danger small">{{ status_form.interview_comments.errors|join:", " }}</div>
-        {% endif %}
-      </div>
-
-      <button type="submit" class="btn btn-primary">Update Status</button>
+      <button type="submit" class="btn btn-primary w-100">Update Status</button>
     </form>
   </div>
+  {% endif %}
 </div>
-{% endif %}
 
 <a href="{% url 'cms-event-list' %}" class="btn btn-primary" role="button">Back</a>
 {% endblock %}
