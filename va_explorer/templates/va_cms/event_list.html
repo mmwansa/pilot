@@ -58,18 +58,16 @@
           >
           {% endif %}
           {% if request.user.is_superuser or request.user|has_group:"Admins" or request.user|has_group:"Data Managers" %}
-            {% if event.event_type == 3 %}
-              {% if event.event_status == 2 or event.event_status == 4 %}
+            {% if event.event_type == 3 and event.event_status == 2 %}
               <a
                 href="{% url 'cms-event-vainterview-schedule' event.pk %}"
                 class="btn btn-primary"
                 role="button"
-                >{% if event.event_status == 4 %}Update VA Schedule{% else %}Schedule VA{% endif %}</a
+                >Schedule VA</a
               >
-              {% endif %}
             {% endif %}
           {% endif %}
-          {% endif %}
+
           {% if event.event_status == 4 %}
           {% comment %} <a
             href="{% url 'cms-event-linkva' event.pk %}"

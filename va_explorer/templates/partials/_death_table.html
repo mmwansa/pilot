@@ -31,7 +31,14 @@
           <td>{{ o.DE_03|default:"Unknown" }}</td>
           <td>{{ o.DE_06|default:"-" }}</td>         
           <td>
-            <a class="btn btn-primary" href="{% url 'va_data_management:death_detail' id=o.id %}">View</a>
+            <a
+              class="btn {% if o.eventid %}btn-secondary disabled{% else %}btn-primary{% endif %}"
+              {% if not o.eventid %}
+              href="{% url 'va_data_management:death_detail' id=o.id %}"
+              {% endif %}
+            >
+              View
+            </a>
           </td>
           {% if va_data_cleanup and perms.va_data_cleanup.download %}
             <td>
