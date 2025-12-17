@@ -95,3 +95,10 @@ def param_replace(context, **kwargs):
 def sort_url(context, value, direction=""):
     sort_value = direction + value
     return param_replace(context, order_by=sort_value)
+
+
+@register.filter
+def has_group(user, group_name):
+    if not getattr(user, "is_authenticated", False):
+        return False
+    return user.groups.filter(name=group_name).exists()

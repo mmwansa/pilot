@@ -1,4 +1,4 @@
-{% extends "base.html" %} {% block title %} All Events{% endblock %} 
+{% extends "base.html" %} {% load va_explorer_tags %} {% block title %} All Events{% endblock %} 
 {% block heading %} Scheduled Verbal Autopsies {% endblock %} {% block content %}
 
 <div class="row mt-4">
@@ -57,13 +57,18 @@
             >Link Data</a
           >
           {% endif %}
-          {% if event.event_status == 2 and event.event_type == 3 %}
-          <a
-            href="{% url 'cms-event-vainterview-schedule' event.pk %}"
-            class="btn btn-primary"
-            role="button"
-            >Schedule VA</a
-          >
+          {% if request.user.is_superuser or request.user|has_group:"Admins" or request.user|has_group:"Data Managers" %}
+            {% if event.event_type == 3 %}
+              {% if event.event_status == 2 or event.event_status == 4 %}
+              <a
+                href="{% url 'cms-event-vainterview-schedule' event.pk %}"
+                class="btn btn-primary"
+                role="button"
+                >{% if event.event_status == 4 %}Update VA Schedule{% else %}Schedule VA{% endif %}</a
+              >
+              {% endif %}
+            {% endif %}
+          {% endif %}
           {% endif %}
           {% if event.event_status == 4 %}
           {% comment %} <a

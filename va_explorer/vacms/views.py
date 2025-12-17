@@ -20,6 +20,19 @@ from va_explorer.va_data_management.models import Death
 from va_explorer.users.models import UserMessage
 
 
+ALLOWED_VA_SCHEDULER_GROUPS = ("Admins", "Data Managers")
+
+
+def user_can_manage_va_schedule(user):
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and (
+            user.is_superuser
+            or user.groups.filter(name__in=ALLOWED_VA_SCHEDULER_GROUPS).exists()
+        )
+    )
+
+
 # event
 class EventListView(ListView):
     model = Event
@@ -227,6 +240,9 @@ class EventDetailView(DetailView):
             "status_form", VAInterviewStatusForm(instance=event)
         )
         context["can_update_va_status"] = self._can_update_status(event)
+        context["user_can_manage_schedule"] = user_can_manage_va_schedule(
+            self.request.user
+        )
         return context
 
     def _can_update_status(self, event):
@@ -273,6 +289,11 @@ class EventScheduleVAInterviewView(UpdateView):
         "interview_comments",
     ]
     template_name = "va_cms/event_schedule_va.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not user_can_manage_va_schedule(request.user):
+            return HttpResponseForbidden("You are not allowed to manage VA schedules.")
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         form.instance.event_status = 4
