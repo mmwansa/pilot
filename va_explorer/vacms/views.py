@@ -188,6 +188,28 @@ class EventDetailView(DetailView):
     fields = "__all__"
     template_name = "va_cms/event_detail.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        event = self.object
+        death_record = event.death
+        context["death_record"] = death_record
+        context["is_death_event"] = (
+            bool(death_record) and event.event_type == Event.EventType.DEATH
+        )
+        interviewer = event.va_interview_staff
+        context["interviewer"] = interviewer
+        if interviewer:
+            context["interviewer_name"] = (
+                interviewer.name or interviewer.get_full_name() or interviewer.email
+            )
+            context["interviewer_contact"] = (
+                interviewer.mobile1 or interviewer.mobile2 or interviewer.email
+            )
+        else:
+            context["interviewer_name"] = None
+            context["interviewer_contact"] = None
+        return context
+
 
 class EventScheduleDataCollectionView(UpdateView):
     model = Event
