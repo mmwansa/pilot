@@ -29,6 +29,18 @@ class Event(models.Model):
         VA_INTERVIEW_COMPLETED = 5, "VA Interview Completed"
         VA_INTERVIEW_ON_HOLD = 6, "VA Interview On Hold"
 
+    class VAInterviewStatus(models.TextChoices):
+        SCHEDULED = "scheduled", "Scheduled"
+        COMPLETED = "completed", "Successfully Completed"
+        NOT_DONE = "not_done", "Not Done"
+        POSTPONED = "postponed", "Postponed"
+
+    class VANotDoneReason(models.TextChoices):
+        RELOCATED = "relocated", "Household relocated"
+        DOD_OUTSIDE_PERIOD = "dod_outside_period", "Date of death outside target period"
+        NON_RESIDENT = "non_resident", "Deceased not resident of EA"
+        OTHER = "other", "Other"
+
     data_collection_staff = models.ForeignKey(
         User,
         related_name="data_collection_events",  # Changed from "staff"
@@ -139,6 +151,25 @@ class Event(models.Model):
     interview_contact_name = models.CharField("VA Interview Contact Name",max_length=255, blank=True, null=True)
     interview_contact_tel = models.CharField("VA Interview Contact Phone",max_length=255, blank=True, null=True)
     interview_comments = models.TextField("VA Interview Comments",max_length=255, blank=True, null=True)
+    va_interview_status = models.CharField(
+        "VA Interview Status",
+        max_length=20,
+        choices=VAInterviewStatus.choices,
+        default=VAInterviewStatus.SCHEDULED,
+    )
+    va_not_done_reason = models.CharField(
+        "Reason not done",
+        max_length=32,
+        choices=VANotDoneReason.choices,
+        blank=True,
+        null=True,
+    )
+    va_not_done_other = models.CharField(
+        "Not done - other comment",
+        max_length=255,
+        blank=True,
+        null=True,
+    )
 
     respondent_name = models.CharField("Respondent Name", max_length=255, blank=True, null=True)
     respondent_phone = models.CharField("Respondent Phone",max_length=255, blank=True, null=True)

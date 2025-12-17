@@ -1,6 +1,7 @@
 import json
+from django.contrib import messages
 from django.shortcuts import redirect, render
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.urls import reverse
 from django.utils import timezone
 from django import forms
@@ -14,7 +15,7 @@ from django.views.generic import (
 
 # Create your views here.
 from va_explorer.vacms.cmsmodels.events import Event
-from va_explorer.vacms.forms.forms import ScheduleDeathForm
+from va_explorer.vacms.forms.forms import ScheduleDeathForm, VAInterviewStatusForm
 from va_explorer.va_data_management.models import Death
 from va_explorer.users.models import UserMessage
 
@@ -188,6 +189,20 @@ class EventDetailView(DetailView):
     fields = "__all__"
     template_name = "va_cms/event_detail.html"
 
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self._can_update_status(self.object):
+            return HttpResponseForbidden("You are not allowed to update this event.")
+
+        form = VAInterviewStatusForm(request.POST, instance=self.object)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "VA interview status updated.")
+            return redirect("cms-event-detail", pk=self.object.pk)
+
+        context = self.get_context_data(status_form=form)
+        return self.render_to_response(context)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         event = self.object
@@ -208,7 +223,19 @@ class EventDetailView(DetailView):
         else:
             context["interviewer_name"] = None
             context["interviewer_contact"] = None
+        context["status_form"] = kwargs.get(
+            "status_form", VAInterviewStatusForm(instance=event)
+        )
+        context["can_update_va_status"] = self._can_update_status(event)
         return context
+
+    def _can_update_status(self, event):
+        user = self.request.user
+        return bool(
+            user.is_authenticated
+            and event.va_interview_staff_id
+            and user.id == event.va_interview_staff_id
+        )
 
 
 class EventScheduleDataCollectionView(UpdateView):
@@ -249,6 +276,9 @@ class EventScheduleVAInterviewView(UpdateView):
 
     def form_valid(self, form):
         form.instance.event_status = 4
+        form.instance.va_interview_status = Event.VAInterviewStatus.SCHEDULED
+        form.instance.va_not_done_reason = None
+        form.instance.va_not_done_other = None
 
         # Call the parent's form_valid to save the object and handle redirection
         response = super().form_valid(form)
@@ -346,6 +376,9 @@ class EventLinkVA(UpdateView):
 
     def form_valid(self, form):
         form.instance.event_status = 5
+        form.instance.va_interview_status = Event.VAInterviewStatus.COMPLETED
+        form.instance.va_not_done_reason = None
+        form.instance.va_not_done_other = None
         form.instance.completion_date = timezone.now().strftime("%Y-%m-%d")
         # Call the parent's form_valid to save the object and handle redirection
         response = super().form_valid(form)

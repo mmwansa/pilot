@@ -10,6 +10,22 @@
     <div class="text-muted">Status</div>
     <div><strong>{{ object.get_event_status_display }}</strong></div>
   </div>
+  <div class="mb-3">
+    <div class="text-muted">VA Interview Status</div>
+    <div><strong>{{ object.get_va_interview_status_display }}</strong></div>
+  </div>
+  {% if object.va_not_done_reason %}
+  <div class="mb-3">
+    <div class="text-muted">Not Done Reason</div>
+    <div><strong>{{ object.get_va_not_done_reason_display }}</strong></div>
+  </div>
+  {% if object.va_not_done_reason == 'other' and object.va_not_done_other %}
+  <div class="mb-3">
+    <div class="text-muted">Not Done Comment</div>
+    <div><strong>{{ object.va_not_done_other }}</strong></div>
+  </div>
+  {% endif %}
+  {% endif %}
 
   {% if is_death_event and death_record %}
   <div class="mb-3">
@@ -96,6 +112,64 @@
   </div>
 </div>
 
+{% if can_update_va_status %}
+<div class="row mt-4">
+  <div class="col-lg-6 col-md-8">
+    <h3>Update VA Interview Status</h3>
+    <form method="post">
+      {% csrf_token %}
+      {% if status_form.non_field_errors %}
+      <div class="alert alert-danger">{{ status_form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label for="{{ status_form.va_interview_status.id_for_label }}" class="form-label">
+          {{ status_form.va_interview_status.label }}
+        </label>
+        {{ status_form.va_interview_status }}
+        {% if status_form.va_interview_status.errors %}
+          <div class="text-danger small">{{ status_form.va_interview_status.errors|join:", " }}</div>
+        {% endif %}
+      </div>
+
+      {% with status_value=status_form.va_interview_status.value reason_value=status_form.va_not_done_reason.value %}
+      <div class="mb-3 {% if status_value != 'not_done' %}d-none{% endif %}" id="va-not-done-reason">
+        <label for="{{ status_form.va_not_done_reason.id_for_label }}" class="form-label">
+          {{ status_form.va_not_done_reason.label }}
+        </label>
+        {{ status_form.va_not_done_reason }}
+        {% if status_form.va_not_done_reason.errors %}
+          <div class="text-danger small">{{ status_form.va_not_done_reason.errors|join:", " }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3 {% if reason_value != 'other' %}d-none{% endif %}" id="va-not-done-other">
+        <label for="{{ status_form.va_not_done_other.id_for_label }}" class="form-label">
+          {{ status_form.va_not_done_other.label }}
+        </label>
+        {{ status_form.va_not_done_other }}
+        {% if status_form.va_not_done_other.errors %}
+          <div class="text-danger small">{{ status_form.va_not_done_other.errors|join:", " }}</div>
+        {% endif %}
+      </div>
+      {% endwith %}
+
+      <div class="mb-3">
+        <label for="{{ status_form.interview_comments.id_for_label }}" class="form-label">
+          {{ status_form.interview_comments.label }}
+        </label>
+        {{ status_form.interview_comments }}
+        {% if status_form.interview_comments.errors %}
+          <div class="text-danger small">{{ status_form.interview_comments.errors|join:", " }}</div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary">Update Status</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <a href="{% url 'cms-event-list' %}" class="btn btn-primary" role="button">Back</a>
 {% endblock %}
 
@@ -103,4 +177,60 @@
 {% block page_scripts %}
 <script src="{% static 'vendor/select2-4.1.0-beta.1/select2.js' %}"></script>
 <script src="{% static 'js/location.js' %}"></script>
+{% if can_update_va_status %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const statusField = document.getElementById("id_va_interview_status");
+    const reasonWrapper = document.getElementById("va-not-done-reason");
+    const reasonField = document.getElementById("id_va_not_done_reason");
+    const otherWrapper = document.getElementById("va-not-done-other");
+    const otherField = document.getElementById("id_va_not_done_other");
+
+    function toggleFields() {
+      if (!statusField) {
+        return;
+      }
+      const status = statusField.value;
+
+      if (status === "not_done") {
+        if (reasonWrapper) {
+          reasonWrapper.classList.remove("d-none");
+        }
+      } else {
+        if (reasonWrapper) {
+          reasonWrapper.classList.add("d-none");
+        }
+        if (reasonField) {
+          reasonField.value = "";
+        }
+      }
+
+      if (
+        status === "not_done" &&
+        reasonField &&
+        reasonField.value === "other"
+      ) {
+        if (otherWrapper) {
+          otherWrapper.classList.remove("d-none");
+        }
+      } else {
+        if (otherWrapper) {
+          otherWrapper.classList.add("d-none");
+        }
+        if (otherField) {
+          otherField.value = "";
+        }
+      }
+    }
+
+    if (statusField) {
+      statusField.addEventListener("change", toggleFields);
+    }
+    if (reasonField) {
+      reasonField.addEventListener("change", toggleFields);
+    }
+    toggleFields();
+  });
+</script>
+{% endif %}
 {% endblock %}
