@@ -85,6 +85,10 @@ def process_user_data(user, cleaned_data):
     group = cleaned_data["group"]
     user.groups.set([group])
 
+    if "is_superuser" in cleaned_data:
+        user.is_superuser = bool(cleaned_data["is_superuser"])
+        user.is_staff = user.is_superuser
+
     # if View PII permission specified in form, override user group's default permission
     if "view_pii" in cleaned_data:
         user.can_view_pii = cleaned_data["view_pii"]
@@ -313,6 +317,7 @@ class UserUpdateForm(UserCommonFields, forms.ModelForm):
             "mobile2",
             "address",
             "is_active",
+            "is_superuser",
             "group",
             "view_pii",
             "download_data",

@@ -62,6 +62,33 @@
         </ul>
       {% endif %}
 
+      <!-- Schedule Management Section -->
+      <li
+        class="nav-section-header collapsible-header"
+        tabindex="0"
+        data-target="case-section"
+        aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
+      >
+        <span class="section-title">Schedule Management</span>
+        <i class="fas fa-chevron-down collapse-caret"></i>
+      </li>
+      <ul
+        class="collapse-section"
+        id="case-section"
+        style="{% if '/case-management' in request.path %}display:block{% else %}display:none{% endif %}"
+      >
+        <li class="nav-item">
+          <a
+            class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' %}active{% endif %}"
+            href="{% url 'cms-event-list' %}"
+            data-tooltip="Events"
+          >
+            <i class="fas fa-calendar nav-icon"></i>
+            <span class="nav-label">Scheduled VAs</span>
+          </a>
+        </li>
+      </ul>
+
       <!-- Data Management Section -->
       <li
         class="nav-section-header collapsible-header"
@@ -145,54 +172,6 @@
             </a>
           </li>
         {% endif %}
-      </ul>
-
-      <!-- Case Management Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="case-section"
-        aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
-      >
-        <span class="section-title">Schedule Management</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
-      <ul
-        class="collapse-section"
-        id="case-section"
-        style="{% if '/case-management' in request.path %}display:block{% else %}display:none{% endif %}"
-      >
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' %}active{% endif %}"
-            href="{% url 'cms-event-list' %}"
-            data-tooltip="Events"
-          >
-            <i class="fas fa-calendar nav-icon"></i>
-            <span class="nav-label">Scheduled VAs</span>
-          </a>
-        </li>
-        {% comment %} <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-scheduled-list' %}active{% endif %}"
-            href="{% url 'cms-event-scheduled-list' %}"
-            data-tooltip="Data Management"
-          >
-            <i class="fas fa-person-walking-arrow-right nav-icon"></i>
-            <span class="nav-label">Scheduled Events</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-completed-list' %}active{% endif %}"
-            href="{% url 'cms-event-completed-list' %}"
-            data-tooltip="Data Management"
-          >
-            <i class="fas fa-book-skull nav-icon"></i>
-            <span class="nav-label">Completed Events</span>
-          </a>
-        </li> {% endcomment %}
-   
       </ul>
 
       <!-- Analytics Section -->
@@ -341,4 +320,3 @@ document.addEventListener("DOMContentLoaded", function () {
   updateToggleIcon();
 });
 </script>
-

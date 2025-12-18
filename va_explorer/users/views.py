@@ -141,6 +141,10 @@ def UserPasswordUpdateView(request, pk):
         
             try:
                 userDetail = User.objects.get(id=pk)
+
+                if userDetail.is_superuser and not request.user.is_superuser:
+                    messages.error(request, "You cannot edit the password for this user.")
+                    return redirect(reverse("users:index"))
                 
                 userDetail.set_password(password1)
                 userDetail.has_valid_password = True
@@ -171,8 +175,8 @@ def UserPasswordUpdateView(request, pk):
                 "mobile2": userDetail.mobile2,
             }
             
-            if userDetail.is_superuser:
-                messages.error(request, 'You cannot edit the password for a super user')
+            if userDetail.is_superuser and not request.user.is_superuser:
+                messages.error(request, "You cannot edit the password for this user.")
                 return redirect(reverse("users:index"))
         except User.DoesNotExist:
             initials = {}
@@ -204,8 +208,18 @@ class UserUpdateView(
     def get_success_url(self):
         return reverse("users:detail", kwargs={"pk": self.kwargs["pk"]})
 
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.is_superuser and not request.user.is_superuser:
+            messages.error(request, "You do not have permission to modify this user.")
+            return redirect(reverse("users:index"))
+        return super().dispatch(request, *args, **kwargs)
+
     def get_object(self):
-        return User.objects.get(pk=self.kwargs["pk"])
+        if hasattr(self, "_cached_object"):
+            return self._cached_object
+        self._cached_object = User.objects.get(pk=self.kwargs["pk"])
+        return self._cached_object
 
     def form_valid(self, form):
         # refresh the updated users session to apply their new role permissions
@@ -242,6 +256,7 @@ class UserUpdateView(
 
         initial["view_pii"] = self.get_object().can_view_pii
         initial["download_data"] = self.get_object().can_download_data
+        initial["is_superuser"] = self.get_object().is_superuser
 
         return initial
 
