@@ -202,11 +202,17 @@ class EventDetailView(DetailView):
     fields = "__all__"
     template_name = "va_cms/event_detail.html"
 
-    def post(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         self.object = self.get_object()
-        if not self._can_update_status(self.object):
+        if (
+            request.method.lower() == "post"
+            and not self._can_update_status(self.object)
+        ):
             return HttpResponseForbidden("You are not allowed to update this event.")
+        return super().dispatch(request, *args, **kwargs)
 
+    def post(self, request, *args, **kwargs):
+        self.object = getattr(self, "object", self.get_object())
         form = VAInterviewStatusForm(request.POST, instance=self.object)
         if form.is_valid():
             form.save()
@@ -247,11 +253,11 @@ class EventDetailView(DetailView):
 
     def _can_update_status(self, event):
         user = self.request.user
-        return bool(
-            user.is_authenticated
-            and event.va_interview_staff_id
-            and user.id == event.va_interview_staff_id
-        )
+        if not user.is_authenticated:
+            return False
+        if event.va_interview_staff_id and user.id == event.va_interview_staff_id:
+            return True
+        return user_can_manage_va_schedule(user)
 
 
 class EventScheduleDataCollectionView(UpdateView):
