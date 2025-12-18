@@ -12,6 +12,7 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )  # new
+from django.db.models import Case, When, Value, IntegerField, Q
 
 # Create your views here.
 from va_explorer.vacms.cmsmodels.events import Event
@@ -37,6 +38,45 @@ def user_can_manage_va_schedule(user):
 class EventListView(ListView):
     model = Event
     template_name = "va_cms/event_list.html"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        queryset = self._apply_filters(queryset)
+        status_priority = Case(
+            When(va_interview_status=Event.VAInterviewStatus.SCHEDULED, then=Value(0)),
+            When(va_interview_status=Event.VAInterviewStatus.POSTPONED, then=Value(1)),
+            When(va_interview_status=Event.VAInterviewStatus.NOT_DONE, then=Value(2)),
+            When(va_interview_status=Event.VAInterviewStatus.COMPLETED, then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField(),
+        )
+        return (
+            queryset.annotate(_va_status_priority=status_priority)
+            .order_by("_va_status_priority", "interview_scheduled_date", "id")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["filters"] = self._filters_context
+        return context
+
+    def _apply_filters(self, queryset):
+        params = self.request.GET
+        filters = {
+            "district": params.get("district", "").strip(),
+            "interview_status": params.get("interview_status", "").strip(),
+            "interviewer": params.get("interviewer", "").strip(),
+        }
+
+        if filters["district"]:
+            queryset = queryset.filter(district__icontains=filters["district"])
+        if filters["interview_status"]:
+            queryset = queryset.filter(va_interview_status=filters["interview_status"])
+        if filters["interviewer"]:
+            queryset = queryset.filter(va_interview_staff__full_name__icontains=filters["interviewer"])
+
+        self._filters_context = filters
+        return queryset
 
 
 class EventListScheduledView(ListView):
