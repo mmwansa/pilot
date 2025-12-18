@@ -5,7 +5,13 @@ from django.core.management import BaseCommand
 from va_explorer.users.models import User
 from va_explorer.va_analytics.models import Dashboard
 from va_explorer.va_data_cleanup.models import DataCleanup
-from va_explorer.va_data_management.models import VerbalAutopsy
+from va_explorer.va_data_management.models import (
+    VerbalAutopsy,
+    Household,
+    Pregnancy,
+    PregnancyOutcome,
+    Death,
+)
 
 GROUPS_PERMISSIONS = {
     "Admins": {
@@ -50,6 +56,10 @@ GROUPS_PERMISSIONS = {
             "delete_verbalautopsy",
             "bulk_delete",
         ],
+        Household: ["view_household"],
+        Pregnancy: ["view_pregnancy"],
+        PregnancyOutcome: ["view_pregnancyoutcome"],
+        Death: ["view_death"],
         DataCleanup: ["view_datacleanup", "download", "bulk_download"],
     },
     "Community Surveillance Officer": {
