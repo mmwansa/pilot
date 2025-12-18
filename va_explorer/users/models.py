@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from functools import reduce
 
+from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser, Permission
 from django.db import models
@@ -14,6 +15,12 @@ from django.utils.translation import gettext_lazy as _
 # from allauth.account.signals import email_confirmed
 # from django.dispatch import receiver
 from va_explorer.va_data_management.models import Location, VerbalAutopsy
+from va_explorer.vacms.constants import VA_SCHEDULE_MESSAGE_SUBJECT
+
+from .constants import FEEDBACK_MODULE_FEATURES
+
+
+HIDDEN_MAILBOX_SUBJECTS = (VA_SCHEDULE_MESSAGE_SUBJECT,)
 
 
 class CustomUserManager(BaseUserManager):
@@ -202,8 +209,11 @@ class UserPasswordHistory(models.Model):
 
 
 class UserMessageQuerySet(models.QuerySet):
+    def mailbox_visible(self):
+        return self.exclude(subject__in=HIDDEN_MAILBOX_SUBJECTS)
+
     def unread(self):
-        return self.filter(read_at__isnull=True)
+        return self.mailbox_visible().filter(read_at__isnull=True)
 
 
 class UserMessageManager(models.Manager.from_queryset(UserMessageQuerySet)):
@@ -242,3 +252,60 @@ class UserMessage(models.Model):
 
     def get_absolute_url(self):
         return reverse("users:message_detail", kwargs={"pk": self.pk})
+
+
+class Feedback(models.Model):
+    class Module(models.TextChoices):
+        DATA_MANAGEMENT = "data_management", "Data Management"
+        PERSONNEL_MANAGEMENT = "personnel_management", "Personnel Management"
+        SCHEDULE_MANAGEMENT = "schedule_management", "Schedule Management"
+        ANALYTICS = "analytics", "Dashboards (Analytics)"
+
+    class Severity(models.TextChoices):
+        CRITICAL = "critical", "Critical"
+        HIGH = "high", "High"
+        MEDIUM = "medium", "Medium"
+        LOW = "low", "Low"
+        ENHANCEMENT = "enhancement", "Enhancement"
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        IN_PROGRESS = "in_progress", "In Progress"
+        RESOLVED = "resolved", "Resolved"
+
+    subject = models.CharField(max_length=255)
+    module = models.CharField(max_length=64, choices=Module.choices)
+    feature = models.CharField(max_length=64)
+    severity = models.CharField(
+        max_length=16, choices=Severity.choices, default=Severity.MEDIUM
+    )
+    description = models.TextField()
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.NEW
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="feedback_reports",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.subject} ({self.get_module_display()})"
+
+    @staticmethod
+    def module_feature_map():
+        return FEEDBACK_MODULE_FEATURES
+
+    @classmethod
+    def feature_choices_for(cls, module):
+        return cls.module_feature_map().get(module, [])
+
+    def get_feature_display(self):
+        return dict(self.feature_choices_for(self.module)).get(self.feature, self.feature)

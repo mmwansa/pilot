@@ -2,7 +2,7 @@ from django.urls import reverse
 
 from va_explorer.users.models import UserMessage
 
-VA_SCHEDULE_MESSAGE_SUBJECT = "New VA scheduled"
+from .constants import VA_SCHEDULE_MESSAGE_SUBJECT
 
 
 def ensure_va_schedule_message(event, request):

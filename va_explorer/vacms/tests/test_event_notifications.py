@@ -5,6 +5,7 @@ from django.urls import reverse
 from va_explorer.tests.factories import UserFactory
 from va_explorer.users.models import UserMessage
 from va_explorer.vacms.cmsmodels.events import Event
+from va_explorer.vacms.constants import VA_SCHEDULE_MESSAGE_SUBJECT
 from va_explorer.vacms.notifications import ensure_va_schedule_message
 from va_explorer.va_data_management.models import Death
 
@@ -54,7 +55,7 @@ def test_assigning_va_creates_mailbox_message(client):
 
     message = UserMessage.objects.get(user=assigned_user)
 
-    assert message.subject == "New VA scheduled"
+    assert message.subject == VA_SCHEDULE_MESSAGE_SUBJECT
     assert "Test Person" in message.body
     assert "2023-09-01" in message.body
 
@@ -110,7 +111,7 @@ def test_va_schedule_message_only_created_once(client, rf):
         UserMessage.objects.filter(
             user=assigned_user,
             metadata__event_id=event.pk,
-            subject="New VA scheduled",
+            subject=VA_SCHEDULE_MESSAGE_SUBJECT,
         ).count()
         == 1
     )

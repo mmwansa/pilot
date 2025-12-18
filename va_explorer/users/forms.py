@@ -20,6 +20,9 @@ from django.utils.crypto import get_random_string
 from va_explorer.users.utils.location_mapping import map_srs_clusters_to_locations
 from va_explorer.va_data_management.models import Location, SRSClusterLocation
 
+from .constants import FEEDBACK_MODULE_FEATURES
+from .models import Feedback
+
 # from allauth.account.utils import send_email_confirmation, setup_user_email
 
 
@@ -453,6 +456,65 @@ class UserChangePasswordForm(PasswordVerificationMixin, forms.Form):
         user.save()
 
         return user
+
+
+class FeedbackForm(forms.ModelForm):
+    module = forms.ChoiceField(
+        choices=Feedback.Module.choices,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    feature = forms.ChoiceField(
+        choices=(),
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    severity = forms.ChoiceField(
+        choices=Feedback.Severity.choices,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+    class Meta:
+        model = Feedback
+        fields = ["subject", "module", "feature", "severity", "description"]
+        widgets = {
+            "subject": forms.TextInput(attrs={"class": "form-control"}),
+            "description": forms.Textarea(
+                attrs={"class": "form-control", "rows": 5}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        module = self.initial.get("module") or getattr(
+            self.instance, "module", Feedback.Module.DATA_MANAGEMENT
+        )
+        self._set_feature_choices(module)
+
+    def _set_feature_choices(self, module):
+        self.fields["feature"].choices = FEEDBACK_MODULE_FEATURES.get(module, [])
+        if not self.fields["feature"].choices:
+            self.fields["feature"].choices = [("", "---------")]
+
+    def clean(self):
+        cleaned = super().clean()
+        module = cleaned.get("module")
+        feature = cleaned.get("feature")
+        if module and feature:
+            valid_features = dict(FEEDBACK_MODULE_FEATURES.get(module, []))
+            if feature not in valid_features:
+                self.add_error(
+                    "feature",
+                    "Select a valid feature for the chosen module.",
+                )
+        return cleaned
+
+
+class FeedbackStatusForm(forms.ModelForm):
+    class Meta:
+        model = Feedback
+        fields = ["status"]
+        widgets = {
+            "status": forms.Select(attrs={"class": "form-select form-select-sm"})
+        }
 
 class UserImportForm(forms.Form):
     
