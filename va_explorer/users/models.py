@@ -15,12 +15,7 @@ from django.utils.translation import gettext_lazy as _
 # from allauth.account.signals import email_confirmed
 # from django.dispatch import receiver
 from va_explorer.va_data_management.models import Location, VerbalAutopsy
-from va_explorer.vacms.constants import VA_SCHEDULE_MESSAGE_SUBJECT
-
 from .constants import FEEDBACK_MODULE_FEATURES
-
-
-HIDDEN_MAILBOX_SUBJECTS = (VA_SCHEDULE_MESSAGE_SUBJECT,)
 
 
 class CustomUserManager(BaseUserManager):
@@ -209,11 +204,8 @@ class UserPasswordHistory(models.Model):
 
 
 class UserMessageQuerySet(models.QuerySet):
-    def mailbox_visible(self):
-        return self.exclude(subject__in=HIDDEN_MAILBOX_SUBJECTS)
-
     def unread(self):
-        return self.mailbox_visible().filter(read_at__isnull=True)
+        return self.filter(read_at__isnull=True)
 
 
 class UserMessageManager(models.Manager.from_queryset(UserMessageQuerySet)):
