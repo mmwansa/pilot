@@ -5,7 +5,7 @@ from django.urls import reverse
 from va_explorer.tests.factories import UserFactory
 from va_explorer.users.models import UserMessage
 from va_explorer.vacms.cmsmodels.events import Event
-from va_explorer.vacms.views import ensure_va_schedule_message
+from va_explorer.vacms.notifications import ensure_va_schedule_message
 from va_explorer.va_data_management.models import Death
 
 

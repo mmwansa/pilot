@@ -17,12 +17,14 @@ from django.db.models import Case, When, Value, IntegerField, Q
 # Create your views here.
 from va_explorer.vacms.cmsmodels.events import Event
 from va_explorer.vacms.forms.forms import ScheduleDeathForm, VAInterviewStatusForm
+from va_explorer.vacms.notifications import (
+    ensure_va_schedule_message,
+    remove_va_schedule_message,
+)
 from va_explorer.va_data_management.models import Death
-from va_explorer.users.models import UserMessage
 
 
 ALLOWED_VA_SCHEDULER_GROUPS = ("Admins", "Data Managers")
-VA_SCHEDULE_MESSAGE_SUBJECT = "New VA scheduled"
 
 
 def user_can_manage_va_schedule(user):
@@ -33,59 +35,6 @@ def user_can_manage_va_schedule(user):
             or user.groups.filter(name__in=ALLOWED_VA_SCHEDULER_GROUPS).exists()
         )
     )
-
-
-def ensure_va_schedule_message(event, request):
-    """Create a single mailbox notification for a scheduled VA event."""
-    if not (event and event.va_interview_staff_id):
-        return
-
-    existing = UserMessage.objects.filter(
-        user_id=event.va_interview_staff_id,
-        metadata__event_id=event.pk,
-        subject=VA_SCHEDULE_MESSAGE_SUBJECT,
-    )
-    if existing.exists():
-        return
-
-    scheduled_date = event.interview_scheduled_date
-    scheduled_date_str = (
-        scheduled_date.strftime("%Y-%m-%d")
-        if hasattr(scheduled_date, "strftime")
-        else str(scheduled_date) if scheduled_date else ""
-    )
-    death_record = event.death
-    deceased_name = getattr(death_record, "DE_03", None) or f"Death {event.pk}"
-    event_detail_url = request.build_absolute_uri(
-        reverse("cms-event-detail", kwargs={"pk": event.pk})
-    )
-
-    UserMessage.objects.create(
-        user=event.va_interview_staff,
-        subject=VA_SCHEDULE_MESSAGE_SUBJECT,
-        body=(
-            "A new verbal autopsy for "
-            f"{deceased_name} has been scheduled on {scheduled_date_str}.\n"
-            f"View the details: {event_detail_url}"
-        ),
-        metadata={
-            "event_id": event.pk,
-            "death_id": getattr(death_record, "pk", None),
-            "scheduled_date": scheduled_date_str,
-        },
-    )
-
-
-def remove_va_schedule_message(event):
-    """Remove the scheduled VA notification for an event, if it exists."""
-    if not (event and event.va_interview_staff_id):
-        return
-
-    UserMessage.objects.filter(
-        user_id=event.va_interview_staff_id,
-        metadata__event_id=event.pk,
-        subject=VA_SCHEDULE_MESSAGE_SUBJECT,
-    ).delete()
 
 
 # event
