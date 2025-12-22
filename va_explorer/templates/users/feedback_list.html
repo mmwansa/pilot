@@ -74,7 +74,7 @@
                     {% endif %}
                   ">{{ feedback.get_status_display }}</span>
                 </td>
-                <td>{{ feedback.created_at|date:"M d, Y H:i" }}</td>
+                <td>{{ feedback.created_at|date:"DATETIME_FORMAT" }}</td>
                 <td>{{ feedback.submitted_by.name|default:feedback.submitted_by.email|default:_("Unknown") }}</td>
               </tr>
             {% endfor %}

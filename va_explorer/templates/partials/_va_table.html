@@ -36,13 +36,13 @@
       {% for va in va_list %}
         <tr>
           <td>{{ va.id }}</td>
-          <td>{% pii_filter "Id10012" va.interviewed|default:"Date Unknown" %}</td>
+          <td>{% pii_filter "Id10012" va.interviewed|standard_date|default:"Date Unknown" %}</td>
           {% if not user.is_fieldworker %}
             <td>{% pii_filter "Id10010" va.interviewer|default:"Not Listed" %}</td>
           {% endif %}
           <td>{{ va.facility|default:"Not Provided" }}</td>
           <td>{% pii_filter "Id10017" va.deceased|default:"Subject Unknown" %}</td>
-          <td>{{ va.dod|default:"Date Unknown" }}</td>
+          <td>{{ va.dod|standard_date|default:"Date Unknown" }}</td>
           <td>{{ va.cause|default:"Not Coded" }}</td>
           <td>{{ va.warnings }}</td>
           <td>{{ va.errors }}</td>

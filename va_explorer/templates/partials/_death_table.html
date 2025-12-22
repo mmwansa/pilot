@@ -29,7 +29,7 @@
           <td>{{ o.district|default:"-" }}</td>
           <td>{{ o.ward|default:"-" }}</td>
           <td>{{ o.DE_03|default:"Unknown" }}</td>
-          <td>{{ o.DE_06|default:"-" }}</td>         
+          <td>{{ o.DE_06|standard_date|default:"-" }}</td>         
           <td>
             <a
               class="btn {% if o.eventid %}btn-secondary disabled{% else %}btn-primary{% endif %}"

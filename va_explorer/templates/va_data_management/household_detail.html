@@ -64,11 +64,11 @@
         </thead>
         <tbody>
           {% for field in form %}
-            <tr data-value="{% pii_filter field.name field.value|replace %}">
+            <tr data-value="{% pii_filter field.name field.value|format_date_field:field.name|replace %}">
               <td><b>{{ field.name }}</b></td>
               <td>{{ field.label }}</td>
               <td>
-                {% pii_filter field.name field.value|replace %}
+                {% pii_filter field.name field.value|format_date_field:field.name|replace %}
               </td>
             </tr>
           {% endfor %}
@@ -146,8 +146,8 @@
                 {% endif %}
               </td>
               <td>{{ issue.title|default:"—" }}</td>
-              <td>{{ issue.detected_at|date:"Y-m-d H:i" }}</td>
-              <td>{{ issue.updated|date:"Y-m-d H:i" }}</td>
+              <td>{{ issue.detected_at|date:"DATETIME_FORMAT" }}</td>
+              <td>{{ issue.updated|date:"DATETIME_FORMAT" }}</td>
               <td><code style="white-space: pre-wrap;">{{ issue.keys }}</code></td>
               <td><code style="white-space: pre-wrap;">{{ issue.details }}</code></td>
             </tr>
@@ -172,7 +172,7 @@
           <tbody>
             {% for diff in diffs %}
               <tr>
-                <td>{{ diff.new_record.history_date|date:"Y-m-d H:i" }}</td>
+                <td>{{ diff.new_record.history_date|date:"DATETIME_FORMAT" }}</td>
                 <td>{{ diff.new_record.history_user.name|default:"System" }} &lt;{{ diff.new_record.history_user.email|default:"noreply@host" }}&gt;</td>
                 <td>
                   {% for change in diff.changes %}

@@ -41,7 +41,7 @@
       <tr>
         <td>{{ event.id }}</td>
         <td>{{ event.get_event_status_display }}</td>
-        <td>{{ event.interview_scheduled_date }}</td>
+        <td>{{ event.interview_scheduled_date|standard_date|default:"--" }}</td>
         <td>{{ event.va_interview_staff.name|default:event.va_interview_staff.get_full_name|default:"Unassigned" }}</td>
         <td>
           {% comment %} <a

@@ -11,7 +11,7 @@
       <div>
         <h5 class="mb-1">{{ feedback.subject }}</h5>
         <small class="text-muted">
-          {% trans "Submitted" %} {{ feedback.created_at|date:"M d, Y H:i" }}
+          {% trans "Submitted" %} {{ feedback.created_at|date:"DATETIME_FORMAT" }}
           {% if feedback.submitted_by %}
             · {% trans "by" %} {{ feedback.submitted_by.name|default:feedback.submitted_by.email }}
           {% endif %}

@@ -31,11 +31,11 @@
         </thead>
         <tbody>
           {% for field in form %}
-            <tr data-value="{% pii_filter field.name field.value|replace %}">
+            <tr data-value="{% pii_filter field.name field.value|format_date_field:field.name|replace %}">
               <td><b>{{ field.name }}</b></td>
               <td>{{ field.label }}</td>
               <td>
-                {% pii_filter field.name field.value|replace %}
+                {% pii_filter field.name field.value|format_date_field:field.name|replace %}
               </td>
             </tr>
           {% endfor %}

@@ -16,6 +16,11 @@ env.read_env(str(ROOT_DIR / ".env"))
 # General
 
 TIME_ZONE = "UTC"
+# Default display formats for date and datetime values when rendered in the UI.
+DATE_FORMAT = "Y-m-d"
+DATETIME_FORMAT = "Y-m-d H:i"
+SHORT_DATE_FORMAT = DATE_FORMAT
+SHORT_DATETIME_FORMAT = DATETIME_FORMAT
 # accepted date formats for VA records
 DATE_FORMATS = {
     "%Y-%m-%d": "yyyy-mm-dd",
