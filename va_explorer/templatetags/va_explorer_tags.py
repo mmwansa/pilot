@@ -46,6 +46,14 @@ STANDARDIZED_DATE_FIELDS = {
     "id10023_b",
 }
 STANDARDIZED_DATE_FIELDS = {name.lower() for name in STANDARDIZED_DATE_FIELDS}
+HIDDEN_LIST_FIELDS = {
+    "household_descriptors",
+    "consented",
+    "pe_04",
+    "po_group",
+    "informant",
+    "antenatal_card_details",
+}
 
 
 def _format_standard_date(value, include_time=False):
@@ -94,6 +102,14 @@ def format_date_field(value, field_name):
     if field_name and str(field_name).lower() in STANDARDIZED_DATE_FIELDS:
         return standard_date(value)
     return value
+
+
+@register.filter
+def hide_list_field(field_name):
+    """
+    Returns True when a field should be hidden from record list tables.
+    """
+    return str(field_name).lower() in HIDDEN_LIST_FIELDS
 
 
 @register.filter
