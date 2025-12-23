@@ -61,6 +61,17 @@ body {
 .btn-primary:hover, .btn-primary:focus, .btn-success:hover, .btn-success:focus {
    background-color: #e67816 !important;
 }
+.btn-amber {
+  background-color: #e67816;
+  border-color: #e67816;
+  color: #fff;
+}
+.btn-amber:hover,
+.btn-amber:focus {
+  background-color: #c95f0f;
+  border-color: #c95f0f;
+  color: #fff;
+}
 .copyright-text {
   color: #656565;
   line-height: 40px;

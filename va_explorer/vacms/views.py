@@ -12,7 +12,6 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )  # new
-from django.db.models import Case, When, Value, IntegerField, Q
 
 # Create your views here.
 from va_explorer.vacms.cmsmodels.events import Event
@@ -45,22 +44,24 @@ class EventListView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         queryset = self._apply_filters(queryset)
-        status_priority = Case(
-            When(va_interview_status=Event.VAInterviewStatus.SCHEDULED, then=Value(0)),
-            When(va_interview_status=Event.VAInterviewStatus.POSTPONED, then=Value(1)),
-            When(va_interview_status=Event.VAInterviewStatus.NOT_DONE, then=Value(2)),
-            When(va_interview_status=Event.VAInterviewStatus.COMPLETED, then=Value(3)),
-            default=Value(4),
-            output_field=IntegerField(),
-        )
-        return (
-            queryset.annotate(_va_status_priority=status_priority)
-            .order_by("_va_status_priority", "interview_scheduled_date", "id")
-        )
+        return queryset.order_by("interview_scheduled_date", "id")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["filters"] = self._filters_context
+        base_queryset = context["object_list"]
+        context["scheduled_events"] = base_queryset.filter(
+            va_interview_status__in=(
+                Event.VAInterviewStatus.SCHEDULED,
+                Event.VAInterviewStatus.POSTPONED,
+            )
+        )
+        context["completed_events"] = base_queryset.filter(
+            va_interview_status=Event.VAInterviewStatus.COMPLETED
+        )
+        context["not_done_events"] = base_queryset.filter(
+            va_interview_status=Event.VAInterviewStatus.NOT_DONE
+        )
         return context
 
     def _apply_filters(self, queryset):

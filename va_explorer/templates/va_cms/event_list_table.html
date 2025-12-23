@@ -1,0 +1,70 @@
+{% load va_explorer_tags %}
+{% if events %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>VA Interview Date</th>
+        <th>Interviewer</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+        <tr>
+          <td>{{ event.id }}</td>
+          <td>{{ event.get_va_interview_status_display }}</td>
+          <td>{{ event.interview_scheduled_date|standard_date|default:"--" }}</td>
+          <td>{{ event.va_interview_staff.name|default:event.va_interview_staff.get_full_name|default:"Unassigned" }}</td>
+          <td>
+            <a
+              href="{% url 'cms-event-detail' event.pk %}"
+              class="btn {% if event.va_interview_status == 'completed' %}btn-success{% elif event.va_interview_status == 'postponed' %}btn-amber{% elif event.va_interview_status == 'not_done' %}btn-danger{% else %}btn-primary{% endif %}"
+              role="button"
+              >Show</a
+            >
+
+            {% if event.event_status == 0 %}
+            <a
+              href="{% url 'cms-event-datacollection-schedule' event.pk %}"
+              class="btn btn-primary"
+              role="button"
+              >Schedule</a
+            >
+            {% endif %}
+            {% if event.event_status == 1 %}
+            <a
+              href="{% url 'cms-event-link' event.pk %}"
+              class="btn btn-primary"
+              role="button"
+              >Link Data</a
+            >
+            {% endif %}
+            {% if request.user.is_superuser or request.user|has_group:"Admins" or request.user|has_group:"Data Managers" %}
+              {% if event.event_type == 3 and event.event_status == 2 %}
+                <a
+                  href="{% url 'cms-event-vainterview-schedule' event.pk %}"
+                  class="btn btn-primary"
+                  role="button"
+                  >Schedule VA</a
+                >
+              {% endif %}
+            {% endif %}
+
+            {% if event.event_status == 4 %}
+            {% comment %} <a
+              href="{% url 'cms-event-linkva' event.pk %}"
+              class="btn btn-primary"
+              role="button"
+              >Link VA</a
+            > {% endcomment %}
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-muted mx-3">{{ empty_message }}</p>
+{% endif %}
