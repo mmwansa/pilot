@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ feedback.subject }}{% endblock %}
+{% block heading %}{% trans "Feedback Detail" %}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1">{{ feedback.subject }}</h5>
+        <small class="text-muted">
+          {% trans "Submitted" %} {{ feedback.created_at|date:"DATETIME_FORMAT" }}
+          {% if feedback.submitted_by %}
+            · {% trans "by" %} {{ feedback.submitted_by.name|default:feedback.submitted_by.email }}
+          {% endif %}
+        </small>
+      </div>
+      <div class="text-right">
+        <span class="badge badge-info text-uppercase">{{ feedback.get_severity_display }}</span>
+      </div>
+    </div>
+    <hr>
+    <dl class="row mb-0">
+      <dt class="col-sm-4">{% trans "Module" %}</dt>
+      <dd class="col-sm-8">{{ feedback.get_module_display }}</dd>
+
+      <dt class="col-sm-4">{% trans "Feature" %}</dt>
+      <dd class="col-sm-8">{{ feedback.get_feature_display }}</dd>
+
+      <dt class="col-sm-4">{% trans "Status" %}</dt>
+      <dd class="col-sm-8">
+        <span class="badge
+          {% if feedback.status == 'resolved' %}
+            badge-success
+          {% elif feedback.status == 'in_progress' %}
+            badge-warning
+          {% else %}
+            badge-secondary
+          {% endif %}
+        ">
+          {{ feedback.get_status_display }}
+        </span>
+      </dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <h6>{% trans "Description" %}</h6>
+    <p style="white-space: pre-line;">{{ feedback.description }}</p>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h6 class="mb-3">{% trans "Update Status" %}</h6>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-4">
+          {{ status_form.status.label_tag }}
+          {{ status_form.status }}
+          {% if status_form.status.errors %}
+            <div class="text-danger small">{{ status_form.status.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group col-md-4 mt-3 mt-md-0">
+          <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+          <a href="{% url 'users:feedback_mailbox' %}" class="btn btn-link">{% trans "Back to mailbox" %}</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

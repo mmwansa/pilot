@@ -1,7 +1,11 @@
 import csv
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.contrib.messages.views import SuccessMessageMixin
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
@@ -17,15 +21,30 @@ from django.views.generic import (
 from ..utils.mixins import CustomAuthMixin, UserDetailViewMixin
 from .forms import (
     ExtendedUserCreationForm,
+    FeedbackForm,
+    FeedbackStatusForm,
     UserChangePasswordForm,
     UserImportForm,
     UserPasswordUpdateForm,
     UserSetPasswordForm,
     UserUpdateForm,
 )
+from .models import Feedback
 
 User = get_user_model()
 
+
+def user_is_system_admin(user):
+    return getattr(user, "is_authenticated", False) and (
+        user.is_superuser or user.groups.filter(name="Admins").exists()
+    )
+
+
+class SystemAdminRequiredMixin(UserPassesTestMixin):
+    raise_exception = True
+
+    def test_func(self):
+        return user_is_system_admin(self.request.user)
 
 class UserIndexView(CustomAuthMixin, PermissionRequiredMixin, ListView):
     # https://github.com/pennersr/django-allauth/blob/c19a212c6ee786af1bb8bc1b07eb2aa8e2bf531b/allauth/account/urls.py
@@ -141,6 +160,10 @@ def UserPasswordUpdateView(request, pk):
         
             try:
                 userDetail = User.objects.get(id=pk)
+
+                if userDetail.is_superuser and not request.user.is_superuser:
+                    messages.error(request, "You cannot edit the password for this user.")
+                    return redirect(reverse("users:index"))
                 
                 userDetail.set_password(password1)
                 userDetail.has_valid_password = True
@@ -171,8 +194,8 @@ def UserPasswordUpdateView(request, pk):
                 "mobile2": userDetail.mobile2,
             }
             
-            if userDetail.is_superuser:
-                messages.error(request, 'You cannot edit the password for a super user')
+            if userDetail.is_superuser and not request.user.is_superuser:
+                messages.error(request, "You cannot edit the password for this user.")
                 return redirect(reverse("users:index"))
         except User.DoesNotExist:
             initials = {}
@@ -204,8 +227,18 @@ class UserUpdateView(
     def get_success_url(self):
         return reverse("users:detail", kwargs={"pk": self.kwargs["pk"]})
 
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.is_superuser and not request.user.is_superuser:
+            messages.error(request, "You do not have permission to modify this user.")
+            return redirect(reverse("users:index"))
+        return super().dispatch(request, *args, **kwargs)
+
     def get_object(self):
-        return User.objects.get(pk=self.kwargs["pk"])
+        if hasattr(self, "_cached_object"):
+            return self._cached_object
+        self._cached_object = User.objects.get(pk=self.kwargs["pk"])
+        return self._cached_object
 
     def form_valid(self, form):
         # refresh the updated users session to apply their new role permissions
@@ -242,6 +275,7 @@ class UserUpdateView(
 
         initial["view_pii"] = self.get_object().can_view_pii
         initial["download_data"] = self.get_object().can_download_data
+        initial["is_superuser"] = self.get_object().is_superuser
 
         return initial
 
@@ -314,6 +348,91 @@ class UserMessageDetailView(CustomAuthMixin, DetailView):
 
 
 user_message_detail_view = UserMessageDetailView.as_view()
+
+
+class FeedbackSubmitView(CustomAuthMixin, SuccessMessageMixin, CreateView):
+    login_url = reverse_lazy("account_login")
+    form_class = FeedbackForm
+    template_name = "users/feedback_form.html"
+    success_message = "Thank you for your feedback. Our team will review it shortly."
+    success_url = reverse_lazy("users:feedback_submit")
+
+    def form_valid(self, form):
+        form.instance.submitted_by = self.request.user
+        return super().form_valid(form)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial.setdefault("module", Feedback.Module.DATA_MANAGEMENT)
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["feature_map"] = Feedback.module_feature_map()
+        return context
+
+
+feedback_submit_view = FeedbackSubmitView.as_view()
+
+
+class FeedbackMailboxListView(
+    CustomAuthMixin, SystemAdminRequiredMixin, ListView
+):
+    login_url = reverse_lazy("account_login")
+    model = Feedback
+    template_name = "users/feedback_list.html"
+    context_object_name = "feedback_list"
+    paginate_by = 25
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status = self.request.GET.get("status")
+        if status:
+            qs = qs.filter(status=status)
+        severity = self.request.GET.get("severity")
+        if severity:
+            qs = qs.filter(severity=severity)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["selected_status"] = self.request.GET.get("status", "")
+        context["selected_severity"] = self.request.GET.get("severity", "")
+        context["status_choices"] = Feedback.Status.choices
+        context["severity_choices"] = Feedback.Severity.choices
+        return context
+
+
+feedback_mailbox_view = FeedbackMailboxListView.as_view()
+
+
+class FeedbackMailboxDetailView(
+    CustomAuthMixin, SystemAdminRequiredMixin, DetailView
+):
+    login_url = reverse_lazy("account_login")
+    model = Feedback
+    template_name = "users/feedback_detail.html"
+    context_object_name = "feedback"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["status_form"] = kwargs.get(
+            "status_form", FeedbackStatusForm(instance=self.object)
+        )
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = FeedbackStatusForm(request.POST, instance=self.object)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Feedback status updated.")
+            return redirect("users:feedback_detail", pk=self.object.pk)
+        context = self.get_context_data(status_form=form)
+        return self.render_to_response(context)
+
+
+feedback_detail_view = FeedbackMailboxDetailView.as_view()
 
 
 class UserRedirectView(LoginRequiredMixin, RedirectView):

@@ -8,6 +8,9 @@ from django.shortcuts import redirect
 
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.models import Household
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_queryset_to_user_locations,
+)
 from va_explorer.va_data_management.forms import HouseholdForm
 from va_explorer.va_data_management.filters import HouseholdFilter
 from django.contrib.contenttypes.models import ContentType
@@ -30,9 +33,17 @@ class Households(CustomAuthMixin, PermissionRequiredMixin, ListView):
 
     def get_queryset(self):
         # Set up filter with GET params
+        base_qs = Household.objects.all()
+        base_qs = restrict_queryset_to_user_locations(
+            base_qs,
+            self.request.user,
+            {
+                "province": "province",
+            },
+        )
         self.filter = HouseholdFilter(
             self.request.GET,
-            queryset=Household.objects.all().order_by("-id"),
+            queryset=base_qs.order_by("-id"),
         )
         return self.filter.qs.order_by("-id")
 

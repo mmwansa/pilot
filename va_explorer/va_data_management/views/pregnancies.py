@@ -22,6 +22,9 @@ from django_filters.views import FilterView
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.forms import PregnancyForm
 from va_explorer.va_data_management.models import Pregnancy
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_queryset_to_user_locations,
+)
 from va_explorer.va_data_management.filters import PregnancyFilter
 
 # You can implement PregnancyFilter for advanced search/filtering if needed
@@ -36,7 +39,14 @@ class Pregnancies(CustomAuthMixin, PermissionRequiredMixin, FilterView):
     model = Pregnancy
 
     def get_queryset(self):
-        queryset = Pregnancy.objects.all().order_by("-created", "-id")
+        queryset = Pregnancy.objects.all()
+        queryset = restrict_queryset_to_user_locations(
+            queryset,
+            self.request.user,
+            {
+                "province": "province",
+            },
+        ).order_by("-created", "-id")
 
         if self.request.GET.get("id"):
             queryset = queryset.filter(district__icontains=self.request.GET["id"])

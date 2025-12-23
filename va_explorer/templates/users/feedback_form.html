@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Submit Feedback" %}{% endblock %}
+{% block heading %}{% trans "Submit Feedback" %}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <p class="text-muted">
+      {% trans "Use this form to report issues or share improvement ideas with the system administrators." %}
+    </p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.subject.id_for_label }}">{{ form.subject.label }}*</label>
+        {{ form.subject }}
+        {% if form.subject.errors %}
+          <div class="text-danger small">{{ form.subject.errors|join:", " }}</div>
+        {% endif %}
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label class="form-label" for="{{ form.module.id_for_label }}">{{ form.module.label }}*</label>
+          {{ form.module }}
+          {% if form.module.errors %}
+            <div class="text-danger small">{{ form.module.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group col-md-6">
+          <label class="form-label" for="{{ form.feature.id_for_label }}">{% trans "Feature" %}*</label>
+          {{ form.feature }}
+          {% if form.feature.errors %}
+            <div class="text-danger small">{{ form.feature.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.severity.id_for_label }}">{{ form.severity.label }}*</label>
+        {{ form.severity }}
+        {% if form.severity.errors %}
+          <div class="text-danger small">{{ form.severity.errors|join:", " }}</div>
+        {% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}*</label>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <div class="text-danger small">{{ form.description.errors|join:", " }}</div>
+        {% endif %}
+        <small class="text-muted">{% trans "Please include steps to reproduce, expected behaviour, and any relevant screenshots or IDs." %}</small>
+      </div>
+      <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-paper-plane mr-1"></i> {% trans "Send Feedback" %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{ feature_map|json_script:"feedback-feature-map" }}
+<script>
+  (function() {
+    const featureDataElement = document.getElementById("feedback-feature-map");
+    if (!featureDataElement) return;
+    const featureMap = JSON.parse(featureDataElement.textContent);
+    const moduleField = document.getElementById("id_module");
+    const featureField = document.getElementById("id_feature");
+
+    function populateFeatures() {
+      if (!moduleField || !featureField) return;
+      const selectedModule = moduleField.value;
+      const options = featureMap[selectedModule] || [];
+      featureField.innerHTML = "";
+      if (!options.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "";
+        featureField.appendChild(option);
+      } else {
+        options.forEach(([value, label]) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          featureField.appendChild(option);
+        });
+      }
+    }
+
+    moduleField && moduleField.addEventListener("change", populateFeatures);
+
+    if (featureField && !featureField.value) {
+      populateFeatures();
+    }
+  })();
+</script>
+{% endblock %}

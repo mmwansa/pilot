@@ -1,18 +1,38 @@
-{% extends "base.html" %} {% block title %} All Events{% endblock %} 
+{% extends "base.html" %} {% load va_explorer_tags %} {% block title %} All Events{% endblock %} 
 {% block heading %} Scheduled Verbal Autopsies {% endblock %} {% block content %}
+
+<form method="get" class="d-flex flex-wrap align-items-end mt-3" style="gap: 5px;">
+  <div>
+    <label class="form-label">District</label>
+    <input type="text" name="district" value="{{ filters.district }}" class="form-control" />
+  </div>
+  <div>
+    <label class="form-label">Interviewer</label>
+    <input type="text" name="interviewer" value="{{ filters.interviewer }}" class="form-control" />
+  </div>
+  <div>
+    <label class="form-label">Interview Status</label>
+    <select name="interview_status" class="form-select">
+      <option value="">All</option>
+      {% for value,label in object_list.model.VAInterviewStatus.choices %}
+        <option value="{{ value }}" {% if filters.interview_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="d-flex" style="gap:5px;">
+    <button class="btn btn-primary" type="submit">Apply Filters</button>
+    <a href="{% url 'cms-event-list' %}" class="btn btn-secondary">Reset</a>
+  </div>
+</form>
 
 <div class="row mt-4">
   <table class="table">
     <thead>
       <tr>
         <th>ID</th>
-        <th>Type</th>
         <th>Status</th>
-        <th>Data Collection Date</th>
         <th>VA Interview Date</th>
-        <th>Completed Date</th>
-        <th>Comment</th>
-        <th>Staff</th>
+        <th>Interviewer</th>
         <th>&nbsp;</th>
       </tr>
     </thead>
@@ -20,13 +40,9 @@
       {% for event in object_list %}
       <tr>
         <td>{{ event.id }}</td>
-        <td>{{ event.get_event_type_display }}</td>
         <td>{{ event.get_event_status_display }}</td>
-        <td>{{ event.data_collect_scheduled_date }}</td>
-        <td>{{ event.interview_scheduled_date }}</td>
-        <td>{{ event.completion_date }}</td>
-        <td>{{ event.comment }}</td>
-        <td>{{ event.data_collection_staff.full_name }}</td>
+        <td>{{ event.interview_scheduled_date|standard_date|default:"--" }}</td>
+        <td>{{ event.va_interview_staff.name|default:event.va_interview_staff.get_full_name|default:"Unassigned" }}</td>
         <td>
           {% comment %} <a
             href="{% url 'cms-event-update' event.pk %}"
@@ -36,7 +52,7 @@
           > {% endcomment %}
           <a
             href="{% url 'cms-event-detail' event.pk %}"
-            class="btn btn-primary"
+            class="btn {% if event.va_interview_status == 'completed' %}btn-secondary disabled{% else %}btn-primary{% endif %}"
             role="button"
             >Show</a
           >
@@ -57,14 +73,17 @@
             >Link Data</a
           >
           {% endif %}
-          {% if event.event_status == 2 and event.event_type == 3 %}
-          <a
-            href="{% url 'cms-event-vainterview-schedule' event.pk %}"
-            class="btn btn-primary"
-            role="button"
-            >Schedule VA</a
-          >
+          {% if request.user.is_superuser or request.user|has_group:"Admins" or request.user|has_group:"Data Managers" %}
+            {% if event.event_type == 3 and event.event_status == 2 %}
+              <a
+                href="{% url 'cms-event-vainterview-schedule' event.pk %}"
+                class="btn btn-primary"
+                role="button"
+                >Schedule VA</a
+              >
+            {% endif %}
           {% endif %}
+
           {% if event.event_status == 4 %}
           {% comment %} <a
             href="{% url 'cms-event-linkva' event.pk %}"

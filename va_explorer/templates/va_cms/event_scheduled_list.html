@@ -1,4 +1,4 @@
-{% extends "base.html" %} {% block title %} All Events{% endblock %} 
+{% extends "base.html" %} {% load va_explorer_tags %} {% block title %} All Events{% endblock %} 
 {% block heading %} Scheduled Events {% endblock %} {% block content %}
 
 <div class="row mt-4">
@@ -23,8 +23,8 @@
         <td>{{ event.get_event_type_display }}</td>
         <td>{{ event.get_event_status_display }}</td>
         <td>{{ event.respondent_name }}</td>
-        <td>{{ event.interview_proposed_date }}</td>
-        <td>{{ event.interview_scheduled_date }}</td>
+        <td>{{ event.interview_proposed_date|standard_date|default:"--" }}</td>
+        <td>{{ event.interview_scheduled_date|standard_date|default:"--" }}</td>
         <td>{{ event.comment }}</td>
         <td>{{ event.interview_staff.full_name }}</td>
         <td>

@@ -1,6 +1,8 @@
 from django import forms
-from va_explorer.users.models import User
 from bootstrap_datepicker_plus.widgets import DatePickerInput
+
+from va_explorer.users.models import User
+from va_explorer.vacms.cmsmodels.events import Event
 
 class ScheduleDeathForm(forms.Form):
     id = forms.CharField(
@@ -51,3 +53,47 @@ class ScheduleDeathForm(forms.Form):
         id = self.cleaned_data["id"]
         if not id:
             raise forms.ValidationError("Please choose a date to schedule a VA for")
+
+
+class VAInterviewStatusForm(forms.ModelForm):
+    class Meta:
+        model = Event
+        fields = [
+            "va_interview_status",
+            "va_not_done_reason",
+            "va_not_done_other",
+        ]
+        widgets = {
+            "va_interview_status": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "va_not_done_reason": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "va_not_done_other": forms.Textarea(
+                attrs={"class": "form-control form-control-sm", "rows": 3}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["va_not_done_other"].label = "Other reasons (Explain)"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get("va_interview_status")
+        reason = cleaned_data.get("va_not_done_reason")
+        other_comment = cleaned_data.get("va_not_done_other")
+
+        if status == Event.VAInterviewStatus.NOT_DONE:
+            if not reason:
+                self.add_error(
+                    "va_not_done_reason",
+                    "Please select a reason when the interview is not done.",
+                )
+            elif reason == Event.VANotDoneReason.OTHER and not other_comment:
+                self.add_error(
+                    "va_not_done_other",
+                    "Provide a comment when 'Other' is selected.",
+                )
+        else:
+            cleaned_data["va_not_done_reason"] = None
+            cleaned_data["va_not_done_other"] = None
+
+        return cleaned_data

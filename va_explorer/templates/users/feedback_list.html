@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Feedback Mailbox" %}{% endblock %}
+{% block heading %}{% trans "Feedback Mailbox" %}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <form method="get" class="form-row">
+      <div class="form-group col-md-4">
+        <label class="form-label">{% trans "Status" %}</label>
+        <select name="status" class="form-select">
+          <option value="">{% trans "All" %}</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-4">
+        <label class="form-label">{% trans "Severity" %}</label>
+        <select name="severity" class="form-select">
+          <option value="">{% trans "All" %}</option>
+          {% for value,label in severity_choices %}
+            <option value="{{ value }}" {% if selected_severity == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary mr-2">{% trans "Apply" %}</button>
+        <a href="{% url 'users:feedback_mailbox' %}" class="btn btn-outline-secondary ml-2">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th>{% trans "Subject" %}</th>
+            <th>{% trans "Module" %}</th>
+            <th>{% trans "Feature" %}</th>
+            <th>{% trans "Severity" %}</th>
+            <th>{% trans "Status" %}</th>
+            <th>{% trans "Submitted" %}</th>
+            <th>{% trans "Reporter" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if feedback_list %}
+            {% for feedback in feedback_list %}
+              <tr>
+                <td>
+                  <a href="{% url 'users:feedback_detail' feedback.pk %}">
+                    {{ feedback.subject }}
+                  </a>
+                </td>
+                <td>{{ feedback.get_module_display }}</td>
+                <td>{{ feedback.get_feature_display }}</td>
+                <td>
+                  <span class="badge badge-info text-uppercase">{{ feedback.get_severity_display }}</span>
+                </td>
+                <td>
+                  <span class="badge
+                    {% if feedback.status == 'resolved' %}
+                      badge-success
+                    {% elif feedback.status == 'in_progress' %}
+                      badge-warning
+                    {% else %}
+                      badge-secondary
+                    {% endif %}
+                  ">{{ feedback.get_status_display }}</span>
+                </td>
+                <td>{{ feedback.created_at|date:"DATETIME_FORMAT" }}</td>
+                <td>{{ feedback.submitted_by.name|default:feedback.submitted_by.email|default:_("Unknown") }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">
+                {% trans "No feedback has been submitted yet." %}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+      <div class="card-footer">
+        <nav>
+          <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_severity %}&severity={{ selected_severity }}{% endif %}">&laquo;</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_severity %}&severity={{ selected_severity }}{% endif %}">&raquo;</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

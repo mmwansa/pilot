@@ -10,6 +10,9 @@ from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.models import Death
 from va_explorer.va_data_management.forms import DeathForm
 from va_explorer.va_data_management.filters import DeathFilter
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_queryset_to_user_locations,
+)
 
 
 class DeathAccessMixin(SingleObjectMixin):
@@ -24,11 +27,16 @@ class Deaths(CustomAuthMixin, PermissionRequiredMixin, ListView):
     paginate_by = 15
 
     def get_queryset(self):
-        self.filter = DeathFilter(
-            self.request.GET,
-            queryset=Death.objects.all().order_by("-id"),
-        )
-        return self.filter.qs.order_by("-id")
+        queryset = Death.objects.filter(eventid__isnull=True)
+        queryset = restrict_queryset_to_user_locations(
+            queryset,
+            self.request.user,
+            {
+                "province": "province",
+            },
+        ).order_by("DE_06", "-id")
+        self.filter = DeathFilter(self.request.GET, queryset=queryset)
+        return self.filter.qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

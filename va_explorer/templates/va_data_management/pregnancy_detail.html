@@ -60,13 +60,15 @@
         </thead>
         <tbody>
           {% for field in form %}
-            <tr data-value="{% pii_filter field.name field.value|replace %}">
-              <td><b>{{ field.name }}</b></td>
-              <td>{{ field.label }}</td>
-              <td>
-                {% pii_filter field.name field.value|replace %}
-              </td>
-            </tr>
+            {% if not field.name|hide_list_field %}
+              <tr data-value="{% pii_filter field.name field.value|format_date_field:field.name|replace %}">
+                <td><b>{{ field.name }}</b></td>
+                <td>{{ field.label }}</td>
+                <td>
+                  {% pii_filter field.name field.value|format_date_field:field.name|replace %}
+                </td>
+              </tr>
+            {% endif %}
           {% endfor %}
         </tbody>
       </table>
@@ -118,7 +120,7 @@
           <tbody>
             {% for diff in diffs %}
               <tr>
-                <td>{{ diff.new_record.history_date|date:"Y-m-d H:i" }}</td>
+                <td>{{ diff.new_record.history_date|date:"DATETIME_FORMAT" }}</td>
                 <td>{{ diff.new_record.history_user.name|default:"System" }} &lt;{{ diff.new_record.history_user.email|default:"noreply@host" }}&gt;</td>
                 <td>
                   {% for change in diff.changes %}

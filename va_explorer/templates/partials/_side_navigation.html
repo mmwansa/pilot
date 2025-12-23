@@ -27,35 +27,64 @@
         </a>
       </li>
 
-      <!-- Personnel Management Section -->
+      {% if not request.user|has_group:"Mortality Surveillance Officer" %}
+        <!-- Personnel Management Section -->
+        <li
+          class="nav-section-header collapsible-header"
+          tabindex="0"
+          data-target="personnel-section"
+          aria-expanded="false"
+        >
+          <span class="section-title">Personnel Management</span>
+          <i class="fas fa-chevron-down collapse-caret"></i>
+        </li>
+        <ul class="collapse-section" id="personnel-section" style="display: none">
+          <li class="nav-item">
+            <a
+              class="nav-link {% if 'users' in request.resolver_match.namespace %}active{% endif %}"
+              href="{% url 'users:index' %}"
+              data-tooltip="Users"
+            >
+              <i class="fas fa-users nav-icon"></i>
+              <span class="nav-label">Users</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.resolver_match.url_name == 'supervision' %}active{% endif %}"
+              href="{% url 'va_analytics:supervision' %}"
+              data-tooltip="Supervision"
+            >
+              <i class="fas fa-eye nav-icon"></i>
+              <span class="nav-label">Supervision</span>
+            </a>
+          </li>
+        </ul>
+      {% endif %}
+
+      <!-- Schedule Management Section -->
       <li
         class="nav-section-header collapsible-header"
         tabindex="0"
-        data-target="personnel-section"
-        aria-expanded="false"
+        data-target="case-section"
+        aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
       >
-        <span class="section-title">Personnel Management</span>
+        <span class="section-title">Schedule Management</span>
         <i class="fas fa-chevron-down collapse-caret"></i>
       </li>
-      <ul class="collapse-section" id="personnel-section" style="display: none">
+      <ul
+        class="collapse-section"
+        id="case-section"
+        style="{% if '/case-management' in request.path %}display:block{% else %}display:none{% endif %}"
+      >
         <li class="nav-item">
           <a
-            class="nav-link {% if 'users' in request.resolver_match.namespace %}active{% endif %}"
-            href="{% url 'users:index' %}"
-            data-tooltip="Users"
+            class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' %}active{% endif %}"
+            href="{% url 'cms-event-list' %}"
+            data-tooltip="Events"
           >
-            <i class="fas fa-users nav-icon"></i>
-            <span class="nav-label">Users</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'supervision' %}active{% endif %}"
-            href="{% url 'va_analytics:supervision' %}"
-            data-tooltip="Supervision"
-          >
-            <i class="fas fa-eye nav-icon"></i>
-            <span class="nav-label">Supervision</span>
+            <i class="fas fa-calendar nav-icon"></i>
+            <span class="nav-label">Scheduled VAs</span>
           </a>
         </li>
       </ul>
@@ -121,74 +150,28 @@
             <span class="nav-label">Verbal Autopsies</span>
           </a>
         </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if 'va_data_cleanup' in request.resolver_match.namespace %}active{% endif %}"
-            href="{% url 'va_data_cleanup:index' %}"
-            data-tooltip="Data Cleanup"
-          >
-            <i class="fas fa-broom nav-icon"></i>
-            <span class="nav-label">Data Cleanup</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if 'va_export' in request.resolver_match.namespace %}active{% endif %}"
-            href="{% url 'va_export:download_form' %}"
-            data-tooltip="Export"
-          >
-            <i class="fas fa-download nav-icon"></i>
-            <span class="nav-label">Data Export</span>
-          </a>
-        </li>
-      </ul>
-
-      <!-- Case Management Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="case-section"
-        aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
-      >
-        <span class="section-title">Schedule Management</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
-      <ul
-        class="collapse-section"
-        id="case-section"
-        style="{% if '/case-management' in request.path %}display:block{% else %}display:none{% endif %}"
-      >
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' %}active{% endif %}"
-            href="{% url 'cms-event-list' %}"
-            data-tooltip="Events"
-          >
-            <i class="fas fa-calendar nav-icon"></i>
-            <span class="nav-label">Scheduled VAs</span>
-          </a>
-        </li>
-        {% comment %} <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-scheduled-list' %}active{% endif %}"
-            href="{% url 'cms-event-scheduled-list' %}"
-            data-tooltip="Data Management"
-          >
-            <i class="fas fa-person-walking-arrow-right nav-icon"></i>
-            <span class="nav-label">Scheduled Events</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-completed-list' %}active{% endif %}"
-            href="{% url 'cms-event-completed-list' %}"
-            data-tooltip="Data Management"
-          >
-            <i class="fas fa-book-skull nav-icon"></i>
-            <span class="nav-label">Completed Events</span>
-          </a>
-        </li> {% endcomment %}
-   
+        {% if not request.user|has_group:"Mortality Surveillance Officer" %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if 'va_data_cleanup' in request.resolver_match.namespace %}active{% endif %}"
+              href="{% url 'va_data_cleanup:index' %}"
+              data-tooltip="Data Cleanup"
+            >
+              <i class="fas fa-broom nav-icon"></i>
+              <span class="nav-label">Data Cleanup</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link {% if 'va_export' in request.resolver_match.namespace %}active{% endif %}"
+              href="{% url 'va_export:download_form' %}"
+              data-tooltip="Export"
+            >
+              <i class="fas fa-download nav-icon"></i>
+              <span class="nav-label">Data Export</span>
+            </a>
+          </li>
+        {% endif %}
       </ul>
 
       <!-- Analytics Section -->
@@ -337,5 +320,3 @@ document.addEventListener("DOMContentLoaded", function () {
   updateToggleIcon();
 });
 </script>
-
-

@@ -1,6 +1,7 @@
 import json
+from django.contrib import messages
 from django.shortcuts import redirect, render
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.urls import reverse
 from django.utils import timezone
 from django import forms
@@ -11,18 +12,74 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )  # new
+from django.db.models import Case, When, Value, IntegerField, Q
 
 # Create your views here.
 from va_explorer.vacms.cmsmodels.events import Event
-from va_explorer.vacms.forms.forms import ScheduleDeathForm
+from va_explorer.vacms.forms.forms import ScheduleDeathForm, VAInterviewStatusForm
+from va_explorer.vacms.notifications import (
+    ensure_va_schedule_message,
+    remove_va_schedule_message,
+)
 from va_explorer.va_data_management.models import Death
-from va_explorer.users.models import UserMessage
+
+
+ALLOWED_VA_SCHEDULER_GROUPS = ("Admins", "Data Managers")
+
+
+def user_can_manage_va_schedule(user):
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and (
+            user.is_superuser
+            or user.groups.filter(name__in=ALLOWED_VA_SCHEDULER_GROUPS).exists()
+        )
+    )
 
 
 # event
 class EventListView(ListView):
     model = Event
     template_name = "va_cms/event_list.html"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        queryset = self._apply_filters(queryset)
+        status_priority = Case(
+            When(va_interview_status=Event.VAInterviewStatus.SCHEDULED, then=Value(0)),
+            When(va_interview_status=Event.VAInterviewStatus.POSTPONED, then=Value(1)),
+            When(va_interview_status=Event.VAInterviewStatus.NOT_DONE, then=Value(2)),
+            When(va_interview_status=Event.VAInterviewStatus.COMPLETED, then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField(),
+        )
+        return (
+            queryset.annotate(_va_status_priority=status_priority)
+            .order_by("_va_status_priority", "interview_scheduled_date", "id")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["filters"] = self._filters_context
+        return context
+
+    def _apply_filters(self, queryset):
+        params = self.request.GET
+        filters = {
+            "district": params.get("district", "").strip(),
+            "interview_status": params.get("interview_status", "").strip(),
+            "interviewer": params.get("interviewer", "").strip(),
+        }
+
+        if filters["district"]:
+            queryset = queryset.filter(district__icontains=filters["district"])
+        if filters["interview_status"]:
+            queryset = queryset.filter(va_interview_status=filters["interview_status"])
+        if filters["interviewer"]:
+            queryset = queryset.filter(va_interview_staff__full_name__icontains=filters["interviewer"])
+
+        self._filters_context = filters
+        return queryset
 
 
 class EventListScheduledView(ListView):
@@ -94,30 +151,7 @@ def EventCreateDeathView(request, death):
 
             newEvent.save()
 
-            scheduled_date = (
-                minterview_scheduled_date.strftime("%Y-%m-%d")
-                if hasattr(minterview_scheduled_date, "strftime")
-                else str(minterview_scheduled_date)
-            )
-            event_detail_url = request.build_absolute_uri(
-                reverse("cms-event-detail", kwargs={"pk": newEvent.pk})
-            )
-            deceased_name = deathDetail.DE_03 or f"Death {deathDetail.pk}"
-
-            UserMessage.objects.create(
-                user=mva_interview_staff,
-                subject="New VA scheduled",
-                body=(
-                    "A new verbal autopsy for "
-                    f"{deceased_name} has been scheduled on {scheduled_date}.\n"
-                    f"View the details: {event_detail_url}"
-                ),
-                metadata={
-                    "event_id": newEvent.pk,
-                    "death_id": deathDetail.pk,
-                    "scheduled_date": scheduled_date,
-                },
-            )
+            ensure_va_schedule_message(newEvent, request)
 
             deathDetail.eventid = newEvent.id
             deathDetail.save()
@@ -188,6 +222,68 @@ class EventDetailView(DetailView):
     fields = "__all__"
     template_name = "va_cms/event_detail.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if (
+            request.method.lower() == "post"
+            and not self._can_update_status(self.object)
+        ):
+            return HttpResponseForbidden("You are not allowed to update this event.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.object = getattr(self, "object", self.get_object())
+        form = VAInterviewStatusForm(request.POST, instance=self.object)
+        if form.is_valid():
+            updated_event = form.save()
+            if updated_event.va_interview_status in (
+                Event.VAInterviewStatus.COMPLETED,
+                Event.VAInterviewStatus.NOT_DONE,
+            ):
+                remove_va_schedule_message(updated_event)
+            messages.success(request, "VA interview status updated.")
+            return redirect("cms-event-detail", pk=self.object.pk)
+
+        context = self.get_context_data(status_form=form)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        event = self.object
+        death_record = event.death
+        context["death_record"] = death_record
+        context["is_death_event"] = (
+            bool(death_record) and event.event_type == Event.EventType.DEATH
+        )
+        interviewer = event.va_interview_staff
+        context["interviewer"] = interviewer
+        if interviewer:
+            context["interviewer_name"] = (
+                interviewer.name or interviewer.get_full_name() or interviewer.email
+            )
+            context["interviewer_contact"] = (
+                interviewer.mobile1 or interviewer.mobile2 or interviewer.email
+            )
+        else:
+            context["interviewer_name"] = None
+            context["interviewer_contact"] = None
+        context["status_form"] = kwargs.get(
+            "status_form", VAInterviewStatusForm(instance=event)
+        )
+        context["can_update_va_status"] = self._can_update_status(event)
+        context["user_can_manage_schedule"] = user_can_manage_va_schedule(
+            self.request.user
+        )
+        return context
+
+    def _can_update_status(self, event):
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        if event.va_interview_staff_id and user.id == event.va_interview_staff_id:
+            return True
+        return user_can_manage_va_schedule(user)
+
 
 class EventScheduleDataCollectionView(UpdateView):
     model = Event
@@ -225,8 +321,16 @@ class EventScheduleVAInterviewView(UpdateView):
     ]
     template_name = "va_cms/event_schedule_va.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        if not user_can_manage_va_schedule(request.user):
+            return HttpResponseForbidden("You are not allowed to manage VA schedules.")
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         form.instance.event_status = 4
+        form.instance.va_interview_status = Event.VAInterviewStatus.SCHEDULED
+        form.instance.va_not_done_reason = None
+        form.instance.va_not_done_other = None
 
         # Call the parent's form_valid to save the object and handle redirection
         response = super().form_valid(form)
@@ -324,6 +428,9 @@ class EventLinkVA(UpdateView):
 
     def form_valid(self, form):
         form.instance.event_status = 5
+        form.instance.va_interview_status = Event.VAInterviewStatus.COMPLETED
+        form.instance.va_not_done_reason = None
+        form.instance.va_not_done_other = None
         form.instance.completion_date = timezone.now().strftime("%Y-%m-%d")
         # Call the parent's form_valid to save the object and handle redirection
         response = super().form_valid(form)

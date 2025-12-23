@@ -1,0 +1,1 @@
+VA_SCHEDULE_MESSAGE_SUBJECT = "New VA scheduled"
