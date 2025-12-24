@@ -79,7 +79,7 @@
       >
         <li class="nav-item">
           <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' %}active{% endif %}"
+            class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' or request.resolver_match.url_name == 'cms-event-detail' %}active{% endif %}"
             href="{% url 'cms-event-list' %}"
             data-tooltip="Events"
           >
@@ -102,7 +102,7 @@
       <ul class="collapse-section" id="data-section" style="display: none">
         <li class="nav-item">
           <a
-            class="nav-link {% if request.resolver_match.url_name == 'households' %}active{% endif %}"
+            class="nav-link {% if request.resolver_match.url_name == 'households' or request.resolver_match.url_name == 'household_detail' %}active{% endif %}"
             href="{% url 'va_data_management:households' %}"
             data-tooltip="Households"
           >
@@ -112,7 +112,7 @@
         </li>
         <li class="nav-item">
           <a
-            class="nav-link {% if request.resolver_match.url_name == 'pregnancies' %}active{% endif %}"
+            class="nav-link {% if request.resolver_match.url_name == 'pregnancies' or request.resolver_match.url_name == 'pregnancy_detail' %}active{% endif %}"
             href="{% url 'va_data_management:pregnancies' %}"
             data-tooltip="Pregnancies"
           >
@@ -122,7 +122,7 @@
         </li>
         <li class="nav-item">
           <a
-            class="nav-link {% if request.resolver_match.url_name == 'pregnancy_outcomes' %}active{% endif %}"
+            class="nav-link {% if request.resolver_match.url_name == 'pregnancy_outcomes' or request.resolver_match.url_name == 'pregnancy_outcome_detail' %}active{% endif %}"
             href="{% url 'va_data_management:pregnancy_outcomes' %}"
             data-tooltip="Pregnancy Outcomes"
           >
@@ -132,7 +132,7 @@
         </li>
         <li class="nav-item">
           <a
-            class="nav-link {% if request.resolver_match.url_name == 'deaths' %}active{% endif %}"
+            class="nav-link {% if request.resolver_match.url_name == 'deaths' or request.resolver_match.url_name == 'death_detail' %}active{% endif %}"
             href="{% url 'va_data_management:deaths' %}"
             data-tooltip="Deaths"
           >
@@ -142,7 +142,7 @@
         </li>
         <li class="nav-item">
           <a
-            class="nav-link {% if request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'va_data_management' %}active{% endif %}"
+            class="nav-link {% if request.resolver_match.url_name == 'show' or request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'va_data_management' %}active{% endif %}"
             href="{% url 'va_data_management:index' %}"
             data-tooltip="Data Management"
           >

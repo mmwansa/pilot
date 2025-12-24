@@ -45,6 +45,7 @@ class EventListView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         queryset = self._apply_filters(queryset)
+        return queryset.order_by("interview_scheduled_date", "id")
         status_priority = Case(
             When(va_interview_status=Event.VAInterviewStatus.SCHEDULED, then=Value(0)),
             When(va_interview_status=Event.VAInterviewStatus.POSTPONED, then=Value(1)),
@@ -61,6 +62,19 @@ class EventListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["filters"] = self._filters_context
+        base_queryset = context["object_list"]
+        context["scheduled_events"] = base_queryset.filter(
+            va_interview_status__in=(
+                Event.VAInterviewStatus.SCHEDULED,
+                Event.VAInterviewStatus.POSTPONED,
+            )
+        )
+        context["completed_events"] = base_queryset.filter(
+            va_interview_status=Event.VAInterviewStatus.COMPLETED
+        )
+        context["not_done_events"] = base_queryset.filter(
+            va_interview_status=Event.VAInterviewStatus.NOT_DONE
+        )
         return context
 
     def _apply_filters(self, queryset):
