@@ -24,34 +24,6 @@ from django.utils.text import slugify
 from va_explorer.va_data_management.models import Location, VerbalAutopsy
 from .constants import FEEDBACK_MODULE_FEATURES
 
-FEEDBACK_ATTACHMENT_ROOT = (
-    Path(settings.ROOT_DIR) / "va_explorer" / "static" / "data" / "uploads"
-)
-feedback_attachment_storage = FileSystemStorage(
-    location=str(FEEDBACK_ATTACHMENT_ROOT),
-    base_url=f"{settings.STATIC_URL}data/uploads/",
-)
-
-
-def feedback_attachment_upload_path(instance, filename):
-    timestamp = timezone.now()
-    _, ext = os.path.splitext(filename)
-    module = slugify(getattr(instance, "module", "") or "module")
-    feature = slugify(getattr(instance, "feature", "") or "feature")
-    severity = slugify(getattr(instance, "severity", "") or "severity")
-    username = slugify(
-        getattr(getattr(instance, "submitted_by", None), "username", "") or "user"
-    )
-    filename = (
-        f"{timestamp.strftime('%Y-%m-%d-%H-%M-%S')}-"
-        f"{module}-{feature}-{severity}-{username}{ext}"
-    )
-    return os.path.join(
-        timestamp.strftime("%Y"),
-        timestamp.strftime("%m"),
-        filename,
-    )
-
 
 class CustomUserManager(BaseUserManager):
     """
@@ -282,10 +254,6 @@ class UserMessage(models.Model):
 
 
 class Feedback(models.Model):
-    class ReportType(models.TextChoices):
-        BUG = "bug", "Bug"
-        FEATURE = "feature", "Feature Request"
-
     class Module(models.TextChoices):
         DATA_MANAGEMENT = "data_management", "Data Management"
         PERSONNEL_MANAGEMENT = "personnel_management", "Personnel Management"
@@ -293,9 +261,11 @@ class Feedback(models.Model):
         ANALYTICS = "analytics", "Dashboards (Analytics)"
 
     class Severity(models.TextChoices):
-        LOW = "low", "Low"
-        MEDIUM = "medium", "Medium"
+        CRITICAL = "critical", "Critical"
         HIGH = "high", "High"
+        MEDIUM = "medium", "Medium"
+        LOW = "low", "Low"
+        ENHANCEMENT = "enhancement", "Enhancement"
 
     class Status(models.TextChoices):
         NEW = "new", "New"
@@ -303,13 +273,10 @@ class Feedback(models.Model):
         RESOLVED = "resolved", "Resolved"
 
     subject = models.CharField(max_length=255)
-    report_type = models.CharField(
-        max_length=16, choices=ReportType.choices, default=ReportType.BUG
-    )
     module = models.CharField(max_length=64, choices=Module.choices)
     feature = models.CharField(max_length=64)
     severity = models.CharField(
-        max_length=16, choices=Severity.choices, default=Severity.LOW
+        max_length=16, choices=Severity.choices, default=Severity.MEDIUM
     )
     description = models.TextField()
     status = models.CharField(
@@ -322,13 +289,6 @@ class Feedback(models.Model):
         on_delete=models.SET_NULL,
         related_name="feedback_reports",
     )
-    attachment = models.FileField(
-        upload_to=feedback_attachment_upload_path,
-        storage=feedback_attachment_storage,
-        null=True,
-        blank=True,
-    )
-    metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -348,82 +308,3 @@ class Feedback(models.Model):
 
     def get_feature_display(self):
         return dict(self.feature_choices_for(self.module)).get(self.feature, self.feature)
-
-    @staticmethod
-    def _get_memory_usage_mb():
-        try:
-            import resource
-
-            usage = resource.getrusage(resource.RUSAGE_SELF)
-            return round(usage.ru_maxrss / 1024, 2)
-        except Exception:
-            return None
-
-    @staticmethod
-    def _get_cpu_load():
-        try:
-            load1, load5, load15 = os.getloadavg()
-        except Exception:
-            return None
-        return {
-            "load_1m": round(load1, 2),
-            "load_5m": round(load5, 2),
-            "load_15m": round(load15, 2),
-        }
-
-    @staticmethod
-    def _get_disk_space():
-        try:
-            total, used, free = shutil.disk_usage(settings.MEDIA_ROOT)
-            factor = 1024 * 1024
-            return {
-                "total_mb": round(total / factor, 2),
-                "used_mb": round(used / factor, 2),
-                "free_mb": round(free / factor, 2),
-            }
-        except Exception:
-            return None
-
-    @staticmethod
-    def _get_cache_status():
-        try:
-            cache = caches["default"]
-            probe_key = "feedback-cache-probe"
-            cache.set(probe_key, "ok", 1)
-            reachable = cache.get(probe_key) == "ok"
-            return {
-                "backend": cache.__class__.__name__,
-                "reachable": reachable,
-            }
-        except Exception:
-            return None
-
-    @staticmethod
-    def _get_database_status():
-        try:
-            return {
-                "vendor": connection.vendor,
-                "usable": connection.is_usable(),
-            }
-        except Exception:
-            return None
-
-    @staticmethod
-    def _estimate_network_speed():
-        # Placeholder until active measurements are defined
-        return "Not measured"
-
-    @classmethod
-    def collect_system_metadata(cls, request):
-        return {
-            "timestamp": timezone.now().isoformat(),
-            "operating_system": platform.system(),
-            "os_version": platform.version(),
-            "browser": request.META.get("HTTP_USER_AGENT", "Unknown"),
-            "network_speed": cls._estimate_network_speed(),
-            "memory_usage_mb": cls._get_memory_usage_mb(),
-            "cpu_load": cls._get_cpu_load(),
-            "disk_space": cls._get_disk_space(),
-            "cache_status": cls._get_cache_status(),
-            "database_connection": cls._get_database_status(),
-        }

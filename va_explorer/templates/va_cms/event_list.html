@@ -26,30 +26,76 @@
 </form>
 
 <div class="row mt-4">
-  <div class="col-12">
-    <ul class="nav nav-tabs tab-spacing" id="vaStatusTabs" role="tablist">
-      <li class="nav-item">
-        <a class="nav-link active" id="scheduled-tab" data-toggle="tab" href="#scheduled" role="tab" aria-controls="scheduled" aria-selected="true">Scheduled</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="completed-tab" data-toggle="tab" href="#completed" role="tab" aria-controls="completed" aria-selected="false">Successfully Completed</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="not-done-tab" data-toggle="tab" href="#not-done" role="tab" aria-controls="not-done" aria-selected="false">Not Done</a>
-      </li>
-    </ul>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>VA Interview Date</th>
+        <th>Interviewer</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in object_list %}
+      <tr>
+        <td>{{ event.id }}</td>
+        <td>{{ event.get_event_status_display }}</td>
+        <td>{{ event.interview_scheduled_date|standard_date|default:"--" }}</td>
+        <td>{{ event.va_interview_staff.name|default:event.va_interview_staff.get_full_name|default:"Unassigned" }}</td>
+        <td>
+          {% comment %} <a
+            href="{% url 'cms-event-update' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Edit</a
+          > {% endcomment %}
+          <a
+            href="{% url 'cms-event-detail' event.pk %}"
+            class="btn {% if event.va_interview_status == 'completed' %}btn-secondary disabled{% else %}btn-primary{% endif %}"
+            role="button"
+            >Show</a
+          >
 
-    <div class="tab-content pt-3" id="vaStatusTabContent">
-      <div class="tab-pane fade show active" id="scheduled" role="tabpanel" aria-labelledby="scheduled-tab">
-        {% include "va_cms/event_list_table.html" with events=scheduled_events empty_message="No scheduled or postponed VAs found." %}
-      </div>
-      <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
-        {% include "va_cms/event_list_table.html" with events=completed_events empty_message="No successfully completed VAs found." %}
-      </div>
-      <div class="tab-pane fade" id="not-done" role="tabpanel" aria-labelledby="not-done-tab">
-        {% include "va_cms/event_list_table.html" with events=not_done_events empty_message="No VAs marked as not done found." %}
-      </div>
-    </div>
-  </div>
+          {% if event.event_status == 0 %}
+          <a
+            href="{% url 'cms-event-datacollection-schedule' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Schedule</a
+          >
+          {% endif %}
+          {% if event.event_status == 1 %}
+          <a
+            href="{% url 'cms-event-link' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Link Data</a
+          >
+          {% endif %}
+          {% if request.user.is_superuser or request.user|has_group:"Admins" or request.user|has_group:"Data Managers" %}
+            {% if event.event_type == 3 and event.event_status == 2 %}
+              <a
+                href="{% url 'cms-event-vainterview-schedule' event.pk %}"
+                class="btn btn-primary"
+                role="button"
+                >Schedule VA</a
+              >
+            {% endif %}
+          {% endif %}
+
+          {% if event.event_status == 4 %}
+          {% comment %} <a
+            href="{% url 'cms-event-linkva' event.pk %}"
+            class="btn btn-primary"
+            role="button"
+            >Link VA</a
+          > {% endcomment %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}

@@ -41,7 +41,6 @@
         <thead class="thead-light">
           <tr>
             <th>{% trans "Subject" %}</th>
-            <th>{% trans "Report type" %}</th>
             <th>{% trans "Module" %}</th>
             <th>{% trans "Feature" %}</th>
             <th>{% trans "Severity" %}</th>
@@ -59,7 +58,6 @@
                     {{ feedback.subject }}
                   </a>
                 </td>
-                <td><span class="badge badge-secondary text-uppercase">{{ feedback.get_report_type_display }}</span></td>
                 <td>{{ feedback.get_module_display }}</td>
                 <td>{{ feedback.get_feature_display }}</td>
                 <td>
@@ -82,7 +80,7 @@
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="8" class="text-center text-muted py-4">
+              <td colspan="7" class="text-center text-muted py-4">
                 {% trans "No feedback has been submitted yet." %}
               </td>
             </tr>

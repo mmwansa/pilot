@@ -12,6 +12,7 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )  # new
+from django.db.models import Case, When, Value, IntegerField, Q
 
 # Create your views here.
 from va_explorer.vacms.cmsmodels.events import Event
@@ -45,6 +46,18 @@ class EventListView(ListView):
         queryset = super().get_queryset()
         queryset = self._apply_filters(queryset)
         return queryset.order_by("interview_scheduled_date", "id")
+        status_priority = Case(
+            When(va_interview_status=Event.VAInterviewStatus.SCHEDULED, then=Value(0)),
+            When(va_interview_status=Event.VAInterviewStatus.POSTPONED, then=Value(1)),
+            When(va_interview_status=Event.VAInterviewStatus.NOT_DONE, then=Value(2)),
+            When(va_interview_status=Event.VAInterviewStatus.COMPLETED, then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField(),
+        )
+        return (
+            queryset.annotate(_va_status_priority=status_priority)
+            .order_by("_va_status_priority", "interview_scheduled_date", "id")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

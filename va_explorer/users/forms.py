@@ -465,40 +465,16 @@ class FeedbackForm(forms.ModelForm):
     )
     feature = forms.ChoiceField(
         choices=(),
-        widget=forms.Select(
-            attrs={"class": "form-select w-100"}
-        ),
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
     severity = forms.ChoiceField(
         choices=Feedback.Severity.choices,
-        widget=forms.Select(
-            attrs={"class": "form-select w-100"}
-        ),
-    )
-    report_type = forms.ChoiceField(
-        choices=Feedback.ReportType.choices,
-        widget=RadioSelect(attrs={"class": "form-check-input"}),
-        label="Report type",
-    )
-    attachment = forms.FileField(
-        required=False,
-        widget=forms.ClearableFileInput(
-            attrs={"class": "form-control-file", "accept": "image/*"}
-        ),
-        label="Attach image",
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
 
     class Meta:
         model = Feedback
-        fields = [
-            "subject",
-            "report_type",
-            "module",
-            "feature",
-            "severity",
-            "description",
-            "attachment",
-        ]
+        fields = ["subject", "module", "feature", "severity", "description"]
         widgets = {
             "subject": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(
@@ -530,15 +506,6 @@ class FeedbackForm(forms.ModelForm):
                     "Select a valid feature for the chosen module.",
                 )
         return cleaned
-
-    def clean_attachment(self):
-        file = self.cleaned_data.get("attachment")
-        if not file:
-            return file
-        content_type = getattr(file, "content_type", "") or ""
-        if content_type and not content_type.startswith("image/"):
-            raise forms.ValidationError("Please upload an image file.")
-        return file
 
 
 class FeedbackStatusForm(forms.ModelForm):
