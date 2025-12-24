@@ -4,11 +4,13 @@ import shutil
 import uuid
 from datetime import datetime
 from functools import reduce
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser, Permission
 from django.core.cache import caches
+from django.core.files.storage import FileSystemStorage
 from django.db import connection, models
 from django.db.models import ManyToManyField
 from django.urls import reverse
@@ -22,18 +24,33 @@ from django.utils.text import slugify
 from va_explorer.va_data_management.models import Location, VerbalAutopsy
 from .constants import FEEDBACK_MODULE_FEATURES
 
+FEEDBACK_ATTACHMENT_ROOT = (
+    Path(settings.ROOT_DIR) / "va_explorer" / "static" / "data" / "uploads"
+)
+feedback_attachment_storage = FileSystemStorage(
+    location=str(FEEDBACK_ATTACHMENT_ROOT),
+    base_url=f"{settings.STATIC_URL}data/uploads/",
+)
+
 
 def feedback_attachment_upload_path(instance, filename):
-    timestamp = timezone.now().strftime("%Y-%m-%d-%H-%M-%S")
-    base, ext = os.path.splitext(filename)
+    timestamp = timezone.now()
+    _, ext = os.path.splitext(filename)
     module = slugify(getattr(instance, "module", "") or "module")
     feature = slugify(getattr(instance, "feature", "") or "feature")
     severity = slugify(getattr(instance, "severity", "") or "severity")
     username = slugify(
         getattr(getattr(instance, "submitted_by", None), "username", "") or "user"
     )
-    filename = f"{timestamp}-{module}-{feature}-{severity}-{username}{ext}"
-    return f"feedback/{filename}"
+    filename = (
+        f"{timestamp.strftime('%Y-%m-%d-%H-%M-%S')}-"
+        f"{module}-{feature}-{severity}-{username}{ext}"
+    )
+    return os.path.join(
+        timestamp.strftime("%Y"),
+        timestamp.strftime("%m"),
+        filename,
+    )
 
 
 class CustomUserManager(BaseUserManager):
@@ -276,11 +293,9 @@ class Feedback(models.Model):
         ANALYTICS = "analytics", "Dashboards (Analytics)"
 
     class Severity(models.TextChoices):
-        CRITICAL = "critical", "Critical"
-        HIGH = "high", "High"
-        MEDIUM = "medium", "Medium"
         LOW = "low", "Low"
-        ENHANCEMENT = "enhancement", "Enhancement"
+        MEDIUM = "medium", "Medium"
+        HIGH = "high", "High"
 
     class Status(models.TextChoices):
         NEW = "new", "New"
@@ -294,7 +309,7 @@ class Feedback(models.Model):
     module = models.CharField(max_length=64, choices=Module.choices)
     feature = models.CharField(max_length=64)
     severity = models.CharField(
-        max_length=16, choices=Severity.choices, default=Severity.MEDIUM
+        max_length=16, choices=Severity.choices, default=Severity.LOW
     )
     description = models.TextField()
     status = models.CharField(
@@ -308,7 +323,10 @@ class Feedback(models.Model):
         related_name="feedback_reports",
     )
     attachment = models.FileField(
-        upload_to=feedback_attachment_upload_path, null=True, blank=True
+        upload_to=feedback_attachment_upload_path,
+        storage=feedback_attachment_storage,
+        null=True,
+        blank=True,
     )
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

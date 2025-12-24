@@ -473,7 +473,7 @@ class FeedbackForm(forms.ModelForm):
     )
     report_type = forms.ChoiceField(
         choices=Feedback.ReportType.choices,
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=RadioSelect(attrs={"class": "form-check-input"}),
         label="Report type",
     )
     attachment = forms.FileField(

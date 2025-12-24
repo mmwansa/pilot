@@ -21,8 +21,15 @@
       </div>
       <div class="form-row">
         <div class="form-group col-md-6">
-          <label class="form-label" for="{{ form.report_type.id_for_label }}">{{ form.report_type.label }}*</label>
-          {{ form.report_type }}
+          <label class="form-label">{{ form.report_type.label }}*</label>
+          <div id="{{ form.report_type.id_for_label }}">
+            {% for option in form.report_type %}
+              <div class="form-check form-check-inline">
+                {{ option.tag }}
+                <label class="form-check-label" for="{{ option.id_for_label }}">{{ option.choice_label }}</label>
+              </div>
+            {% endfor %}
+          </div>
           {% if form.report_type.errors %}
             <div class="text-danger small">{{ form.report_type.errors|join:", " }}</div>
           {% endif %}
