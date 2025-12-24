@@ -465,11 +465,15 @@ class FeedbackForm(forms.ModelForm):
     )
     feature = forms.ChoiceField(
         choices=(),
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(
+            attrs={"class": "form-select w-100"}
+        ),
     )
     severity = forms.ChoiceField(
         choices=Feedback.Severity.choices,
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(
+            attrs={"class": "form-select w-100"}
+        ),
     )
     report_type = forms.ChoiceField(
         choices=Feedback.ReportType.choices,
