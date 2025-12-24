@@ -10,7 +10,7 @@
     <p class="text-muted">
       {% trans "Use this form to report issues or share improvement ideas with the system administrators." %}
     </p>
-    <form method="post" novalidate>
+    <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
       <div class="mb-3">
         <label class="form-label" for="{{ form.subject.id_for_label }}">{{ form.subject.label }}*</label>
@@ -18,6 +18,22 @@
         {% if form.subject.errors %}
           <div class="text-danger small">{{ form.subject.errors|join:", " }}</div>
         {% endif %}
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label class="form-label" for="{{ form.report_type.id_for_label }}">{{ form.report_type.label }}*</label>
+          {{ form.report_type }}
+          {% if form.report_type.errors %}
+            <div class="text-danger small">{{ form.report_type.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group col-md-6">
+          <label class="form-label" for="{{ form.severity.id_for_label }}">{{ form.severity.label }}*</label>
+          {{ form.severity }}
+          {% if form.severity.errors %}
+            <div class="text-danger small">{{ form.severity.errors|join:", " }}</div>
+          {% endif %}
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group col-md-6">
@@ -36,19 +52,20 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label" for="{{ form.severity.id_for_label }}">{{ form.severity.label }}*</label>
-        {{ form.severity }}
-        {% if form.severity.errors %}
-          <div class="text-danger small">{{ form.severity.errors|join:", " }}</div>
-        {% endif %}
-      </div>
-      <div class="form-group">
         <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}*</label>
         {{ form.description }}
         {% if form.description.errors %}
           <div class="text-danger small">{{ form.description.errors|join:", " }}</div>
         {% endif %}
         <small class="text-muted">{% trans "Please include steps to reproduce, expected behaviour, and any relevant screenshots or IDs." %}</small>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.attachment.id_for_label }}">{{ form.attachment.label }}</label>
+        {{ form.attachment }}
+        {% if form.attachment.errors %}
+          <div class="text-danger small">{{ form.attachment.errors|join:", " }}</div>
+        {% endif %}
+        <small class="text-muted">{% trans "Attach an image (e.g., screenshot) to help diagnose the issue." %}</small>
       </div>
       <div class="d-flex justify-content-end">
         <button type="submit" class="btn btn-primary">

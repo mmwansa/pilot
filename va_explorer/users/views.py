@@ -359,6 +359,7 @@ class FeedbackSubmitView(CustomAuthMixin, SuccessMessageMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.submitted_by = self.request.user
+        form.instance.metadata = Feedback.collect_system_metadata(self.request)
         return super().form_valid(form)
 
     def get_initial(self):

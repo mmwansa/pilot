@@ -1,3 +1,6 @@
+import os
+import platform
+import shutil
 import uuid
 from datetime import datetime
 from functools import reduce
@@ -5,17 +8,32 @@ from functools import reduce
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser, Permission
-from django.db import models
+from django.core.cache import caches
+from django.db import connection, models
 from django.db.models import ManyToManyField
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 
 # from allauth.account.models import EmailAddress
 # from allauth.account.signals import email_confirmed
 # from django.dispatch import receiver
 from va_explorer.va_data_management.models import Location, VerbalAutopsy
 from .constants import FEEDBACK_MODULE_FEATURES
+
+
+def feedback_attachment_upload_path(instance, filename):
+    timestamp = timezone.now().strftime("%Y-%m-%d-%H-%M-%S")
+    base, ext = os.path.splitext(filename)
+    module = slugify(getattr(instance, "module", "") or "module")
+    feature = slugify(getattr(instance, "feature", "") or "feature")
+    severity = slugify(getattr(instance, "severity", "") or "severity")
+    username = slugify(
+        getattr(getattr(instance, "submitted_by", None), "username", "") or "user"
+    )
+    filename = f"{timestamp}-{module}-{feature}-{severity}-{username}{ext}"
+    return f"feedback/{filename}"
 
 
 class CustomUserManager(BaseUserManager):
@@ -247,6 +265,10 @@ class UserMessage(models.Model):
 
 
 class Feedback(models.Model):
+    class ReportType(models.TextChoices):
+        BUG = "bug", "Bug"
+        FEATURE = "feature", "Feature Request"
+
     class Module(models.TextChoices):
         DATA_MANAGEMENT = "data_management", "Data Management"
         PERSONNEL_MANAGEMENT = "personnel_management", "Personnel Management"
@@ -266,6 +288,9 @@ class Feedback(models.Model):
         RESOLVED = "resolved", "Resolved"
 
     subject = models.CharField(max_length=255)
+    report_type = models.CharField(
+        max_length=16, choices=ReportType.choices, default=ReportType.BUG
+    )
     module = models.CharField(max_length=64, choices=Module.choices)
     feature = models.CharField(max_length=64)
     severity = models.CharField(
@@ -282,6 +307,10 @@ class Feedback(models.Model):
         on_delete=models.SET_NULL,
         related_name="feedback_reports",
     )
+    attachment = models.FileField(
+        upload_to=feedback_attachment_upload_path, null=True, blank=True
+    )
+    metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -301,3 +330,82 @@ class Feedback(models.Model):
 
     def get_feature_display(self):
         return dict(self.feature_choices_for(self.module)).get(self.feature, self.feature)
+
+    @staticmethod
+    def _get_memory_usage_mb():
+        try:
+            import resource
+
+            usage = resource.getrusage(resource.RUSAGE_SELF)
+            return round(usage.ru_maxrss / 1024, 2)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _get_cpu_load():
+        try:
+            load1, load5, load15 = os.getloadavg()
+        except Exception:
+            return None
+        return {
+            "load_1m": round(load1, 2),
+            "load_5m": round(load5, 2),
+            "load_15m": round(load15, 2),
+        }
+
+    @staticmethod
+    def _get_disk_space():
+        try:
+            total, used, free = shutil.disk_usage(settings.MEDIA_ROOT)
+            factor = 1024 * 1024
+            return {
+                "total_mb": round(total / factor, 2),
+                "used_mb": round(used / factor, 2),
+                "free_mb": round(free / factor, 2),
+            }
+        except Exception:
+            return None
+
+    @staticmethod
+    def _get_cache_status():
+        try:
+            cache = caches["default"]
+            probe_key = "feedback-cache-probe"
+            cache.set(probe_key, "ok", 1)
+            reachable = cache.get(probe_key) == "ok"
+            return {
+                "backend": cache.__class__.__name__,
+                "reachable": reachable,
+            }
+        except Exception:
+            return None
+
+    @staticmethod
+    def _get_database_status():
+        try:
+            return {
+                "vendor": connection.vendor,
+                "usable": connection.is_usable(),
+            }
+        except Exception:
+            return None
+
+    @staticmethod
+    def _estimate_network_speed():
+        # Placeholder until active measurements are defined
+        return "Not measured"
+
+    @classmethod
+    def collect_system_metadata(cls, request):
+        return {
+            "timestamp": timezone.now().isoformat(),
+            "operating_system": platform.system(),
+            "os_version": platform.version(),
+            "browser": request.META.get("HTTP_USER_AGENT", "Unknown"),
+            "network_speed": cls._estimate_network_speed(),
+            "memory_usage_mb": cls._get_memory_usage_mb(),
+            "cpu_load": cls._get_cpu_load(),
+            "disk_space": cls._get_disk_space(),
+            "cache_status": cls._get_cache_status(),
+            "database_connection": cls._get_database_status(),
+        }
