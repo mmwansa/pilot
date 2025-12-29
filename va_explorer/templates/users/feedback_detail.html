@@ -29,6 +29,9 @@
       <dt class="col-sm-4">{% trans "Feature" %}</dt>
       <dd class="col-sm-8">{{ feedback.get_feature_display }}</dd>
 
+      <dt class="col-sm-4">{% trans "Report Type" %}</dt>
+      <dd class="col-sm-8">{{ feedback.get_report_type_display }}</dd>
+
       <dt class="col-sm-4">{% trans "Status" %}</dt>
       <dd class="col-sm-8">
         <span class="badge
@@ -51,6 +54,23 @@
   <div class="card-body">
     <h6>{% trans "Description" %}</h6>
     <p style="white-space: pre-line;">{{ feedback.description }}</p>
+    {% if feedback.attachment %}
+      <div class="mt-3">
+        <a href="{{ feedback.attachment.url }}" class="btn btn-sm btn-outline-primary" download>
+          <i class="fas fa-paperclip mr-1"></i> {% trans "Download attachment" %}
+        </a>
+      </div>
+    {% endif %}
+    {% if feedback.metadata %}
+      <hr>
+      <h6 class="mb-2">{% trans "Submission Details" %}</h6>
+      <dl class="row mb-0 small text-muted">
+        {% for key, value in feedback.metadata.items %}
+          <dt class="col-sm-4 text-capitalize">{{ key|capfirst }}</dt>
+          <dd class="col-sm-8">{{ value }}</dd>
+        {% endfor %}
+      </dl>
+    {% endif %}
   </div>
 </div>
 
