@@ -1,6 +1,5 @@
 import os
 import platform
-import shutil
 import uuid
 from datetime import datetime
 from functools import reduce
@@ -9,9 +8,8 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser, Permission
-from django.core.cache import caches
 from django.core.files.storage import FileSystemStorage
-from django.db import connection, models
+from django.db import models
 from django.db.models import ManyToManyField
 from django.urls import reverse
 from django.utils import timezone
@@ -23,6 +21,36 @@ from django.utils.text import slugify
 # from django.dispatch import receiver
 from va_explorer.va_data_management.models import Location, VerbalAutopsy
 from .constants import FEEDBACK_MODULE_FEATURES
+
+
+feedback_upload_root = Path(__file__).resolve().parents[1] / "static" / "data" / "uploads"
+feedback_upload_root.mkdir(parents=True, exist_ok=True)
+feedback_attachment_storage = FileSystemStorage(
+    location=str(feedback_upload_root),
+    base_url=f"{settings.STATIC_URL}data/uploads/",
+)
+
+
+def feedback_attachment_upload_path(instance, filename):
+    """
+    Generate a predictable upload path for feedback attachments.
+    Organizes files by year/month and bakes in useful context for admins.
+    """
+    now = timezone.now()
+    name, ext = os.path.splitext(filename)
+    module = getattr(instance, "module", "feedback") or "feedback"
+    severity = getattr(instance, "severity", "unspecified") or "unspecified"
+    reporter = getattr(getattr(instance, "submitted_by", None), "username", "") or "anonymous"
+    safe_name = "-".join(
+        part for part in [module, severity, reporter, slugify(name)] if part
+    )
+    return "/".join(
+        [
+            now.strftime("%Y"),
+            now.strftime("%m"),
+            f"{safe_name}-{uuid.uuid4().hex[:8]}{ext}",
+        ]
+    )
 
 
 class CustomUserManager(BaseUserManager):
@@ -260,12 +288,14 @@ class Feedback(models.Model):
         SCHEDULE_MANAGEMENT = "schedule_management", "Schedule Management"
         ANALYTICS = "analytics", "Dashboards (Analytics)"
 
+    class ReportType(models.TextChoices):
+        BUG = "bug", "Bug"
+        FEATURE = "feature", "Feature Request"
+
     class Severity(models.TextChoices):
-        CRITICAL = "critical", "Critical"
-        HIGH = "high", "High"
-        MEDIUM = "medium", "Medium"
         LOW = "low", "Low"
-        ENHANCEMENT = "enhancement", "Enhancement"
+        MEDIUM = "medium", "Medium"
+        HIGH = "high", "High"
 
     class Status(models.TextChoices):
         NEW = "new", "New"
@@ -276,12 +306,22 @@ class Feedback(models.Model):
     module = models.CharField(max_length=64, choices=Module.choices)
     feature = models.CharField(max_length=64)
     severity = models.CharField(
-        max_length=16, choices=Severity.choices, default=Severity.MEDIUM
+        max_length=16, choices=Severity.choices, default=Severity.LOW
     )
     description = models.TextField()
     status = models.CharField(
         max_length=16, choices=Status.choices, default=Status.NEW
     )
+    report_type = models.CharField(
+        max_length=16, choices=ReportType.choices, default=ReportType.BUG
+    )
+    attachment = models.FileField(
+        upload_to=feedback_attachment_upload_path,
+        storage=feedback_attachment_storage,
+        null=True,
+        blank=True,
+    )
+    metadata = models.JSONField(blank=True, default=dict)
     submitted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -308,3 +348,16 @@ class Feedback(models.Model):
 
     def get_feature_display(self):
         return dict(self.feature_choices_for(self.module)).get(self.feature, self.feature)
+
+    @staticmethod
+    def collect_system_metadata(request):
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        return {
+            "operating_system": platform.platform(),
+            "python_version": platform.python_version(),
+            "hostname": platform.node(),
+            "user_agent": user_agent,
+            "ip_address": request.META.get("REMOTE_ADDR"),
+            "path": request.build_absolute_uri() if hasattr(request, "build_absolute_uri") else "",
+            "timestamp": timezone.now().isoformat(),
+        }

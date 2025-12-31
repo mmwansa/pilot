@@ -459,6 +459,10 @@ class UserChangePasswordForm(PasswordVerificationMixin, forms.Form):
 
 
 class FeedbackForm(forms.ModelForm):
+    report_type = forms.ChoiceField(
+        choices=Feedback.ReportType.choices,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
     module = forms.ChoiceField(
         choices=Feedback.Module.choices,
         widget=forms.Select(attrs={"class": "form-select"}),
@@ -471,10 +475,22 @@ class FeedbackForm(forms.ModelForm):
         choices=Feedback.Severity.choices,
         widget=forms.Select(attrs={"class": "form-select"}),
     )
+    attachment = forms.FileField(
+        required=False,
+        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
+    )
 
     class Meta:
         model = Feedback
-        fields = ["subject", "module", "feature", "severity", "description"]
+        fields = [
+            "subject",
+            "report_type",
+            "module",
+            "feature",
+            "severity",
+            "description",
+            "attachment",
+        ]
         widgets = {
             "subject": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(
@@ -487,6 +503,8 @@ class FeedbackForm(forms.ModelForm):
         module = self.initial.get("module") or getattr(
             self.instance, "module", Feedback.Module.DATA_MANAGEMENT
         )
+        self.fields["report_type"].initial = Feedback.ReportType.BUG
+        self.fields["severity"].initial = Feedback.Severity.LOW
         self._set_feature_choices(module)
 
     def _set_feature_choices(self, module):

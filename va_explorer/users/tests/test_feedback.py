@@ -67,7 +67,6 @@ def test_admin_can_update_feedback_status(client):
         module=Feedback.Module.ANALYTICS,
         feature="dashboards",
         severity=Feedback.Severity.HIGH,
-        severity=Feedback.Severity.CRITICAL,
         description="Dashboard crash",
     )
     client.force_login(admin)
