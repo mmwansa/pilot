@@ -32,7 +32,7 @@ def _parse_submission_timestamp(value: object) -> Optional[datetime]:
     if isinstance(value, datetime):
         dt = value
     elif isinstance(value, date):
-        dt = datetime.combine(value, time.min)
+        dt = datetime.combine(value, dt_time.min)
     else:
         if value is None:
             return None
@@ -68,7 +68,7 @@ def _parse_submission_timestamp(value: object) -> Optional[datetime]:
         if dt is None:
             parsed_date = parse_date(normalised)
             if parsed_date is not None:
-                dt = datetime.combine(parsed_date, time.min)
+                dt = datetime.combine(parsed_date, dt_time.min)
 
         if dt is None:
             return None

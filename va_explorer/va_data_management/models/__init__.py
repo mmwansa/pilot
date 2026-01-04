@@ -1,6 +1,7 @@
 from .death import Death
 from .household_census import SRSClusterLocation, Household, HouseholdMember
 from .odk_reference import ODKFormChoice
+from .odk_state import ODKPullLock, ODKPullState
 from .pregnancy import Pregnancy
 from .pregnancy_outcome import PregnancyOutcome
 from .verbal_autopsy import (
@@ -27,4 +28,6 @@ __all__ = [ "SRSClusterLocation",
     "CODCodesDHIS",
     "DhisStatus",
     "ODKFormChoice",
+    "ODKPullState",
+    "ODKPullLock",
 ]
