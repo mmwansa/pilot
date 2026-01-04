@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import time as time_module
-from datetime import date, datetime, time as dt_time, timedelta
+import time
+from datetime import date, datetime, time, timedelta
 from typing import Iterable, Optional, Sequence
 
 from django.core.cache import cache
@@ -297,12 +297,12 @@ def get_homepage_metrics() -> dict[str, int]:
         finally:
             cache.delete(LOCK_KEY)
 
-    deadline = time_module.monotonic() + LOCK_WAIT_SECONDS
-    while time_module.monotonic() < deadline:
+    deadline = time.monotonic() + LOCK_WAIT_SECONDS
+    while time.monotonic() < deadline:
         metrics = cache.get(CACHE_KEY)
         if metrics is not None:
             return metrics
-        time_module.sleep(LOCK_SLEEP_SECONDS)
+        time.sleep(LOCK_SLEEP_SECONDS)
 
     # Fallback: try once more to become the lock holder, otherwise compute without caching.
     if cache.add(LOCK_KEY, True, timeout=LOCK_TIMEOUT_SECONDS):
