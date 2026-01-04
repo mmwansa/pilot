@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import time
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Optional, Sequence
 
+from django.core.cache import cache
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
@@ -161,7 +163,15 @@ def _safe_int(value: object) -> int:
             return 0
 
 
-def get_homepage_metrics() -> dict[str, int]:
+CACHE_KEY = "homepage_metrics:v1"
+LOCK_KEY = f"{CACHE_KEY}:lock"
+CACHE_TIMEOUT_SECONDS = 60 * 60 * 24  # 1 day
+LOCK_TIMEOUT_SECONDS = 60
+LOCK_WAIT_SECONDS = 2
+LOCK_SLEEP_SECONDS = 0.1
+
+
+def _compute_homepage_metrics() -> dict[str, int]:
     # -------------------------
     # Households / clusters
     # -------------------------
@@ -267,3 +277,40 @@ def get_homepage_metrics() -> dict[str, int]:
         "today_vas": today_vas,
         "week_vas": week_vas,
     }
+
+
+def invalidate_homepage_metrics_cache() -> None:
+    cache.delete(CACHE_KEY)
+
+
+def get_homepage_metrics() -> dict[str, int]:
+    cached = cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
+
+    have_lock = cache.add(LOCK_KEY, True, timeout=LOCK_TIMEOUT_SECONDS)
+    if have_lock:
+        try:
+            metrics = _compute_homepage_metrics()
+            cache.set(CACHE_KEY, metrics, CACHE_TIMEOUT_SECONDS)
+            return metrics
+        finally:
+            cache.delete(LOCK_KEY)
+
+    deadline = time.monotonic() + LOCK_WAIT_SECONDS
+    while time.monotonic() < deadline:
+        metrics = cache.get(CACHE_KEY)
+        if metrics is not None:
+            return metrics
+        time.sleep(LOCK_SLEEP_SECONDS)
+
+    # Fallback: try once more to become the lock holder, otherwise compute without caching.
+    if cache.add(LOCK_KEY, True, timeout=LOCK_TIMEOUT_SECONDS):
+        try:
+            metrics = _compute_homepage_metrics()
+            cache.set(CACHE_KEY, metrics, CACHE_TIMEOUT_SECONDS)
+            return metrics
+        finally:
+            cache.delete(LOCK_KEY)
+
+    return _compute_homepage_metrics()
