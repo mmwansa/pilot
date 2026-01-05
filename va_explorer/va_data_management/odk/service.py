@@ -135,6 +135,7 @@ class ODKPullService:
         full_refresh: bool = False,
         dry_run: bool = False,
         no_attachments: bool = False,
+        ignore_frequency: bool = False,
     ) -> Dict[str, Dict[str, Any]]:
         """Pull multiple forms; returns summary per form_id."""
         summary: Dict[str, Dict[str, Any]] = {}
@@ -142,13 +143,16 @@ class ODKPullService:
             form_id = cfg.get("form_id")
             if not form_id:
                 continue
+            if cfg.get("enabled") is False:
+                summary[form_id] = {"skipped": True, "reason": "disabled"}
+                continue
             project_id = cfg.get("project_id") or self.default_project_id
             form_name = cfg.get("form_name")
             frequency = cfg.get("frequency_minutes")
             state, _ = ODKPullState.objects.get_or_create(
                 form_id=form_id, project_id=project_id
             )
-            if frequency and state.last_run_finished_at:
+            if frequency and state.last_run_finished_at and not ignore_frequency:
                 delta = timezone.now() - state.last_run_finished_at
                 if delta < timedelta(minutes=int(frequency)):
                     summary[form_id] = {
@@ -180,11 +184,23 @@ class ODKPullService:
     ) -> Dict[str, Any]:
         """Pull a single form and load it into models."""
         project_id = project_id or self.default_project_id
+        if not project_id:
+            raise ValueError("project_id is required to pull ODK data")
         state, _ = ODKPullState.objects.get_or_create(
             form_id=form_id, project_id=project_id
         )
         with self._acquire_global(project_id), self._acquire_lock(form_id, project_id):
             state.mark_started()
+            self._logger.info(
+                "Starting ODK pull",
+                extra={
+                    "form_id": form_id,
+                    "project_id": project_id,
+                    "full_refresh": full_refresh,
+                    "since": since,
+                    "dry_run": dry_run,
+                },
+            )
             try:
                 since_dt = None if full_refresh else (since or state.last_submission_at)
                 df, latest_ts = self.list_submissions(
@@ -207,6 +223,15 @@ class ODKPullService:
                     counts=counts,
                     last_submission_at=latest_ts,
                 )
+                self._logger.info(
+                    "Finished ODK pull",
+                    extra={
+                        "form_id": form_id,
+                        "project_id": project_id,
+                        "counts": counts,
+                        "last_submission_at": latest_ts,
+                    },
+                )
                 return {**counts, "status": ODKPullState.STATUS_SUCCESS}
             except Exception as exc:
                 state.mark_finished(
@@ -227,7 +252,7 @@ class ODKPullService:
             filter_expr = None
             if since:
                 since_utc = self._as_utc(since)
-                filter_expr = f"createdAt ge {since_utc}"
+                filter_expr = f"updatedAt ge {since_utc}"
             data = client.submissions.get_table(
                 form_id=form_id, project_id=project_id, expand="*", filter=filter_expr
             )

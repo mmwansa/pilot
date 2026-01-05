@@ -121,6 +121,20 @@ now appear and function.
       to a blank string. **Recommended to customize.**
 ````
 
+Additional scheduling and per-form controls:
+
+- ``ODK_PULL_INTERVAL_MINUTES`` (default: 30) controls how often Celery Beat calls the ODK pull task.
+- ``ODK_FORM_ENABLED``, ``ODK_HOUSEHOLD_FORM_ENABLED``, ``ODK_PREGNANCY_FORM_ENABLED``, ``ODK_PREGNANCY_OUTCOME_FORM_ENABLED``, ``ODK_DEATH_FORM_ENABLED`` toggle per-form scheduled pulls (defaults to ``True``). Leave the corresponding ``ODK_*_FORM_ID`` blank or set ``*_FORM_ENABLED`` to ``False`` to disable.
+
+Manual import uses the shared pipeline:
+
+```
+python manage.py import_from_odk --form-id <xmlFormId> [--project-id <id>] [--since <ISO|7d>] [--full-refresh] [--dry-run] [--no-attachments]
+```
+
+- Omit ``--form-id`` to default to configured forms (``ODK_PULL_FORMS`` in settings).
+- Use ``--since`` or ``--full-refresh`` to control incremental behavior; state is persisted in the ``ODKPullState`` table.
+
 ## KoboToolbox
 
 VA Explorer supports integration with KoboToolbox as an alternative to ODK that also
