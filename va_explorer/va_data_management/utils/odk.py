@@ -1,4 +1,5 @@
 from io import BytesIO
+import logging
 from tempfile import NamedTemporaryFile
 
 import environ
@@ -13,6 +14,7 @@ ODK_HOST = env("ODK_HOST", default="http://127.0.0.1:5002")
 # Don't verify localhost (self-signed cert)
 SSL_VERIFY = env.bool("ODK_SSL_VERIFY", not ODK_HOST.startswith("https://localhost"))
 
+logger = logging.getLogger(__name__)
 
 def flatten_dict(item):
     result = {}
@@ -123,12 +125,19 @@ def download_responses(
 
 def _make_client():
     """Create a pyODK Client based on environment configuration."""
+    return make_pyodk_client()
+
+
+def make_pyodk_client(project_id=None):
+    """Create a pyODK Client with optional project override."""
     cfg = {
         "central": {
             "base_url": ODK_HOST,
             "username": env("ODK_EMAIL"),
             "password": env("ODK_PASSWORD"),
-            "default_project_id": env.int("ODK_PROJECT_ID"),
+            "default_project_id": project_id
+            if project_id is not None
+            else env.int("ODK_PROJECT_ID"),
         }
     }
     with NamedTemporaryFile(delete=False, suffix=".toml") as tmp:
@@ -136,6 +145,11 @@ def _make_client():
         path = tmp.name
     client = Client(config_path=path)
     client.session.verify = SSL_VERIFY
+    logger.debug(
+        "Created pyODK client for project %s with host %s",
+        cfg["central"]["default_project_id"],
+        ODK_HOST,
+    )
     return client
 
 

@@ -1,9 +1,12 @@
 import os
+from datetime import datetime, timedelta
+from typing import List, Optional
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 
-from va_explorer.va_data_management.utils.loading import load_records_from_dataframe
-from va_explorer.va_data_management.utils.odk import download_responses
+from va_explorer.va_data_management.odk.service import ODKPullService
 
 
 class Command(BaseCommand):
@@ -11,60 +14,111 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--email", type=str, required=False, default=os.environ.get("ODK_EMAIL")
+            "--form-id",
+            action="append",
+            dest="form_ids",
+            help="ODK xmlFormId to pull (can be repeated); defaults to configured forms.",
         )
         parser.add_argument(
-            "--password",
+            "--project-id",
+            type=int,
+            required=False,
+            default=os.environ.get("ODK_PROJECT_ID"),
+            help="Override project ID (defaults to ODK_PROJECT_ID env/setting).",
+        )
+        parser.add_argument(
+            "--since",
             type=str,
             required=False,
-            default=os.environ.get("ODK_PASSWORD"),
+            help="ISO timestamp or relative window (e.g., 7d) to pull incremental data.",
         )
-        parser.add_argument("--project-name", type=str, required=False)
-        parser.add_argument("--project-id", type=str, required=False)
-        parser.add_argument("--form-id", type=str, required=False)
-        parser.add_argument("--form-name", type=str, required=False)
+        parser.add_argument(
+            "--full-refresh",
+            action="store_true",
+            help="Ignore stored state and pull all submissions (idempotent).",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Fetch data but do not write to DB; still updates state timestamps.",
+        )
+        parser.add_argument(
+            "--no-attachments",
+            action="store_true",
+            help="Skip attachment downloads.",
+        )
 
     def handle(self, *args, **options):
         _ = args  # unused
-        email = options["email"]
-        password = options["password"]
-        project_id = options["project_id"]
-        project_name = options["project_name"]
-        form_id = options["form_id"]
-        form_name = options["form_name"]
+        form_ids: Optional[List[str]] = options.get("form_ids")
+        project_id = options.get("project_id")
+        since_raw = options.get("since")
+        since_dt = self._parse_since(since_raw) if since_raw else None
+        full_refresh = bool(options.get("full_refresh"))
+        dry_run = bool(options.get("dry_run"))
+        no_attachments = bool(options.get("no_attachments"))
 
-        if not email or not password:
-            self.stderr.write(
-                "Must specify either --email and --password arguments or "
-                "ODK_EMAIL and ODK_PASSWORD environment variables."
-            )
-            return
+        service = ODKPullService(default_project_id=project_id)
+        form_configs = self._resolve_forms(form_ids, project_id)
+        if not form_configs:
+            raise CommandError("No form IDs provided or configured.")
 
-        # Should only specify project_id or project_name, not both.
-        if (not project_id and not project_name) or (project_id and project_name):
-            self.stderr.write(
-                "Must specify either --project-id or --project-name arguments; not both"
-            )
-            return
-
-        # Should only specify form_id or form_name, not both.
-        if (not form_id and not form_name) or (form_id and form_name):
-            self.stderr.write(
-                "Must specify either --form-id or --form-name arguments; not both"
-            )
-            return
-
-        forms = download_responses(
-            email, password, project_name, project_id, form_name, form_id
+        summary = service.pull_forms(
+            form_configs,
+            since=since_dt,
+            full_refresh=full_refresh,
+            dry_run=dry_run,
+            no_attachments=no_attachments,
+            ignore_frequency=True,
         )
+        self._print_summary(summary)
 
-        results = load_records_from_dataframe(forms)
+    def _resolve_forms(self, form_ids: Optional[List[str]], project_id: Optional[int]):
+        configs = getattr(settings, "ODK_PULL_FORMS", [])
+        if form_ids:
+            return [
+                {
+                    "form_id": fid,
+                    "project_id": project_id
+                    or getattr(settings, "ODK_DEFAULT_PROJECT_ID", None),
+                    "enabled": True,
+                }
+                for fid in form_ids
+            ]
 
-        num_created = len(results["created"])
-        num_ignored = len(results["ignored"])
-        num_outdated = len(results["outdated"])
+        resolved = []
+        for cfg in configs:
+            fid = cfg.get("form_id")
+            if not fid:
+                continue
+            resolved.append(
+                {
+                    "form_id": fid,
+                    "form_name": cfg.get("form_name"),
+                    "project_id": project_id or cfg.get("project_id"),
+                    "enabled": cfg.get("enabled", True),
+                }
+            )
+        return resolved
 
-        self.stdout.write(
-            f"Loaded {num_created} verbal autopsies from ODK "
-            f"({num_ignored} ignored, {num_outdated} removed as outdated)"
-        )
+    def _parse_since(self, raw: str) -> datetime:
+        if raw.endswith("d") and raw[:-1].isdigit():
+            days = int(raw[:-1])
+            return timezone.now() - timedelta(days=days)
+        try:
+            parsed = datetime.fromisoformat(raw)
+        except ValueError as exc:  # pragma: no cover - defensive
+            raise CommandError(f"Could not parse --since value '{raw}'") from exc
+        if timezone.is_naive(parsed):
+            parsed = timezone.make_aware(parsed, timezone=timezone.utc)
+        return parsed
+
+    def _print_summary(self, summary):
+        for form_id, info in summary.items():
+            if info.get("skipped"):
+                self.stdout.write(
+                    f"[{form_id}] skipped ({info.get('reason', 'unknown')})"
+                )
+                continue
+            counts = {k: v for k, v in info.items() if k not in ("status",)}
+            self.stdout.write(f"[{form_id}] status={info.get('status')} {counts}")

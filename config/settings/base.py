@@ -49,6 +49,42 @@ QUESTIONS_TO_AUTODETECT_DUPLICATES = os.environ.get(
     "QUESTIONS_TO_AUTODETECT_DUPLICATES", None
 )
 
+ODK_DEFAULT_PROJECT_ID = env.int("ODK_PROJECT_ID", default=None)
+# Form configs used by scheduled pulls and as defaults for manual pulls.
+ODK_PULL_FORMS = [
+    {
+        "form_id": env("ODK_FORM_ID", default=""),
+        "form_name": "verbal_autopsy",
+        "project_id": ODK_DEFAULT_PROJECT_ID,
+        "enabled": env.bool("ODK_FORM_ENABLED", default=True),
+        "frequency_minutes": env.int("ODK_PULL_INTERVAL_MINUTES", default=30),
+    },
+    {
+        "form_id": env("ODK_HOUSEHOLD_FORM_ID", default=""),
+        "form_name": "household",
+        "project_id": ODK_DEFAULT_PROJECT_ID,
+        "enabled": env.bool("ODK_HOUSEHOLD_FORM_ENABLED", default=True),
+    },
+    {
+        "form_id": env("ODK_PREGNANCY_FORM_ID", default=""),
+        "form_name": "pregnancy",
+        "project_id": ODK_DEFAULT_PROJECT_ID,
+        "enabled": env.bool("ODK_PREGNANCY_FORM_ENABLED", default=True),
+    },
+    {
+        "form_id": env("ODK_PREGNANCY_OUTCOME_FORM_ID", default=""),
+        "form_name": "pregnancy_outcome",
+        "project_id": ODK_DEFAULT_PROJECT_ID,
+        "enabled": env.bool("ODK_PREGNANCY_OUTCOME_FORM_ENABLED", default=True),
+    },
+    {
+        "form_id": env("ODK_DEATH_FORM_ID", default=""),
+        "form_name": "death",
+        "project_id": ODK_DEFAULT_PROJECT_ID,
+        "enabled": env.bool("ODK_DEATH_FORM_ENABLED", default=True),
+    },
+]
+
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # Databases
