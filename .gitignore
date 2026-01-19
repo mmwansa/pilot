@@ -99,3 +99,6 @@ Icon
 /*.csv
 /*.xlsx
 /*.xlsx
+
+# DB DUMP
+/*.dump
