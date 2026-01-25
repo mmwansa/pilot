@@ -251,6 +251,7 @@ TEMPLATES = [
                 "va_explorer.utils.context_processors.auto_detect_duplicates",
                 "va_explorer.utils.context_processors.duplicates_count",
                 "va_explorer.utils.context_processors.mailbox",
+                "va_explorer.utils.context_processors.feedback_counts",
             ],
             "libraries": {
                 "va_explorer_tags": "va_explorer.templatetags.va_explorer_tags"

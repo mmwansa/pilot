@@ -27,7 +27,14 @@ class PregnancyOutcomes(CustomAuthMixin, PermissionRequiredMixin, ListView):
     model = PregnancyOutcome
 
     def get_queryset(self):
-        queryset = PregnancyOutcome.objects.all().order_by("-id")
+        queryset = PregnancyOutcome.objects.all()
+        queryset = restrict_queryset_to_user_locations(
+            queryset,
+            self.request.user,
+            {
+                "province": "province",
+            },
+        ).order_by("-id")
         # Filtering example: by district
         if self.request.GET.get("id"):
             queryset = queryset.filter(district__icontains=self.request.GET["id"])

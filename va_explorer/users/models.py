@@ -279,3 +279,85 @@ class UserMessage(models.Model):
 
     def get_absolute_url(self):
         return reverse("users:message_detail", kwargs={"pk": self.pk})
+
+
+class Feedback(models.Model):
+    class Module(models.TextChoices):
+        DATA_MANAGEMENT = "data_management", "Data Management"
+        PERSONNEL_MANAGEMENT = "personnel_management", "Personnel Management"
+        SCHEDULE_MANAGEMENT = "schedule_management", "Schedule Management"
+        ANALYTICS = "analytics", "Dashboards (Analytics)"
+
+    class ReportType(models.TextChoices):
+        BUG = "bug", "Bug"
+        FEATURE = "feature", "Feature Request"
+
+    class Severity(models.TextChoices):
+        LOW = "low", "Low"
+        MEDIUM = "medium", "Medium"
+        HIGH = "high", "High"
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        IN_PROGRESS = "in_progress", "In Progress"
+        RESOLVED = "resolved", "Resolved"
+
+    subject = models.CharField(max_length=255)
+    module = models.CharField(max_length=64, choices=Module.choices)
+    feature = models.CharField(max_length=64)
+    severity = models.CharField(
+        max_length=16, choices=Severity.choices, default=Severity.LOW
+    )
+    description = models.TextField()
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.NEW
+    )
+    report_type = models.CharField(
+        max_length=16, choices=ReportType.choices, default=ReportType.BUG
+    )
+    attachment = models.FileField(
+        upload_to=feedback_attachment_upload_path,
+        storage=feedback_attachment_storage,
+        null=True,
+        blank=True,
+    )
+    metadata = models.JSONField(blank=True, default=dict)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="feedback_reports",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.subject} ({self.get_module_display()})"
+
+    @staticmethod
+    def module_feature_map():
+        return FEEDBACK_MODULE_FEATURES
+
+    @classmethod
+    def feature_choices_for(cls, module):
+        return cls.module_feature_map().get(module, [])
+
+    def get_feature_display(self):
+        return dict(self.feature_choices_for(self.module)).get(self.feature, self.feature)
+
+    @staticmethod
+    def collect_system_metadata(request):
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        return {
+            "operating_system": platform.platform(),
+            "python_version": platform.python_version(),
+            "hostname": platform.node(),
+            "user_agent": user_agent,
+            "ip_address": request.META.get("REMOTE_ADDR"),
+            "path": request.build_absolute_uri() if hasattr(request, "build_absolute_uri") else "",
+            "timestamp": timezone.now().isoformat(),
+        }

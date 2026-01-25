@@ -91,12 +91,11 @@
         </li>
         
         {% if request.user.is_authenticated %}
-        <li class="nav-item">
-          <a class="nav-link position-relative" href="{% url 'users:mailbox' %}" title="{% trans 'Notifications' %}">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="{% trans 'Notifications' %}">
             <i class="fas fa-bell"></i>
             {% if MAILBOX_UNREAD_COUNT %}
-            <span class="badge badge-danger badge-pill position-absolute"
-                  style="top: 5px; right: 5px; font-size: 0.6rem;">{{ MAILBOX_UNREAD_COUNT }}</span>
+            <span class="badge badge-danger badge-pill position-absolute" style="top: 5px; right: 5px; font-size: 0.6rem;">{{ MAILBOX_UNREAD_COUNT }}</span>
             {% endif %}
           </a>
           <div class="dropdown-menu dropdown-menu-right" aria-labelledby="notificationsDropdown">
