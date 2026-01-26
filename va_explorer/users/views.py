@@ -1,4 +1,3 @@
-import csv
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, permission_required
@@ -20,6 +19,7 @@ from django.views.generic import (
 )
 
 from ..utils.mixins import CustomAuthMixin, UserDetailViewMixin
+from .utils.user_form_backend import parse_users_from_file, save_users_from_data
 from .forms import (
     ExtendedUserCreationForm,
     FeedbackForm,
@@ -85,64 +85,57 @@ user_create_view = UserCreateView.as_view()
 def UserImportView(request):
 
     if request.method == "POST":
-
-        form = UserImportForm(request.POST, request.FILES)
-
-        if form.is_valid():
-
-            # Process the uploaded file
-            uploaded_file = form.cleaned_data['file']
-            group = form.cleaned_data["groups"]
+        
+        if "confirm_import" in request.POST:
+            # Step 2: Confirmation
+            valid_users = request.session.get("valid_users_import")
+            if not valid_users:
+                messages.error(request, "No user data found to import or session expired.")
+                return redirect(reverse("users:import"))
             
-            # Basic validation
-            if not uploaded_file.name.endswith('.csv'):
-                messages.error(request, 'File is not a CSV type.')
-                return redirect(reverse("users:index"))
-
-            # Read the CSV file
-            decoded_file = uploaded_file.read().decode('utf-8').splitlines()
-            reader = csv.DictReader(decoded_file)
-
-            # Process each row of the CSV
-            importcsv = True
-            userList = []
+            saved_users = save_users_from_data(valid_users)
+            messages.success(request, f"Successfully imported {len(saved_users)} users.")
             
-            for row in reader:
-                
-                user = User()
-                user.email = row["Email"]
-                user.name = row["Name"]
-                user.mobile1 = row["Mobile1"]
-                user.mobile2 = row["Mobile2"]
-                user.address= row["Address"]
-                user.password = row["Password"]
-                
-                try:
-                    userDetail = User.objects.get(email=user.email)
-                    messages.error(request, f"The specified user '{user.email}' already exists!")
-                    importcsv = False
-                    break
-                except User.DoesNotExist:
-                    userList.append(user)
+            # Clean up session
+            del request.session["valid_users_import"]
             
-            if importcsv: 
-
-                total = 0   
-                for user in userList:
-                    user.set_password(user.password)
-                    user.save()
-                    user.groups.set([group])
-                    total += 1
-
-                messages.success(request, f'User CSV file uploaded and processed successfully and {total}/{len(userList)} user(s) imported.')
-            
-
             return redirect(reverse("users:index"))
 
         else:
-            # Form is invalid, re-render with errors
-            return render(request, "users/user_import.html", {"form": form})
+            # Step 1: Upload and Review
+            form = UserImportForm(request.POST, request.FILES)
+
+            if form.is_valid():
+                uploaded_file = form.cleaned_data['file']
+                group = form.cleaned_data.get("groups")
+                
+                if not uploaded_file.name.endswith('.csv'):
+                    messages.error(request, 'File is not a CSV type.')
+                    return render(request, "users/user_import.html", {"form": form})
+
+                # Parse the users
+                valid_users_raw, valid_users_display, invalid_users = parse_users_from_file(uploaded_file, default_group=group)
+                
+                # Store valid users in session for the confirmation step
+                request.session["valid_users_import"] = valid_users_raw
+                
+                # Render the review page
+                return render(request, "users/user_import_review.html", {
+                    "valid_users": valid_users_display,
+                    "headers": list(valid_users_display[0].keys()) if valid_users_display else [],
+                    "invalid_users": invalid_users,
+                    "total_valid": len(valid_users_raw),
+                    "total_invalid": len(invalid_users)
+                })
+
+            else:
+                # Form is invalid, re-render with errors
+                return render(request, "users/user_import.html", {"form": form})
     else:
+        # GET request
+        # Clear any stale import data
+        if "valid_users_import" in request.session:
+            del request.session["valid_users_import"]
 
         return render(
             request,
