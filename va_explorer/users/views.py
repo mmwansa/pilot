@@ -1,6 +1,7 @@
 import csv
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
@@ -79,6 +80,8 @@ class UserCreateView(
 user_create_view = UserCreateView.as_view()
 
 
+@login_required(login_url=reverse_lazy("account_login"))
+@permission_required("users.add_user", raise_exception=True)
 def UserImportView(request):
 
     if request.method == "POST":
@@ -148,6 +151,8 @@ def UserImportView(request):
         )
 
 
+@login_required(login_url=reverse_lazy("account_login"))
+@permission_required("users.change_user", raise_exception=True)
 def UserPasswordUpdateView(request, pk):
 
     if request.method == "POST":
