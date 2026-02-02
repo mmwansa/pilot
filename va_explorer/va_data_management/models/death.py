@@ -1,5 +1,6 @@
 from django.db import models
 from simple_history.models import HistoricalRecords
+from .household_census import SRSClusterLocation
 
 class Death(models.Model):
     
@@ -23,6 +24,8 @@ class Death(models.Model):
     ea = models.TextField("[Select Enumeration Area]", blank=True, null=True)
     supervisor = models.TextField("Select the name of your supervisor", blank=True, null=True)
     enumerator = models.TextField("Select your name", blank=True, null=True)
+    # ADDING DEATH ID FIELD
+    death_id = models.TextField("DEATH ID", blank=True, null=True)
     
     DE_01 = models.TextField("DE-01 Household ID", blank=True, null=True)
     consent = models.TextField("Did respondent give consent?", blank=True, null=True)
