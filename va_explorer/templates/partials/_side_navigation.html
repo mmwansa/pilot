@@ -28,18 +28,7 @@
       </li>
 
       {% if not request.user|has_group:"Mortality Surveillance Officer" %}
-        <!-- Personnel Section -->
-      <li
-          class="nav-section-header collapsible-header"
-          tabindex="0"
-          data-target="personnel-section"
-          data-tooltip="Personnel Management"
-          aria-expanded="false"
-        >
-          <span class="section-title">Personnel</span>
-          <i class="fas fa-chevron-down collapse-caret"></i>
-        </li>
-        <ul class="collapse-section" id="personnel-section" style="display: none">
+        <ul class="collapse-section" id="personnel-section" style="display: block">
           <li class="nav-item">
             <a
               class="nav-link {% if 'users' in request.resolver_match.namespace %}active{% endif %}"
@@ -63,21 +52,10 @@
         </ul>
       {% endif %}
 
-      <!-- Schedule Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="case-section"
-        data-tooltip="Schedule Management"
-        aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
-      >
-        <span class="section-title">Schedule</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
       <ul
         class="collapse-section"
         id="case-section"
-        style="{% if '/case-management' in request.path %}display:block{% else %}display:none{% endif %}"
+        style="display:block"
       >
         <li class="nav-item">
           <a
@@ -91,18 +69,7 @@
         </li>
       </ul>
 
-      <!-- Data Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="data-section"
-        data-tooltip="Data Management"
-        aria-expanded="false"
-      >
-        <span class="section-title">Data</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
-      <ul class="collapse-section" id="data-section" style="display: none">
+      <ul class="collapse-section" id="data-section" style="display: block">
         <li class="nav-item">
           <a
             class="nav-link {% if request.resolver_match.url_name == 'households' or request.resolver_match.url_name == 'household_detail' %}active{% endif %}"
@@ -177,18 +144,7 @@
         {% endif %}
       </ul>
 
-      <!-- Analytics Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="analytics-section"
-        data-tooltip="Analytics"
-        aria-expanded="false"
-      >
-        <span class="section-title">Analytics</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
-      <ul class="collapse-section" id="analytics-section" style="display: none">
+      <ul class="collapse-section" id="analytics-section" style="display: block">
         <li class="nav-item">
           <a
             class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
