@@ -28,7 +28,7 @@
       </li>
 
       {% if not request.user|has_group:"Mortality Surveillance Officer" %}
-        <!-- Personnel Management Section -->
+        <!-- Personnel Section -->
       <li
           class="nav-section-header collapsible-header"
           tabindex="0"
@@ -36,7 +36,7 @@
           data-tooltip="Personnel Management"
           aria-expanded="false"
         >
-          <span class="section-title">Personnel Management</span>
+          <span class="section-title">Personnel</span>
           <i class="fas fa-chevron-down collapse-caret"></i>
         </li>
         <ul class="collapse-section" id="personnel-section" style="display: none">
@@ -63,7 +63,7 @@
         </ul>
       {% endif %}
 
-      <!-- Schedule Management Section -->
+      <!-- Schedule Section -->
       <li
         class="nav-section-header collapsible-header"
         tabindex="0"
@@ -71,7 +71,7 @@
         data-tooltip="Schedule Management"
         aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
       >
-        <span class="section-title">Schedule Management</span>
+        <span class="section-title">Schedule</span>
         <i class="fas fa-chevron-down collapse-caret"></i>
       </li>
       <ul
@@ -91,7 +91,7 @@
         </li>
       </ul>
 
-      <!-- Data Management Section -->
+      <!-- Data Section -->
       <li
         class="nav-section-header collapsible-header"
         tabindex="0"
@@ -99,7 +99,7 @@
         data-tooltip="Data Management"
         aria-expanded="false"
       >
-        <span class="section-title">Data Management</span>
+        <span class="section-title">Data</span>
         <i class="fas fa-chevron-down collapse-caret"></i>
       </li>
       <ul class="collapse-section" id="data-section" style="display: none">

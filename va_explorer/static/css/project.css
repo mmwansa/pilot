@@ -355,7 +355,7 @@ table.home-page-statistics th {
   
 }
 :root {
-    --sidebar-width: 280px;
+    --sidebar-width: 560px;
     --sidebar-collapsed-width: 70px;
     --sidebar-transition: 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --sidebar-overlay-bg: rgba(0, 0, 0, 0.35);
