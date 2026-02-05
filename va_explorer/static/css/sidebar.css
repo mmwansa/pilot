@@ -36,6 +36,12 @@
   padding: 0;
 }
 
+.collapse-section {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* --- Sidebar transitions & mobile behavior --- */
 .sidebar-container {
   transition: width 0.25s ease, transform 0.25s ease;

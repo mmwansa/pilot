@@ -13,9 +13,6 @@
   <nav class="sidebar-nav" id="sidebarNav">
     <ul class="nav flex-column">
       <!-- Core Navigation (not collapsible) -->
-      <li class="nav-section-header">
-        <span class="section-title">Main</span>
-      </li>
       <li class="nav-item">
         <a
           class="nav-link {% if request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'home' %}active{% endif %}"
