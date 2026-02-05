@@ -652,10 +652,6 @@ a.link-default:hover {
         transform: translateX(0);
     }
     
-    .sidebar-toggle {
-        display: none;
-    }
-    
     .collapse-toggle {
         display: flex;
     }
@@ -682,6 +678,13 @@ a.link-default:hover {
     visibility: hidden;
     transform: translateX(-10px);
     width: 0;
+}
+
+.sidebar-container.collapsed .collapse-caret {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    width: auto;
 }
 
 .sidebar-container.collapsed .user-profile {
@@ -840,21 +843,4 @@ table thead th,
 
 .smaller-cards {
     height:300px; border-radius: 0.75rem;
-}
-
-/* Add this to your sidebar.css or here for demo */
-.sidebar-container.collapsed {
-  width: 60px !important;
-  min-width: 60px !important;
-  transition: width 0.2s;
-}
-.sidebar-container.collapsed .nav-label,
-.sidebar-container.collapsed .section-title {
-  display: none !important;
-}
-.sidebar-container.collapsed .collapse-caret {
-  display: none !important;
-}
-.sidebar-container {
-  transition: width 0.2s;
 }

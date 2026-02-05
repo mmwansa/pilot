@@ -29,10 +29,11 @@
 
       {% if not request.user|has_group:"Mortality Surveillance Officer" %}
         <!-- Personnel Management Section -->
-        <li
+      <li
           class="nav-section-header collapsible-header"
           tabindex="0"
           data-target="personnel-section"
+          data-tooltip="Personnel Management"
           aria-expanded="false"
         >
           <span class="section-title">Personnel Management</span>
@@ -67,6 +68,7 @@
         class="nav-section-header collapsible-header"
         tabindex="0"
         data-target="case-section"
+        data-tooltip="Schedule Management"
         aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
       >
         <span class="section-title">Schedule Management</span>
@@ -94,6 +96,7 @@
         class="nav-section-header collapsible-header"
         tabindex="0"
         data-target="data-section"
+        data-tooltip="Data Management"
         aria-expanded="false"
       >
         <span class="section-title">Data Management</span>
@@ -179,6 +182,7 @@
         class="nav-section-header collapsible-header"
         tabindex="0"
         data-target="analytics-section"
+        data-tooltip="Analytics"
         aria-expanded="false"
       >
         <span class="section-title">Analytics</span>
@@ -235,7 +239,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const sidebarToggle = document.getElementById("sidebarToggle");
   const sidebarOverlay = document.getElementById("sidebarOverlay");
   const headers = document.querySelectorAll(".collapsible-header");
-  const storageKey = "sa_sidebarCollapsed";
   const desktopBreakpoint = 995;
   const isAnalytics = body.dataset.sidebarContext === "va_analytics";
 
@@ -277,20 +280,15 @@ document.addEventListener("DOMContentLoaded", function () {
     sidebarOverlay.classList.toggle("active", isExpanded);
   }
 
-  function setCollapsed(isCollapsed, shouldPersist = true) {
+  function setCollapsed(isCollapsed) {
     sidebar.classList.toggle("collapsed", isCollapsed);
-    if (!isAnalytics && shouldPersist && isDesktop()) {
-      localStorage.setItem(storageKey, isCollapsed.toString());
-    }
   }
 
   function applyDesktopState() {
+    setCollapsed(true);
     if (isAnalytics) {
-      setCollapsed(true, false);
-      setOverlayExpanded(false);
+      setOverlayExpanded(!sidebar.classList.contains("collapsed"));
     } else {
-      const stored = localStorage.getItem(storageKey) === "true";
-      setCollapsed(stored, false);
       setOverlayExpanded(false);
     }
   }
@@ -338,8 +336,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const isCollapsed = sidebar.classList.toggle("collapsed");
       if (isAnalytics) {
         setOverlayExpanded(!isCollapsed);
-      } else {
-        localStorage.setItem(storageKey, isCollapsed.toString());
       }
     }
     updateToggleIcon();
