@@ -230,10 +230,14 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const body = document.body;
   const sidebar = document.getElementById("sidebar");
   const sidebarToggle = document.getElementById("sidebarToggle");
   const sidebarOverlay = document.getElementById("sidebarOverlay");
   const headers = document.querySelectorAll(".collapsible-header");
+  const storageKey = "sa_sidebarCollapsed";
+  const desktopBreakpoint = 995;
+  const isAnalytics = body.dataset.sidebarContext === "va_analytics";
 
   // --- Initialize collapsible sections with saved state ---
   headers.forEach(header => {
@@ -264,9 +268,37 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // --- Restore sidebar collapsed state on desktop ---
-  if (localStorage.getItem("sa_sidebarCollapsed") === "true") {
-    sidebar.classList.add("collapsed");
+  function isDesktop() {
+    return window.innerWidth > desktopBreakpoint;
+  }
+
+  function setOverlayExpanded(isExpanded) {
+    body.classList.toggle("sidebar-overlay-expanded", isExpanded);
+    sidebarOverlay.classList.toggle("active", isExpanded);
+  }
+
+  function setCollapsed(isCollapsed, shouldPersist = true) {
+    sidebar.classList.toggle("collapsed", isCollapsed);
+    if (!isAnalytics && shouldPersist && isDesktop()) {
+      localStorage.setItem(storageKey, isCollapsed.toString());
+    }
+  }
+
+  function applyDesktopState() {
+    if (isAnalytics) {
+      setCollapsed(true, false);
+      setOverlayExpanded(false);
+    } else {
+      const stored = localStorage.getItem(storageKey) === "true";
+      setCollapsed(stored, false);
+      setOverlayExpanded(false);
+    }
+  }
+
+  function applyMobileState() {
+    sidebar.classList.remove("open");
+    sidebar.classList.remove("collapsed");
+    setOverlayExpanded(false);
   }
 
   // Helper to update the toggle icon (fa-bars <-> fa-times)
@@ -274,7 +306,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const icon = sidebarToggle.querySelector("i");
     if (!icon) return;
 
-    if (window.innerWidth <= 995) {
+    if (!isDesktop()) {
       // mobile: show X when open, bars when closed
       if (sidebar.classList.contains("open")) {
         icon.classList.remove("fa-bars");
@@ -297,36 +329,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- Toggle behavior ---
   sidebarToggle.addEventListener("click", function () {
-    if (window.innerWidth <= 995) {
+    if (!isDesktop()) {
       // Mobile: open/close the off-canvas sidebar (don't change collapsed state)
       const isNowOpen = sidebar.classList.toggle("open");
       sidebarOverlay.classList.toggle("active", isNowOpen);
     } else {
       // Desktop: collapse/expand (icon-only)
       const isCollapsed = sidebar.classList.toggle("collapsed");
-      localStorage.setItem("sa_sidebarCollapsed", isCollapsed.toString());
+      if (isAnalytics) {
+        setOverlayExpanded(!isCollapsed);
+      } else {
+        localStorage.setItem(storageKey, isCollapsed.toString());
+      }
     }
     updateToggleIcon();
   });
 
-  // Clicking overlay closes the mobile sidebar
+  // Clicking overlay closes the sidebar
   sidebarOverlay.addEventListener("click", function () {
-    sidebar.classList.remove("open");
-    this.classList.remove("active");
+    if (!isDesktop()) {
+      sidebar.classList.remove("open");
+      this.classList.remove("active");
+    } else if (isAnalytics) {
+      setCollapsed(true, false);
+      setOverlayExpanded(false);
+    }
     updateToggleIcon();
   });
 
-  // Update icon on resize (keeps visual state consistent)
-  window.addEventListener("resize", function () {
-    // If resizing to desktop, ensure overlay/open classes are cleared
-    if (window.innerWidth > 995) {
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    if (!isDesktop() && sidebar.classList.contains("open")) {
       sidebar.classList.remove("open");
       sidebarOverlay.classList.remove("active");
+      updateToggleIcon();
+      return;
+    }
+    if (isAnalytics && isDesktop() && !sidebar.classList.contains("collapsed")) {
+      setCollapsed(true, false);
+      setOverlayExpanded(false);
+      updateToggleIcon();
+    }
+  });
+
+  // Update state on resize
+  window.addEventListener("resize", function () {
+    if (isDesktop()) {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.remove("active");
+      applyDesktopState();
+    } else {
+      applyMobileState();
     }
     updateToggleIcon();
   });
 
-  // initial icon set
+  if (isDesktop()) {
+    applyDesktopState();
+  } else {
+    applyMobileState();
+  }
   updateToggleIcon();
 });
 </script>

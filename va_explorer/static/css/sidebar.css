@@ -14,7 +14,11 @@
 .collapse-caret {
   margin-left: 8px;
   font-size: 13px;
-  transition: transform 0.2s;
+  transition: transform 0.2s, opacity 0.18s ease;
+}
+
+.section-title {
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .collapsible-header[aria-expanded="true"] .collapse-caret {
@@ -40,19 +44,22 @@
 
 /* Smooth label fade when collapsing */
 .sidebar-container .nav-label {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease, width 0.18s ease;
   white-space: nowrap;
 }
 
 /* Icon-only collapsed look (desktop) */
 .sidebar-container.collapsed {
-  width: 60px !important;
-  min-width: 60px !important;
+  width: var(--sidebar-collapsed-width) !important;
+  min-width: var(--sidebar-collapsed-width) !important;
 }
 .sidebar-container.collapsed .nav-label,
 .sidebar-container.collapsed .section-title,
 .sidebar-container.collapsed .collapse-caret {
-  display: none !important;
+  opacity: 0;
+  transform: translateX(-8px);
+  width: 0;
+  pointer-events: none;
 }
 .sidebar-container.collapsed .sidebar-toggle {
   text-align: center;
@@ -72,7 +79,7 @@
     left: 0;
     top: 0;
     height: 100vh;
-    width: 250px;
+    width: var(--sidebar-width);
     transform: translateX(-100%);
     background-color: var(--sidebar-bg, #f0f1f6);
     z-index: 2000;
@@ -86,8 +93,17 @@
 
   /* Keep collapsed width from applying on mobile (we use open/close) */
   .sidebar-container.collapsed {
-    width: 250px !important;
-    min-width: 250px !important;
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
+  }
+
+  .sidebar-container.collapsed .nav-label,
+  .sidebar-container.collapsed .section-title,
+  .sidebar-container.collapsed .collapse-caret {
+    opacity: 1;
+    transform: none;
+    width: auto;
+    pointer-events: auto;
   }
 
   /* Make the toggle button always reachable on mobile */
