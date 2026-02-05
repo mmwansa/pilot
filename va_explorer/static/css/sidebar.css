@@ -105,6 +105,8 @@
     top: 0;
     height: 100vh;
     width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
     transform: translateX(-100%);
     background-color: var(--sidebar-bg, #f0f1f6);
     z-index: 2000;

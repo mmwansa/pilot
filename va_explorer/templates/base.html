@@ -41,13 +41,14 @@
     {% include "partials/_top_navigation.html" %}
   </div>
 
-  <!-- Fixed Sidebar Navigation -->
-   <div class="sidebar-wrapper side-navigation-wrapper">
-  {% include "partials/_side_navigation.html" %}
-  </div>
-  
-  <!-- Main Content Wrapper -->
-  <div class="main-content-wrapper main-content" id="mainContentWrapper">
+  <div class="app-shell">
+    <!-- Fixed Sidebar Navigation -->
+    <div class="sidebar-wrapper side-navigation-wrapper">
+      {% include "partials/_side_navigation.html" %}
+    </div>
+    
+    <!-- Main Content Wrapper -->
+    <div class="main-content-wrapper main-content" id="mainContentWrapper">
     <div class="{% block container-type %}container{% endblock %}" style="padding-top: 60px; padding-left:10px">
       {% include "partials/_messages.html" %}
 
@@ -70,6 +71,7 @@
     <!-- /container -->
 
   
+    </div>
   </div>
 
   {% block modal %}{% endblock modal %}

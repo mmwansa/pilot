@@ -359,16 +359,33 @@ table.home-page-statistics th {
     --sidebar-collapsed-width: 70px;
     --sidebar-transition: 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --sidebar-overlay-bg: rgba(0, 0, 0, 0.35);
+    --sidebar-current-width: var(--sidebar-collapsed-width);
+    --top-nav-height: 60px;
+}
+
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    align-items: stretch;
+}
+
+.side-navigation-wrapper {
+    flex: 0 0 var(--sidebar-current-width);
+    width: var(--sidebar-current-width);
+    min-width: var(--sidebar-current-width);
+    max-width: var(--sidebar-current-width);
+    transition: width var(--sidebar-transition);
 }
 
 /* Sidebar Container */
 .sidebar-container {
     position: fixed;
-    margin-top: 30px;
-    top: 30;
+    top: var(--top-nav-height);
     left: 0;
-    height: 100vh;
-    width: var(--sidebar-width);
+    height: calc(100vh - var(--top-nav-height));
+    width: var(--sidebar-current-width);
+    min-width: var(--sidebar-current-width);
+    max-width: var(--sidebar-current-width);
     background: linear-gradient(180deg, #060606 0%, #06090b 100%);
     color: #ecf0f1;
     transition: width var(--sidebar-transition), transform var(--sidebar-transition);
@@ -377,6 +394,8 @@ table.home-page-statistics th {
     display: flex;
     flex-direction: column;
     transform: translateX(0);
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 /* Brand Section */
@@ -459,6 +478,8 @@ table.home-page-statistics th {
     flex: 1;
     padding: 20px 0;
     overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .sidebar-nav .nav {
@@ -589,7 +610,7 @@ table.home-page-statistics th {
 
 /* MAIN CONTENT AREA */
 .main-content {
-    margin-left: var(--sidebar-width);
+    flex: 1 1 auto;
     min-height: 100vh;
     padding: 20px;
     transition: margin-left var(--sidebar-transition);
@@ -625,7 +646,17 @@ a.link-default:hover {
 
 /* Mobile Responsive */
 @media (max-width: 995px) {
+    .side-navigation-wrapper {
+        flex: 0 0 0;
+        width: 0;
+        min-width: 0;
+        max-width: 0;
+    }
+
     .sidebar-container {
+        position: fixed;
+        top: 0;
+        height: 100vh;
         transform: translateX(-100%);
     }
     
@@ -660,14 +691,8 @@ a.link-default:hover {
 /* Collapsed state for desktop */
 .sidebar-container.collapsed {
     width: var(--sidebar-collapsed-width);
-}
-
-.main-content {
-    transition: margin-left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.sidebar-container.collapsed + .sidebar-overlay + .main-content {
-    margin-left: var(--sidebar-collapsed-width);
+    min-width: var(--sidebar-collapsed-width);
+    max-width: var(--sidebar-collapsed-width);
 }
 
 .sidebar-container.collapsed .brand-text,
@@ -754,12 +779,22 @@ a.link-default:hover {
 }
 
 body.sidebar-overlay-expanded .main-content {
-    margin-left: var(--sidebar-collapsed-width);
+    margin-left: 0;
 }
 
 body.sidebar-overlay-expanded .sidebar-container {
+    position: fixed;
+    top: var(--top-nav-height);
+    left: 0;
     background: rgba(6, 9, 11, 0.9);
     box-shadow: 4px 0 18px rgba(0, 0, 0, 0.35);
+}
+
+body.sidebar-overlay-expanded .side-navigation-wrapper {
+    width: var(--sidebar-collapsed-width);
+    min-width: var(--sidebar-collapsed-width);
+    max-width: var(--sidebar-collapsed-width);
+    flex-basis: var(--sidebar-collapsed-width);
 }
 
 .side-navigation-wrapper{

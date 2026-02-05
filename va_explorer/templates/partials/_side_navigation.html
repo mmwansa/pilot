@@ -282,6 +282,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function setCollapsed(isCollapsed) {
     sidebar.classList.toggle("collapsed", isCollapsed);
+    const width = isCollapsed
+      ? "var(--sidebar-collapsed-width)"
+      : "var(--sidebar-width)";
+    document.documentElement.style.setProperty("--sidebar-current-width", width);
   }
 
   function applyDesktopState() {
