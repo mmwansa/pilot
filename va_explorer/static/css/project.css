@@ -779,24 +779,6 @@ a.link-default:hover {
     transition: margin-left 0.3s ease-in-out;
 }
 
-body.sidebar-overlay-expanded .main-content {
-    margin-left: 0;
-}
-
-body.sidebar-overlay-expanded .sidebar-container {
-    position: fixed;
-    top: var(--top-nav-height);
-    left: 0;
-    background: rgba(6, 9, 11, 0.9);
-    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.35);
-}
-
-body.sidebar-overlay-expanded .side-navigation-wrapper {
-    width: var(--sidebar-collapsed-width);
-    min-width: var(--sidebar-collapsed-width);
-    max-width: var(--sidebar-collapsed-width);
-    flex-basis: var(--sidebar-collapsed-width);
-}
 
 .side-navigation-wrapper{
   margin-bottom: 30px;

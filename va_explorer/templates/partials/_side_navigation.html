@@ -189,7 +189,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const sidebarOverlay = document.getElementById("sidebarOverlay");
   const headers = document.querySelectorAll(".collapsible-header");
   const desktopBreakpoint = 995;
-  const isAnalytics = body.dataset.sidebarContext === "va_analytics";
 
   // --- Initialize collapsible sections with saved state ---
   headers.forEach(header => {
@@ -224,11 +223,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return window.innerWidth > desktopBreakpoint;
   }
 
-  function setOverlayExpanded(isExpanded) {
-    body.classList.toggle("sidebar-overlay-expanded", isExpanded);
-    sidebarOverlay.classList.toggle("active", isExpanded);
-  }
-
   function setCollapsed(isCollapsed) {
     sidebar.classList.toggle("collapsed", isCollapsed);
     const width = isCollapsed
@@ -239,11 +233,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function applyDesktopState() {
     setCollapsed(false);
-    if (isAnalytics) {
-      setOverlayExpanded(!sidebar.classList.contains("collapsed"));
-    } else {
-      setOverlayExpanded(false);
-    }
   }
 
   function applyMobileState() {
@@ -287,9 +276,6 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       // Desktop: collapse/expand (icon-only)
       const isCollapsed = sidebar.classList.toggle("collapsed");
-      if (isAnalytics) {
-        setOverlayExpanded(!isCollapsed);
-      }
     }
     updateToggleIcon();
   });
@@ -299,9 +285,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!isDesktop()) {
       sidebar.classList.remove("open");
       this.classList.remove("active");
-    } else if (isAnalytics) {
-      setCollapsed(true, false);
-      setOverlayExpanded(false);
     }
     updateToggleIcon();
   });
@@ -314,9 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateToggleIcon();
       return;
     }
-    if (isAnalytics && isDesktop() && !sidebar.classList.contains("collapsed")) {
-      setCollapsed(true, false);
-      setOverlayExpanded(false);
+    if (isDesktop()) {
       updateToggleIcon();
     }
   });
