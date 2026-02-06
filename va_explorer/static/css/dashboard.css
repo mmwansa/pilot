@@ -29,7 +29,7 @@ figure {
 
 main {
   height: 95vh; /* Let height adjust naturally */
-  width: calc(100vw - var(--sidebar-current-width) - 40px);
+  width: 100%;
   max-width: 100%;
   margin: 0;
   font-size: .88rem;
@@ -40,6 +40,10 @@ main {
   grid-template-columns: repeat(5, minmax(200px, 1fr)); /* stops from over-stretching */
   grid-gap: 10px;
   --h2height: 20px;
+}
+
+#dashboardApp {
+  background-color: #00c853;
 }
 
 
