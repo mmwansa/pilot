@@ -29,11 +29,12 @@ figure {
 
 main {
   height: 95vh; /* Let height adjust naturally */
-  max-width: 100%; /* Control shrink size */
-  margin: 0 auto; /* Center on page */
+  width: calc(100vw - var(--sidebar-current-width) - 40px);
+  max-width: 100%;
+  margin: 0;
   font-size: .88rem;
   padding: 10px 0 10px 0;
-  margin-right: 250px;
+  margin-right: 0;
   display: grid;
   grid-template-rows: 15rem repeat(5, minmax(0, 1fr));
   grid-template-columns: repeat(5, minmax(200px, 1fr)); /* stops from over-stretching */
