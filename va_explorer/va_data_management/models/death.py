@@ -4,9 +4,6 @@ from .household_census import SRSClusterLocation
 
 class Death(models.Model):
     
-    #new field  for event from cms. Null if va interview not scheduled
-    eventid = models.TextField("Event ID", blank=True, null=True)
-    
     # Persist the CSV key so we can dedupe reliably
     key = models.TextField(unique=True, db_index=True, null=True, blank=True)
     

@@ -5,6 +5,7 @@ from .odk_reference import ODKFormChoice
 from .odk_state import ODKPullLock, ODKPullState
 from .pregnancy import Pregnancy
 from .pregnancy_outcome import PregnancyOutcome
+from .csa_daily_tracker import CSADailyTracker
 from .verbal_autopsy import (
     CauseCodingIssue,
     CauseOfDeath,
@@ -32,4 +33,5 @@ __all__ = [ "SRSClusterLocation",
     "ODKFormChoice",
     "ODKPullState",
     "ODKPullLock",
+    "CSADailyTracker"
 ]
