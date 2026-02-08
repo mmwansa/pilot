@@ -46,6 +46,8 @@
 .sidebar-container {
   transition: width 0.25s ease, transform 0.25s ease;
   will-change: transform, width;
+  overflow-x: visible;
+  overflow-y: auto;
 }
 
 /* Smooth label fade when collapsing */
@@ -94,6 +96,36 @@
 }
 .sidebar-container.collapsed .sidebar-toggle {
   text-align: center;
+}
+
+/* Supervision pop-out (hover) */
+.supervision-item {
+  position: relative;
+}
+
+.supervision-popout {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translate(-8px, -50%);
+  opacity: 0;
+  background: #0f1115;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  z-index: 1500;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+  transition: opacity 0.2s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.supervision-item:hover .supervision-popout,
+.supervision-item:focus-within .supervision-popout {
+  opacity: 1;
+  transform: translate(12px, -50%);
 }
 
 /* Rotate caret when expanded */
