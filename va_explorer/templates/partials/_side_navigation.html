@@ -24,6 +24,17 @@
         </a>
       </li>
 
+      <li class="nav-item">
+        <a
+          class="nav-link {% if request.resolver_match.url_name == 'regional_operations' and request.resolver_match.namespace == 'home' %}active{% endif %}"
+          href="{% url 'home:regional_operations' %}"
+          data-tooltip="Regional Operations"
+        >
+          <i class="fas fa-map-marked-alt nav-icon"></i>
+          <span class="nav-label">Regional Ops</span>
+        </a>
+      </li>
+
       {% if not request.user|has_group:"Mortality Surveillance Officer" %}
         <ul class="collapse-section" id="personnel-section" style="display: block">
           <li class="nav-item supervision-item">

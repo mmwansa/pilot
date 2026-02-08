@@ -56,5 +56,9 @@ trends_endpoint_view = Trends.as_view()
 
 class About(CustomAuthMixin, TemplateView):
     template_name = "home/about.html"
+
+
+class RegionalOperations(CustomAuthMixin, TemplateView):
+    template_name = "home/regional_operations.html"
     
     
