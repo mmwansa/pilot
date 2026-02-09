@@ -86,8 +86,8 @@
             </div>
           </div>
           <div class="filters-datetime-group">
-            <input type="date" class="form-control" aria-label="Start date">
-            <input type="date" class="form-control" aria-label="End date">
+            <input type="date" class="form-control" aria-label="Start date" id="timeStartDate">
+            <input type="date" class="form-control" aria-label="End date" id="timeEndDate">
           </div>
         </div>
       </div>
@@ -171,7 +171,8 @@
           <h4 class="mso-title">MSO</h4>
           <span class="mso-source-label">Source:</span>
           <select class="form-control mso-source-select" aria-label="MSO source">
-            <option selected>SRS</option>
+            <option selected>Community</option>
+            <option>Facility</option>
           </select>
         </div>
         <div class="section-body">
@@ -179,13 +180,10 @@
             <table class="mso-table">
               <thead>
                 <tr>
-                  <th style="width: 16%;">
-                    <div class="mso-table-header">
-                      <span>MSO Name</span>
-                      <span class="sort-icon">▲</span>
-                    </div>
+                  <th style="width: 16%;">                    
                     <div class="mso-search">
-                      <input type="search" placeholder="Search MSO" aria-label="Search MSO">
+                      <input type="search" placeholder="MSO Name (Search)" aria-label="Search MSO">
+                      <span class="sort-icon">▲</span>
                     </div>
                   </th>
                   <th class="numeric" style="width: 7%;">Death Events<span class="sort-icon">▲</span></th>
@@ -203,6 +201,45 @@
               <tbody>
                 <tr>
                   <td class="mso-name">Lusaka Urban</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="mso-name">Ndola Central</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="mso-name">Ndola Central</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="mso-name">Ndola Central</td>
                   <td class="numeric">—</td>
                   <td class="numeric group-sep">—</td>
                   <td class="numeric">—</td>
@@ -254,16 +291,29 @@
         time24: 'Last 24 hours'
       };
 
+      var startInput = document.getElementById('timeStartDate');
+      var endInput = document.getElementById('timeEndDate');
+
       function updateLabel() {
+        var startVal = startInput ? startInput.value : '';
+        var endVal = endInput ? endInput.value : '';
+        if (startVal && endVal) {
+          label.textContent = 'Geography: ' + startVal + ' - ' + endVal;
+          return;
+        }
+
         var selected = document.querySelector('input[name="timePreset"]:checked');
         if (!selected || !mapping[selected.id]) return;
-        label.textContent = 'Geography \u2013 ' + mapping[selected.id];
+        label.textContent = 'Geography: ' + mapping[selected.id];
       }
 
       var radios = document.querySelectorAll('input[name="timePreset"]');
       radios.forEach(function(radio) {
         radio.addEventListener('change', updateLabel);
       });
+
+      if (startInput) startInput.addEventListener('change', updateLabel);
+      if (endInput) endInput.addEventListener('change', updateLabel);
 
       updateLabel();
     })();
