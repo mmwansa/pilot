@@ -1,8 +1,271 @@
 {% extends "base.html" %}
+{% load static i18n %}
 
 {% block title %}Regional Operations Dashboard{% endblock title %}
 
 {% block heading %}Regional Operations Dashboard{% endblock heading %}
 
+{% block container-type %}container-fluid{% endblock %}
+
+{% block css %}
+  {{ block.super }}
+  <link href="{% static 'css/regional_operations.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
+<section class="regional-ops-layout">
+  <div class="regional-ops-panel left-panel">
+    <!-- Contextual summary panel -->
+    <div class="left-panel-header">
+      <h3 class="left-panel-title">Regional Operational View</h3>
+      <p class="left-panel-subtitle" id="geographyTimeLabel">Geography – All Time</p>
+    </div>
+    <div class="left-panel-filter">
+      <span class="left-panel-filter-label">Filter</span>
+      <select class="form-control left-panel-filter-select" aria-label="Geography filter">
+        <option selected>National</option>
+        <option>Regional</option>
+      </select>
+    </div>
+    <div class="left-panel-map" aria-label="Zambia map">
+      <svg role="img" aria-labelledby="zambiaMapTitle">        
+      </svg> 
+    </div>
+    <div class="left-panel-metrics">
+      <div class="metrics-row three-cols">
+        <div class="metric-tile">
+          <div class="metric-value">—</div>
+          <div class="metric-label">Households</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-value">—</div>
+          <div class="metric-label">People</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-value">—</div>
+          <div class="metric-label">Clusters</div>
+        </div>
+      </div>
+      <div class="metrics-row two-cols">
+        <div class="metric-tile">
+          <div class="metric-value">—</div>
+          <div class="metric-label">Active months</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-value">—</div>
+          <div class="metric-label">Last census</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="regional-ops-divider" aria-hidden="true"></div>
+
+  <div class="regional-ops-panel right-panel">
+    <!-- Interactive analytical panel -->
+    <div class="right-panel-sections">
+      <div class="right-panel-section filters-section">
+        <div class="filters-bar">
+          <span class="filters-title">Time filters</span>
+          <div class="filters-radio-group" role="radiogroup" aria-label="Preset time filters">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="timePreset" id="timeAll" checked>
+              <label class="form-check-label" for="timeAll">All time</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="timePreset" id="time30">
+              <label class="form-check-label" for="time30">Last 30 days</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="timePreset" id="time7">
+              <label class="form-check-label" for="time7">Last 7 days</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="timePreset" id="time24">
+              <label class="form-check-label" for="time24">Last 24 hours</label>
+            </div>
+          </div>
+          <div class="filters-datetime-group">
+            <input type="date" class="form-control" aria-label="Start date">
+            <input type="date" class="form-control" aria-label="End date">
+          </div>
+        </div>
+      </div>
+      <div class="right-panel-section csa-section">
+        <h4 class="section-header">CSAs</h4>
+        <div class="section-body">
+          <div class="csa-table-container" role="region" aria-label="CSA table">
+            <table class="csa-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">
+                    <div class="csa-search csa-table-header">
+                      <input type="search" placeholder="CSA Name (Search)" aria-label="Search CSA">
+                      <span class="sort-icon">▲</span>
+                    </div>
+                  </th>
+                  <th class="numeric" style="width: 9%;">Visits<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 9%;">Events<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 9%;">Deaths<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 9%;">Pregnancies<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 14%;">Pregnancy Outcomes<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 18%;">Pregnancies ≥ 6 mo. Past Due Date Without Interview<span class="sort-icon">▲</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="csa-name">Lusaka Central</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="csa-name">Ndola Urban</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="csa-name">Kitwe East</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="csa-name">Nkana East</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="csa-name">Nkana West</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="csa-pagination" aria-label="CSA pagination">
+            <span>Page 1 of 4</span>
+          </div>
+        </div>
+      </div>
+      <div class="right-panel-section mso-section">
+        <div class="mso-header-row">
+          <h4 class="mso-title">MSO</h4>
+          <span class="mso-source-label">Source:</span>
+          <select class="form-control mso-source-select" aria-label="MSO source">
+            <option selected>SRS</option>
+          </select>
+        </div>
+        <div class="section-body">
+          <div class="mso-table-container" role="region" aria-label="MSO table">
+            <table class="mso-table">
+              <thead>
+                <tr>
+                  <th style="width: 16%;">
+                    <div class="mso-table-header">
+                      <span>MSO Name</span>
+                      <span class="sort-icon">▲</span>
+                    </div>
+                    <div class="mso-search">
+                      <input type="search" placeholder="Search MSO" aria-label="Search MSO">
+                    </div>
+                  </th>
+                  <th class="numeric" style="width: 7%;">Death Events<span class="sort-icon">▲</span></th>
+                  <th class="numeric group-sep" style="width: 7%;">VAs Scheduled<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 9%;">VA Scheduled but Not Complete<span class="sort-icon">▲</span></th>
+                  <th class="numeric group-sep" style="width: 8%;">Mean Days (Event → Scheduled)<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 8%;">Mean Days (Scheduled → Complete)<span class="sort-icon">▲</span></th>
+                  <th class="numeric group-sep" style="width: 5%;">VA<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 6%;">Valid COD<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 6%;">Indeterminate<span class="sort-icon">▲</span></th>
+                  <th class="numeric group-sep" style="width: 5%;">Error<span class="sort-icon">▲</span></th>
+                  <th class="numeric" style="width: 6%;">≤15 or ≥90m<span class="sort-icon">▲</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mso-name">Lusaka Urban</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+                <tr>
+                  <td class="mso-name">Ndola Central</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric">—</td>
+                  <td class="numeric group-sep">—</td>
+                  <td class="numeric">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mso-pagination" aria-label="MSO pagination">
+            <span>Page 1 of 5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 {% endblock content %}
+
+{% block page_scripts %}
+  {{ block.super }}
+  <script>
+    (function() {
+      var label = document.getElementById('geographyTimeLabel');
+      if (!label) return;
+
+      var mapping = {
+        timeAll: 'All Time',
+        time30: 'Last 30 days',
+        time7: 'Last 7 days',
+        time24: 'Last 24 hours'
+      };
+
+      function updateLabel() {
+        var selected = document.querySelector('input[name="timePreset"]:checked');
+        if (!selected || !mapping[selected.id]) return;
+        label.textContent = 'Geography \u2013 ' + mapping[selected.id];
+      }
+
+      var radios = document.querySelectorAll('input[name="timePreset"]');
+      radios.forEach(function(radio) {
+        radio.addEventListener('change', updateLabel);
+      });
+
+      updateLabel();
+    })();
+  </script>
+{% endblock %}
