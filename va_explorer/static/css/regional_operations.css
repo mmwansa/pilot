@@ -10,12 +10,11 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  height: 100%;
   overflow: hidden;
 }
 
 .regional-ops-panel.left-panel {
-  flex: 0 0 30%;
+  flex: 0 0 1;
   min-width: 320px;
   max-width: 420px;
   overflow-y: auto;
