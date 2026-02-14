@@ -1,9 +1,12 @@
+from datetime import datetime
+
 from django.http import JsonResponse
 from django.views.generic import TemplateView, View
 
 from va_explorer.home.dashboard_metrics import get_homepage_metrics
 from va_explorer.home.va_trends import get_trends_data
 from va_explorer.utils.mixins import CustomAuthMixin
+from va_explorer.va_analytics.utils.loading import load_va_data
 from va_explorer.va_data_management.utils.loading import get_va_summary_stats
 
 
@@ -60,5 +63,32 @@ class About(CustomAuthMixin, TemplateView):
 
 class RegionalOperations(CustomAuthMixin, TemplateView):
     template_name = "home/regional_operations.html"
+
+
+class RegionalOperationsMapData(CustomAuthMixin, View):
+    def get(self, request, *args, **kwargs):
+        start_date = request.GET.get("start_date") or "1901-01-01"
+        end_date = request.GET.get("end_date") or datetime.today().strftime("%Y-%m-%d")
+
+        data = load_va_data(
+            request.user,
+            start_date=start_date,
+            end_date=end_date,
+            cause_of_death=None,
+            region_of_interest=None,
+            age=None,
+            sex=None,
+        )
+
+        return JsonResponse(
+            {
+                "geographic_province_sums": list(
+                    data.get("geographic_province_sums", [])
+                ),
+                "geographic_district_sums": list(
+                    data.get("geographic_district_sums", [])
+                ),
+            }
+        )
     
     

@@ -12,6 +12,11 @@ urlpatterns = [
         view=views.RegionalOperations.as_view(),
         name="regional_operations",
     ),
+    path(
+        "regional-operations/map-data/",
+        view=views.RegionalOperationsMapData.as_view(),
+        name="regional_operations_map_data",
+    ),
     path("about/", view=views.About.as_view(), name="about"),
     path("trends/", trends_endpoint_view, name="charts"),
 ]

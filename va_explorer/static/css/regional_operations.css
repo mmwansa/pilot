@@ -78,12 +78,24 @@
   justify-content: center;
   padding: 0 0 2px 0;
   color: #324054;
+  max-height: 30%;
+  width: 100%;
 }
 
-.left-panel-map svg {
+.regional-map {
   width: 100%;
-  max-width: 360px;
-  max-height: 30%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  min-height: 140px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f2f4f7;
+}
+
+.left-panel-map .leaflet-control-zoom,
+.left-panel-map .leaflet-control-attribution {
+  display: none;
 }
 
 .zambia-map-shape {

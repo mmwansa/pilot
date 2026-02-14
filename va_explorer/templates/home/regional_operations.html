@@ -10,6 +10,7 @@
 {% block css %}
   {{ block.super }}
   <link href="{% static 'css/regional_operations.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -22,14 +23,13 @@
     </div>
     <div class="left-panel-filter">
       <span class="left-panel-filter-label">Filter</span>
-      <select class="form-control left-panel-filter-select" aria-label="Geography filter">
+      <select class="form-control left-panel-filter-select" aria-label="Geography filter" id="geographyFilterSelect">
         <option selected>National</option>
         <option>Regional</option>
       </select>
     </div>
     <div class="left-panel-map" aria-label="Zambia map">
-      <svg role="img" aria-labelledby="zambiaMapTitle">        
-      </svg> 
+      <div id="regionalMap" class="regional-map" data-map-url="{% url 'home:regional_operations_map_data' %}"></div>
     </div>
     <div class="left-panel-metrics">
       <div class="metrics-row three-cols">
@@ -278,43 +278,6 @@
 
 {% block page_scripts %}
   {{ block.super }}
-  <script>
-    (function() {
-      var label = document.getElementById('geographyTimeLabel');
-      if (!label) return;
-
-      var mapping = {
-        timeAll: 'All Time',
-        time30: 'Last 30 days',
-        time7: 'Last 7 days',
-        time24: 'Last 24 hours'
-      };
-
-      var startInput = document.getElementById('timeStartDate');
-      var endInput = document.getElementById('timeEndDate');
-
-      function updateLabel() {
-        var startVal = startInput ? startInput.value : '';
-        var endVal = endInput ? endInput.value : '';
-        if (startVal && endVal) {
-          label.textContent = 'Geography: ' + startVal + ' - ' + endVal;
-          return;
-        }
-
-        var selected = document.querySelector('input[name="timePreset"]:checked');
-        if (!selected || !mapping[selected.id]) return;
-        label.textContent = 'Geography: ' + mapping[selected.id];
-      }
-
-      var radios = document.querySelectorAll('input[name="timePreset"]');
-      radios.forEach(function(radio) {
-        radio.addEventListener('change', updateLabel);
-      });
-
-      if (startInput) startInput.addEventListener('change', updateLabel);
-      if (endInput) endInput.addEventListener('change', updateLabel);
-
-      updateLabel();
-    })();
-  </script>
+  <script src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
+  <script src="{% static 'js/regional_operations.js' %}"></script>
 {% endblock %}
