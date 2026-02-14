@@ -108,8 +108,7 @@ class RegionalOperationsComponentContextMixin:
         ("death_events", "Death Events"),
         ("va_scheduled", "VAs Scheduled"),
         ("va_not_complete", "VA Scheduled but Not Complete"),
-        ("mean_event_to_scheduled", "Mean Days (Event→Scheduled)"),
-        ("mean_scheduled_to_complete", "Mean Days (Scheduled→Complete)"),
+        ("mean_death_to_va_complete", "Mean Days (Death→Complete)"),
         ("va_total", "VA"),
         ("valid_cod", "Valid COD"),
         ("indeterminate", "Indeterminate"),
@@ -451,15 +450,13 @@ class RegionalOperationsComponentContextMixin:
                 "death_events": 0,
                 "va_scheduled": 0,
                 "va_not_complete": 0,
-                "mean_event_to_scheduled": 0,
-                "mean_scheduled_to_complete": 0,
+                "mean_death_to_va_complete": 0,
                 "va_total": 0,
                 "valid_cod": 0,
                 "indeterminate": 0,
                 "error": 0,
                 "duration_outliers": 0,
-                "_event_to_sched_days": [],
-                "_sched_to_complete_days": [],
+                "_death_to_complete_days": [],
             }
         )
 
@@ -493,22 +490,21 @@ class RegionalOperationsComponentContextMixin:
             if event.interview_scheduled_date and not event.interview_complete_date:
                 entry["va_not_complete"] += 1
 
-            event_reference_date = self._coerce_date(getattr(event.death, "DE_06", None))
-            event_to_sched_days = self._safe_days(
-                event_reference_date,
-                event.interview_scheduled_date,
-            )
-            if event_to_sched_days is not None:
-                entry["_event_to_sched_days"].append(event_to_sched_days)
-
             sched_to_complete_days = self._safe_days(
                 event.interview_scheduled_date,
                 event.interview_complete_date,
             )
             if sched_to_complete_days is not None:
-                entry["_sched_to_complete_days"].append(sched_to_complete_days)
                 if sched_to_complete_days <= 15 or sched_to_complete_days >= 90:
                     entry["duration_outliers"] += 1
+
+            death_date = self._coerce_date(getattr(event.death, "DE_06", None))
+            death_to_complete_days = self._safe_days(
+                death_date,
+                event.interview_complete_date,
+            )
+            if death_to_complete_days is not None:
+                entry["_death_to_complete_days"].append(death_to_complete_days)
 
             va = event.va
             if not va:
@@ -527,9 +523,8 @@ class RegionalOperationsComponentContextMixin:
 
         rows = []
         for row in stats_by_mso.values():
-            row["mean_event_to_scheduled"] = self._mean(row.pop("_event_to_sched_days"))
-            row["mean_scheduled_to_complete"] = self._mean(
-                row.pop("_sched_to_complete_days")
+            row["mean_death_to_va_complete"] = self._mean(
+                row.pop("_death_to_complete_days")
             )
             rows.append(row)
         return rows
