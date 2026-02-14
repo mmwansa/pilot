@@ -411,6 +411,11 @@
   flex-wrap: wrap;
 }
 
+.filters-bar #geographyFilterSelect {
+  flex: 0 0 180px;
+  width: auto;
+}
+
 .filters-title {
   font-size: 0.95rem;
   font-weight: 600;

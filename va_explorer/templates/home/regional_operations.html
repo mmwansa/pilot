@@ -15,7 +15,7 @@
 
 {% block content %}
 <section class="regional-ops-layout">
-  <div class="regional-ops-panel left-panel">
+  {% comment %} <div class="regional-ops-panel left-panel">
     <!-- Contextual summary panel -->
     <div class="left-panel-header">
       <h3 class="left-panel-title">Regional Operational View</h3>
@@ -57,7 +57,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </div> {% endcomment %}
 
   <div class="regional-ops-divider" aria-hidden="true"></div>
 
@@ -66,6 +66,12 @@
     <div class="right-panel-sections">
       <div class="right-panel-section filters-section">
         <div class="filters-bar">
+          <select class="form-control" aria-label="Geography filter" id="geographyFilterSelect">
+            <option value="" disabled selected>Region</option>
+            <option value="national">National</option>
+            <option value="lusaka">Lusaka</option>
+            <option value="southern">Southern</option>
+          </select>
           <span class="filters-title">Time filters</span>
           <div class="filters-radio-group" role="radiogroup" aria-label="Preset time filters">
             <div class="form-check">
