@@ -96,9 +96,8 @@ Icon
 .Trashes
 
 ### VACMS Stuff
-/*.csv
-/*.xlsx
-/*.xlsx
+*.csv
+*.xlsx
 
 # DB DUMP
 /*.dump
