@@ -6,7 +6,7 @@
         <tr>
           <th style="width: 22%;">
             <div class="csa-search csa-table-header">
-              <input type="search" placeholder="CSA Name (Search)" aria-label="Search CSA">
+              <input type="search" placeholder="CSA Name (Search)" aria-label="Search CSA" id="csaNameSearch" value="{{ csa_search }}">
               <a
                 href="?csa_sort=name&csa_dir={% if csa_sort == 'name' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1"
                 class="regional-sort-link sort-icon"
@@ -36,7 +36,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for row in csa_rows %}
+        {% for row in csa_stats %}
           <tr>
             <td class="csa-name">{{ row.name }}</td>
             <td class="numeric">{{ row.visits }}</td>

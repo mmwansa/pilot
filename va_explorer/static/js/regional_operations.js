@@ -10,12 +10,22 @@
   };
   var csaComponentEl = document.getElementById('regionalCsaComponent');
   var msoComponentEl = document.getElementById('regionalMsoComponent');
+  var csaSearchInputEl = document.getElementById('csaNameSearch');
+  var msoSearchInputEl = document.getElementById('msoNameSearch');
+  var focusState = {
+    restoreCsaSearch: false,
+    csaCaretPos: null,
+    restoreMsoSearch: false,
+    msoCaretPos: null
+  };
   var tableSortState = {
     csa_sort: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-sort') || 'visits') : 'visits',
     csa_dir: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-dir') || 'desc') : 'desc',
+    csa_search: csaSearchInputEl ? (csaSearchInputEl.value || '') : '',
     csa_page: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-page') || '1') : '1',
     mso_sort: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-sort') || 'death_events') : 'death_events',
     mso_dir: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-dir') || 'desc') : 'desc',
+    mso_search: msoSearchInputEl ? (msoSearchInputEl.value || '') : '',
     mso_page: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-page') || '1') : '1'
   };
 
@@ -49,43 +59,8 @@
     return document.getElementById(id);
   }
 
-  function formatDate(date) {
-    return date.toISOString().slice(0, 10);
-  }
-
   function getSelectedPreset() {
     return document.querySelector('input[name="timePreset"]:checked');
-  }
-
-  function getPresetDates() {
-    var selected = getSelectedPreset();
-    if (!selected) return {start: '', end: ''};
-
-    var now = new Date();
-
-    if (selected.id === 'timeAll') {
-      return {start: '', end: ''};
-    }
-
-    if (selected.id === 'time30') {
-      var d30 = new Date(now);
-      d30.setDate(d30.getDate() - 30);
-      return {start: formatDate(d30), end: formatDate(now)};
-    }
-
-    if (selected.id === 'time7') {
-      var d7 = new Date(now);
-      d7.setDate(d7.getDate() - 7);
-      return {start: formatDate(d7), end: formatDate(now)};
-    }
-
-    if (selected.id === 'time24') {
-      var d1 = new Date(now);
-      d1.setDate(d1.getDate() - 1);
-      return {start: formatDate(d1), end: formatDate(now)};
-    }
-
-    return {start: '', end: ''};
   }
 
   function getDateRange() {
@@ -93,31 +68,32 @@
     var endInput = getEl('timeEndDate');
     var startVal = startInput ? startInput.value : '';
     var endVal = endInput ? endInput.value : '';
-
-    if (startVal && endVal) {
-      return {start: startVal, end: endVal};
-    }
-
-    return getPresetDates();
+    return {start: startVal, end: endVal};
   }
 
   function getFilterParams() {
     var params = new URLSearchParams();
     var geoSelect = getEl('geographyFilterSelect');
     var sourceSelect = getEl('msoSourceSelect');
+    var csaSearchInput = getEl('csaNameSearch');
+    var msoSearchInput = getEl('msoNameSearch');
     var selectedPreset = getSelectedPreset();
     var range = getDateRange();
 
-    if (geoSelect && geoSelect.value) params.set('geography', geoSelect.value);
+    if (geoSelect && geoSelect.value) params.set('geo', geoSelect.value);
     if (sourceSelect && sourceSelect.value) params.set('source', sourceSelect.value);
     if (selectedPreset && selectedPreset.id) params.set('time_preset', selectedPreset.id);
     if (range.start) params.set('start_date', range.start);
     if (range.end) params.set('end_date', range.end);
+    if (csaSearchInput) tableSortState.csa_search = csaSearchInput.value.trim();
+    if (msoSearchInput) tableSortState.mso_search = msoSearchInput.value.trim();
     if (tableSortState.csa_sort) params.set('csa_sort', tableSortState.csa_sort);
     if (tableSortState.csa_dir) params.set('csa_dir', tableSortState.csa_dir);
+    if (tableSortState.csa_search) params.set('csa_search', tableSortState.csa_search);
     if (tableSortState.csa_page) params.set('csa_page', tableSortState.csa_page);
     if (tableSortState.mso_sort) params.set('mso_sort', tableSortState.mso_sort);
     if (tableSortState.mso_dir) params.set('mso_dir', tableSortState.mso_dir);
+    if (tableSortState.mso_search) params.set('mso_search', tableSortState.mso_search);
     if (tableSortState.mso_page) params.set('mso_page', tableSortState.mso_page);
 
     return params;
@@ -137,6 +113,26 @@
       })
       .then(function(html) {
         container.innerHTML = html;
+        if (containerId === 'regionalCsaComponent' && focusState.restoreCsaSearch) {
+          var refreshedSearch = getEl('csaNameSearch');
+          if (refreshedSearch) {
+            refreshedSearch.focus();
+            var pos = typeof focusState.csaCaretPos === 'number'
+              ? Math.min(focusState.csaCaretPos, refreshedSearch.value.length)
+              : refreshedSearch.value.length;
+            refreshedSearch.setSelectionRange(pos, pos);
+          }
+        }
+        if (containerId === 'regionalMsoComponent' && focusState.restoreMsoSearch) {
+          var refreshedMsoSearch = getEl('msoNameSearch');
+          if (refreshedMsoSearch) {
+            refreshedMsoSearch.focus();
+            var msoPos = typeof focusState.msoCaretPos === 'number'
+              ? Math.min(focusState.msoCaretPos, refreshedMsoSearch.value.length)
+              : refreshedMsoSearch.value.length;
+            refreshedMsoSearch.setSelectionRange(msoPos, msoPos);
+          }
+        }
       })
       .catch(function() {
         // Keep last-rendered component if refresh fails.
@@ -283,11 +279,7 @@
   function updateMapData() {
     if (!hasMap || !mapUrl) return Promise.resolve();
 
-    var range = getDateRange();
-    var params = new URLSearchParams();
-    if (range.start) params.set('start_date', range.start);
-    if (range.end) params.set('end_date', range.end);
-
+    var params = getFilterParams();
     var url = mapUrl + (params.toString() ? '?' + params.toString() : '');
 
     return fetch(url, {method: 'GET'})
@@ -303,6 +295,29 @@
   }
 
   function wireEvents() {
+    var csaSearchTimer = null;
+    var msoSearchTimer = null;
+    document.addEventListener('pointerdown', function(event) {
+      var target = event.target;
+      if (!target) return;
+      if (target.id === 'csaNameSearch') {
+        focusState.restoreCsaSearch = true;
+        focusState.restoreMsoSearch = false;
+        focusState.msoCaretPos = null;
+        return;
+      }
+      if (target.id === 'msoNameSearch') {
+        focusState.restoreMsoSearch = true;
+        focusState.restoreCsaSearch = false;
+        focusState.csaCaretPos = null;
+        return;
+      }
+      focusState.restoreCsaSearch = false;
+      focusState.csaCaretPos = null;
+      focusState.restoreMsoSearch = false;
+      focusState.msoCaretPos = null;
+    });
+
     document.addEventListener('click', function(event) {
       var link = event.target.closest('.regional-sort-link, .regional-page-link');
       if (!link) return;
@@ -352,6 +367,33 @@
       if (target.id === 'msoSourceSelect') {
         tableSortState.mso_page = '1';
         refreshDataComponents({mso: true});
+      }
+    });
+
+    document.addEventListener('input', function(event) {
+      var target = event.target;
+      if (!target) return;
+      if (target.id === 'csaNameSearch') {
+        tableSortState.csa_search = (target.value || '').trim();
+        tableSortState.csa_page = '1';
+        focusState.restoreCsaSearch = true;
+        focusState.csaCaretPos = target.selectionStart;
+        if (csaSearchTimer) clearTimeout(csaSearchTimer);
+        csaSearchTimer = setTimeout(function() {
+          refreshDataComponents({csa: true});
+        }, 1000);
+        return;
+      }
+
+      if (target.id === 'msoNameSearch') {
+        tableSortState.mso_search = (target.value || '').trim();
+        tableSortState.mso_page = '1';
+        focusState.restoreMsoSearch = true;
+        focusState.msoCaretPos = target.selectionStart;
+        if (msoSearchTimer) clearTimeout(msoSearchTimer);
+        msoSearchTimer = setTimeout(function() {
+          refreshDataComponents({mso: true});
+        }, 1000);
       }
     });
 

@@ -14,7 +14,7 @@
         <tr>
           <th style="width: 16%;">
             <div class="mso-search">
-              <input type="search" placeholder="MSO Name (Search)" aria-label="Search MSO"><a
+              <input type="search" placeholder="MSO Name (Search)" aria-label="Search MSO" id="msoNameSearch" value="{{ mso_search }}"><a
                 href="?mso_sort=name&mso_dir={% if mso_sort == 'name' and mso_dir == 'desc' %}asc{% else %}desc{% endif %}&mso_page=1"
                 class="regional-sort-link sort-icon"
                 data-table="mso"
@@ -35,7 +35,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for row in mso_rows %}
+        {% for row in mso_stats %}
           <tr>
             <td class="mso-name">{{ row.name }}</td>
             <td class="numeric">{{ row.death_events }}</td>
