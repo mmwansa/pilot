@@ -227,6 +227,12 @@
   text-decoration: underline;
 }
 
+.regional-page-link.disabled {
+  pointer-events: none;
+  opacity: 0.45;
+  text-decoration: none;
+}
+
 .csa-table tbody td {
   padding: 10px 8px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);

@@ -251,6 +251,7 @@ def test_regional_operations_components_refresh_independently(user: User):
     assert csa_response.status_code == 200
     assert b"CSA Name (Search)" in csa_response.content
     assert b"regional-sort-link" in csa_response.content
+    assert b"regional-page-link" in csa_response.content
 
     mso_response = client.get(
         "/regional-operations/components/mso/",
@@ -261,6 +262,7 @@ def test_regional_operations_components_refresh_independently(user: User):
     assert b"id=\"msoSourceSelect\"" in mso_response.content
     assert b"value=\"facility\" selected" in mso_response.content
     assert b"regional-sort-link" in mso_response.content
+    assert b"regional-page-link" in mso_response.content
 
 
 # Get the about page and make sure it returns successfully

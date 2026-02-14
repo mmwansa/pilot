@@ -13,8 +13,10 @@
   var tableSortState = {
     csa_sort: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-sort') || 'visits') : 'visits',
     csa_dir: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-dir') || 'desc') : 'desc',
+    csa_page: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-page') || '1') : '1',
     mso_sort: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-sort') || 'death_events') : 'death_events',
-    mso_dir: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-dir') || 'desc') : 'desc'
+    mso_dir: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-dir') || 'desc') : 'desc',
+    mso_page: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-page') || '1') : '1'
   };
 
   var label = document.getElementById('geographyTimeLabel');
@@ -113,8 +115,10 @@
     if (range.end) params.set('end_date', range.end);
     if (tableSortState.csa_sort) params.set('csa_sort', tableSortState.csa_sort);
     if (tableSortState.csa_dir) params.set('csa_dir', tableSortState.csa_dir);
+    if (tableSortState.csa_page) params.set('csa_page', tableSortState.csa_page);
     if (tableSortState.mso_sort) params.set('mso_sort', tableSortState.mso_sort);
     if (tableSortState.mso_dir) params.set('mso_dir', tableSortState.mso_dir);
+    if (tableSortState.mso_page) params.set('mso_page', tableSortState.mso_page);
 
     return params;
   }
@@ -300,8 +304,9 @@
 
   function wireEvents() {
     document.addEventListener('click', function(event) {
-      var link = event.target.closest('.regional-sort-link');
+      var link = event.target.closest('.regional-sort-link, .regional-page-link');
       if (!link) return;
+      if (link.classList.contains('disabled') || link.getAttribute('aria-disabled') === 'true') return;
 
       event.preventDefault();
       var href = link.getAttribute('href') || '';
@@ -312,6 +317,7 @@
       if (table === 'csa') {
         tableSortState.csa_sort = params.get('csa_sort') || tableSortState.csa_sort;
         tableSortState.csa_dir = params.get('csa_dir') || tableSortState.csa_dir;
+        tableSortState.csa_page = params.get('csa_page') || tableSortState.csa_page;
         refreshDataComponents({csa: true});
         return;
       }
@@ -319,6 +325,7 @@
       if (table === 'mso') {
         tableSortState.mso_sort = params.get('mso_sort') || tableSortState.mso_sort;
         tableSortState.mso_dir = params.get('mso_dir') || tableSortState.mso_dir;
+        tableSortState.mso_page = params.get('mso_page') || tableSortState.mso_page;
         refreshDataComponents({mso: true});
       }
     });
@@ -334,6 +341,8 @@
         target.name === 'timePreset';
 
       if (isPrimaryFilter) {
+        tableSortState.csa_page = '1';
+        tableSortState.mso_page = '1';
         updateLabel();
         updateMapData();
         refreshDataComponents({csa: true, mso: true});
@@ -341,6 +350,7 @@
       }
 
       if (target.id === 'msoSourceSelect') {
+        tableSortState.mso_page = '1';
         refreshDataComponents({mso: true});
       }
     });
