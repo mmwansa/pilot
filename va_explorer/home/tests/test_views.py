@@ -219,6 +219,50 @@ def test_trends_no_data(user: User):
     assert json_data["isFieldWorker"] is False
 
 
+def test_regional_operations_page_loads(user: User):
+    client = Client()
+    client.force_login(user=user)
+
+    response = client.get("/regional-operations/", follow=True)
+    assert response.status_code == 200
+    assert b"id=\"regionalFiltersComponent\"" in response.content
+    assert b"id=\"regionalCsaComponent\"" in response.content
+    assert b"id=\"regionalMsoComponent\"" in response.content
+
+
+def test_regional_operations_components_refresh_independently(user: User):
+    client = Client()
+    client.force_login(user=user)
+
+    filters_response = client.get(
+        "/regional-operations/components/filters/",
+        {"geography": "lusaka", "time_preset": "time7"},
+        follow=True,
+    )
+    assert filters_response.status_code == 200
+    assert b"id=\"geographyFilterSelect\"" in filters_response.content
+    assert b"value=\"lusaka\" selected" in filters_response.content
+
+    csa_response = client.get(
+        "/regional-operations/components/csa/",
+        {"geography": "lusaka", "csa_sort": "deaths", "csa_dir": "asc"},
+        follow=True,
+    )
+    assert csa_response.status_code == 200
+    assert b"CSA Name (Search)" in csa_response.content
+    assert b"regional-sort-link" in csa_response.content
+
+    mso_response = client.get(
+        "/regional-operations/components/mso/",
+        {"source": "facility", "mso_sort": "error", "mso_dir": "asc"},
+        follow=True,
+    )
+    assert mso_response.status_code == 200
+    assert b"id=\"msoSourceSelect\"" in mso_response.content
+    assert b"value=\"facility\" selected" in mso_response.content
+    assert b"regional-sort-link" in mso_response.content
+
+
 # Get the about page and make sure it returns successfully
 def test_about(user: User):
     client = Client()

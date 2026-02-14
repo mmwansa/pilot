@@ -1,0 +1,68 @@
+<h4 class="section-header">CSAs</h4>
+<div class="section-body">
+  <div class="csa-table-container" role="region" aria-label="CSA table">
+    <table class="csa-table">
+      <thead>
+        <tr>
+          <th style="width: 22%;">
+            <div class="csa-search csa-table-header">
+              <input type="search" placeholder="CSA Name (Search)" aria-label="Search CSA">
+              <a
+                href="?csa_sort=name&csa_dir={% if csa_sort == 'name' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1"
+                class="regional-sort-link sort-icon"
+                data-table="csa"
+                aria-label="Sort CSA name"
+              >{% if csa_sort == 'name' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</a>
+            </div>
+          </th>
+          <th class="numeric" style="width: 9%;">
+            <a href="?csa_sort=visits&csa_dir={% if csa_sort == 'visits' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Visits</a><span class="sort-icon">{% if csa_sort == 'visits' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+          <th class="numeric" style="width: 9%;">
+            <a href="?csa_sort=events&csa_dir={% if csa_sort == 'events' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Events</a><span class="sort-icon">{% if csa_sort == 'events' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+          <th class="numeric" style="width: 9%;">
+            <a href="?csa_sort=deaths&csa_dir={% if csa_sort == 'deaths' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Deaths</a><span class="sort-icon">{% if csa_sort == 'deaths' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+          <th class="numeric" style="width: 9%;">
+            <a href="?csa_sort=pregnancies&csa_dir={% if csa_sort == 'pregnancies' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Pregnancies</a><span class="sort-icon">{% if csa_sort == 'pregnancies' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+          <th class="numeric" style="width: 14%;">
+            <a href="?csa_sort=pregnancy_outcomes&csa_dir={% if csa_sort == 'pregnancy_outcomes' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Pregnancy Outcomes</a><span class="sort-icon">{% if csa_sort == 'pregnancy_outcomes' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+          <th class="numeric" style="width: 18%;">
+            <a href="?csa_sort=overdue_without_interview&csa_dir={% if csa_sort == 'overdue_without_interview' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Pregnancies ≥ 6 mo. Past Due Date Without Interview</a><span class="sort-icon">{% if csa_sort == 'overdue_without_interview' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in csa_rows %}
+          <tr>
+            <td class="csa-name">{{ row.name }}</td>
+            <td class="numeric">{{ row.visits }}</td>
+            <td class="numeric">{{ row.events }}</td>
+            <td class="numeric">{{ row.deaths }}</td>
+            <td class="numeric">{{ row.pregnancies }}</td>
+            <td class="numeric">{{ row.pregnancy_outcomes }}</td>
+            <td class="numeric">{{ row.overdue_without_interview }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="csa-name">No CSA data found</td>
+            <td class="numeric">0</td>
+            <td class="numeric">0</td>
+            <td class="numeric">0</td>
+            <td class="numeric">0</td>
+            <td class="numeric">0</td>
+            <td class="numeric">0</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="csa-pagination" aria-label="CSA pagination">
+    <a href="?csa_page={{ csa_prev_page }}" class="regional-page-link {% if not csa_has_prev %}disabled{% endif %}" data-table="csa" aria-disabled="{% if csa_has_prev %}false{% else %}true{% endif %}">Prev</a>
+    <span>Page {{ csa_page }} of {{ csa_total_pages }} | Rows: {{ csa_visible_count }} of {{ csa_total_count }}</span>
+    <a href="?csa_page={{ csa_next_page }}" class="regional-page-link {% if not csa_has_next %}disabled{% endif %}" data-table="csa" aria-disabled="{% if csa_has_next %}false{% else %}true{% endif %}">Next</a>
+  </div>
+</div>

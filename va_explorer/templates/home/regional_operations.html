@@ -63,218 +63,34 @@
 
   <div class="regional-ops-panel right-panel">
     <!-- Interactive analytical panel -->
-    <div class="right-panel-sections">
+    <div
+      class="right-panel-sections"
+      id="regionalOperationsComponents"
+      data-filters-url="{% url 'home:regional_operations_filters_component' %}"
+      data-csa-url="{% url 'home:regional_operations_csa_component' %}"
+      data-mso-url="{% url 'home:regional_operations_mso_component' %}"
+    >
       <div class="right-panel-section filters-section">
-        <div class="filters-bar">
-          <select class="form-control" aria-label="Geography filter" id="geographyFilterSelect">
-            <option value="" disabled selected>Region</option>
-            <option value="national">National</option>
-            <option value="lusaka">Lusaka</option>
-            <option value="southern">Southern</option>
-          </select>
-          <span class="filters-title">Time filters</span>
-          <div class="filters-radio-group" role="radiogroup" aria-label="Preset time filters">
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="timePreset" id="timeAll" checked>
-              <label class="form-check-label" for="timeAll">All time</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="timePreset" id="time30">
-              <label class="form-check-label" for="time30">Last 30 days</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="timePreset" id="time7">
-              <label class="form-check-label" for="time7">Last 7 days</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="timePreset" id="time24">
-              <label class="form-check-label" for="time24">Last 24 hours</label>
-            </div>
-          </div>
-          <div class="filters-datetime-group">
-            <input type="date" class="form-control" aria-label="Start date" id="timeStartDate">
-            <input type="date" class="form-control" aria-label="End date" id="timeEndDate">
-          </div>
+        <div class="filters-bar" id="regionalFiltersComponent">
+          {% include "home/components/_regional_operations_filters.html" %}
         </div>
       </div>
       <div class="right-panel-section csa-section">
-        <h4 class="section-header">CSAs</h4>
-        <div class="section-body">
-          <div class="csa-table-container" role="region" aria-label="CSA table">
-            <table class="csa-table">
-              <thead>
-                <tr>
-                  <th style="width: 22%;">
-                    <div class="csa-search csa-table-header">
-                      <input type="search" placeholder="CSA Name (Search)" aria-label="Search CSA">
-                      <span class="sort-icon">▲</span>
-                    </div>
-                  </th>
-                  <th class="numeric" style="width: 9%;">Visits<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 9%;">Events<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 9%;">Deaths<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 9%;">Pregnancies<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 14%;">Pregnancy Outcomes<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 18%;">Pregnancies ≥ 6 mo. Past Due Date Without Interview<span class="sort-icon">▲</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="csa-name">Lusaka Central</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="csa-name">Ndola Urban</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="csa-name">Kitwe East</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="csa-name">Nkana East</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="csa-name">Nkana West</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="csa-pagination" aria-label="CSA pagination">
-            <span>Page 1 of 4</span>
-          </div>
+        <div
+          id="regionalCsaComponent"
+          data-csa-sort="{{ csa_sort }}"
+          data-csa-dir="{{ csa_dir }}"
+        >
+          {% include "home/components/_regional_operations_csa_table.html" %}
         </div>
       </div>
       <div class="right-panel-section mso-section">
-        <div class="mso-header-row">
-          <h4 class="mso-title">MSO</h4>
-          <span class="mso-source-label">Source:</span>
-          <select class="form-control mso-source-select" aria-label="MSO source">
-            <option selected>Community</option>
-            <option>Facility</option>
-          </select>
-        </div>
-        <div class="section-body">
-          <div class="mso-table-container" role="region" aria-label="MSO table">
-            <table class="mso-table">
-              <thead>
-                <tr>
-                  <th style="width: 16%;">                    
-                    <div class="mso-search">                        
-                      <input type="search" placeholder="MSO Name (Search)" aria-label="Search MSO"><span class="sort-icon">▲</span>                      
-                    </div>
-                  </th>
-                  <th class="numeric" style="width: 7%;">Death <br> Events<span class="sort-icon">▲</span></th>
-                  <th class="numeric group-sep" style="width: 7%;">VAs <br> Scheduled<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 9%;">VA Scheduled but <br> Not Complete<span class="sort-icon">▲</span></th>
-                  <th class="numeric group-sep" style="width: 8%;">Mean Days (Event→Scheduled)<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 8%;">Mean Days (Scheduled→Complete)<span class="sort-icon">▲</span></th>
-                  <th class="numeric group-sep" style="width: 5%;">VA<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 6%;">Valid COD<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 6%;">Indeterminate<span class="sort-icon">▲</span></th>
-                  <th class="numeric group-sep" style="width: 5%;">Error<span class="sort-icon">▲</span></th>
-                  <th class="numeric" style="width: 6%;">≤15 or ≥90m<span class="sort-icon">▲</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="mso-name">Lusaka Urban</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="mso-name">Ndola Central</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="mso-name">Ndola Central</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="mso-name">Ndola Central</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-                <tr>
-                  <td class="mso-name">Ndola Central</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric">—</td>
-                  <td class="numeric group-sep">—</td>
-                  <td class="numeric">—</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="mso-pagination" aria-label="MSO pagination">
-            <span>Page 1 of 5</span>
-          </div>
+        <div
+          id="regionalMsoComponent"
+          data-mso-sort="{{ mso_sort }}"
+          data-mso-dir="{{ mso_dir }}"
+        >
+          {% include "home/components/_regional_operations_mso_table.html" %}
         </div>
       </div>
     </div>

@@ -216,6 +216,17 @@
   vertical-align: bottom;
 }
 
+.csa-table thead th a,
+.mso-table thead th a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.csa-table thead th a:hover,
+.mso-table thead th a:hover {
+  text-decoration: underline;
+}
+
 .csa-table tbody td {
   padding: 10px 8px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);

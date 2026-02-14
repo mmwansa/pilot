@@ -1,13 +1,24 @@
 (function() {
   var mapEl = document.getElementById('regionalMap');
-  if (!mapEl || !window.L) return;
+  var hasMap = Boolean(mapEl && window.L);
+
+  var componentsEl = document.getElementById('regionalOperationsComponents');
+  var componentUrls = {
+    filters: componentsEl ? componentsEl.getAttribute('data-filters-url') : '',
+    csa: componentsEl ? componentsEl.getAttribute('data-csa-url') : '',
+    mso: componentsEl ? componentsEl.getAttribute('data-mso-url') : ''
+  };
+  var csaComponentEl = document.getElementById('regionalCsaComponent');
+  var msoComponentEl = document.getElementById('regionalMsoComponent');
+  var tableSortState = {
+    csa_sort: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-sort') || 'visits') : 'visits',
+    csa_dir: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-dir') || 'desc') : 'desc',
+    mso_sort: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-sort') || 'death_events') : 'death_events',
+    mso_dir: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-dir') || 'desc') : 'desc'
+  };
 
   var label = document.getElementById('geographyTimeLabel');
-  var startInput = document.getElementById('timeStartDate');
-  var endInput = document.getElementById('timeEndDate');
-  var geoSelect = document.getElementById('geographyFilterSelect');
-
-  var mapUrl = mapEl.getAttribute('data-map-url');
+  var mapUrl = mapEl ? mapEl.getAttribute('data-map-url') : '';
   var geojsonUrl = window.location.origin + '/static/data/zambia_geojson.json';
 
   var colorScale = [
@@ -32,17 +43,23 @@
     time24: 'Last 24 hours'
   };
 
+  function getEl(id) {
+    return document.getElementById(id);
+  }
+
   function formatDate(date) {
     return date.toISOString().slice(0, 10);
   }
 
+  function getSelectedPreset() {
+    return document.querySelector('input[name="timePreset"]:checked');
+  }
+
   function getPresetDates() {
-    var selected = document.querySelector('input[name="timePreset"]:checked');
+    var selected = getSelectedPreset();
     if (!selected) return {start: '', end: ''};
 
     var now = new Date();
-    var start = '';
-    var end = '';
 
     if (selected.id === 'timeAll') {
       return {start: '', end: ''};
@@ -51,24 +68,27 @@
     if (selected.id === 'time30') {
       var d30 = new Date(now);
       d30.setDate(d30.getDate() - 30);
-      start = formatDate(d30);
-      end = formatDate(now);
-    } else if (selected.id === 'time7') {
-      var d7 = new Date(now);
-      d7.setDate(d7.getDate() - 7);
-      start = formatDate(d7);
-      end = formatDate(now);
-    } else if (selected.id === 'time24') {
-      var d1 = new Date(now);
-      d1.setDate(d1.getDate() - 1);
-      start = formatDate(d1);
-      end = formatDate(now);
+      return {start: formatDate(d30), end: formatDate(now)};
     }
 
-    return {start: start, end: end};
+    if (selected.id === 'time7') {
+      var d7 = new Date(now);
+      d7.setDate(d7.getDate() - 7);
+      return {start: formatDate(d7), end: formatDate(now)};
+    }
+
+    if (selected.id === 'time24') {
+      var d1 = new Date(now);
+      d1.setDate(d1.getDate() - 1);
+      return {start: formatDate(d1), end: formatDate(now)};
+    }
+
+    return {start: '', end: ''};
   }
 
   function getDateRange() {
+    var startInput = getEl('timeStartDate');
+    var endInput = getEl('timeEndDate');
     var startVal = startInput ? startInput.value : '';
     var endVal = endInput ? endInput.value : '';
 
@@ -79,22 +99,83 @@
     return getPresetDates();
   }
 
+  function getFilterParams() {
+    var params = new URLSearchParams();
+    var geoSelect = getEl('geographyFilterSelect');
+    var sourceSelect = getEl('msoSourceSelect');
+    var selectedPreset = getSelectedPreset();
+    var range = getDateRange();
+
+    if (geoSelect && geoSelect.value) params.set('geography', geoSelect.value);
+    if (sourceSelect && sourceSelect.value) params.set('source', sourceSelect.value);
+    if (selectedPreset && selectedPreset.id) params.set('time_preset', selectedPreset.id);
+    if (range.start) params.set('start_date', range.start);
+    if (range.end) params.set('end_date', range.end);
+    if (tableSortState.csa_sort) params.set('csa_sort', tableSortState.csa_sort);
+    if (tableSortState.csa_dir) params.set('csa_dir', tableSortState.csa_dir);
+    if (tableSortState.mso_sort) params.set('mso_sort', tableSortState.mso_sort);
+    if (tableSortState.mso_dir) params.set('mso_dir', tableSortState.mso_dir);
+
+    return params;
+  }
+
+  function refreshComponent(containerId, url) {
+    var container = getEl(containerId);
+    if (!container || !url) return Promise.resolve();
+
+    var params = getFilterParams();
+    var requestUrl = url + (params.toString() ? '?' + params.toString() : '');
+
+    return fetch(requestUrl, {method: 'GET'})
+      .then(function(res) {
+        if (!res.ok) throw new Error('Failed to load component');
+        return res.text();
+      })
+      .then(function(html) {
+        container.innerHTML = html;
+      })
+      .catch(function() {
+        // Keep last-rendered component if refresh fails.
+      });
+  }
+
+  function refreshDataComponents(options) {
+    var opts = options || {csa: true, mso: true};
+    var requests = [];
+
+    if (opts.filters) {
+      requests.push(refreshComponent('regionalFiltersComponent', componentUrls.filters));
+    }
+    if (opts.csa) {
+      requests.push(refreshComponent('regionalCsaComponent', componentUrls.csa));
+    }
+    if (opts.mso) {
+      requests.push(refreshComponent('regionalMsoComponent', componentUrls.mso));
+    }
+
+    return Promise.all(requests);
+  }
+
   function updateLabel() {
     if (!label) return;
+
     var range = getDateRange();
     if (range.start && range.end) {
       label.textContent = 'Geography: ' + range.start + ' - ' + range.end;
       return;
     }
 
-    var selected = document.querySelector('input[name="timePreset"]:checked');
+    var selected = getSelectedPreset();
     if (!selected || !mapping[selected.id]) return;
     label.textContent = 'Geography: ' + mapping[selected.id];
   }
 
   function getBorderType() {
-    if (!geoSelect) return 'Province';
-    return geoSelect.value === 'Regional' ? 'District' : 'Province';
+    var geoSelect = getEl('geographyFilterSelect');
+    if (!geoSelect || !geoSelect.value || geoSelect.value === 'national') {
+      return 'Province';
+    }
+    return 'District';
   }
 
   function computeGeoScale(geoSums) {
@@ -132,7 +213,7 @@
   }
 
   function addGeoJsonLayer() {
-    if (!state.geojson || !state.geoScale || !state.map) return;
+    if (!hasMap || !state.geojson || !state.geoScale || !state.map) return;
 
     var borderType = getBorderType();
     var borders = ['Country', borderType];
@@ -168,6 +249,8 @@
   }
 
   function initializeMap() {
+    if (!hasMap) return Promise.resolve();
+
     state.map = L.map('regionalMap', {
       zoomControl: false,
       attributionControl: false,
@@ -180,7 +263,7 @@
       ]
     }).setView([-13, 27], 6);
 
-    fetch(geojsonUrl)
+    return fetch(geojsonUrl)
       .then(function(res) { return res.json(); })
       .then(function(geojson) {
         state.geojson = geojson;
@@ -194,7 +277,7 @@
   }
 
   function updateMapData() {
-    if (!mapUrl) return Promise.resolve();
+    if (!hasMap || !mapUrl) return Promise.resolve();
 
     var range = getDateRange();
     var params = new URLSearchParams();
@@ -216,26 +299,50 @@
   }
 
   function wireEvents() {
-    var radios = document.querySelectorAll('input[name="timePreset"]');
-    radios.forEach(function(radio) {
-      radio.addEventListener('change', function() {
+    document.addEventListener('click', function(event) {
+      var link = event.target.closest('.regional-sort-link');
+      if (!link) return;
+
+      event.preventDefault();
+      var href = link.getAttribute('href') || '';
+      var table = link.getAttribute('data-table');
+      if (!href || !table) return;
+
+      var params = new URLSearchParams(href.replace('?', ''));
+      if (table === 'csa') {
+        tableSortState.csa_sort = params.get('csa_sort') || tableSortState.csa_sort;
+        tableSortState.csa_dir = params.get('csa_dir') || tableSortState.csa_dir;
+        refreshDataComponents({csa: true});
+        return;
+      }
+
+      if (table === 'mso') {
+        tableSortState.mso_sort = params.get('mso_sort') || tableSortState.mso_sort;
+        tableSortState.mso_dir = params.get('mso_dir') || tableSortState.mso_dir;
+        refreshDataComponents({mso: true});
+      }
+    });
+
+    document.addEventListener('change', function(event) {
+      var target = event.target;
+      if (!target) return;
+
+      var isPrimaryFilter =
+        target.id === 'geographyFilterSelect' ||
+        target.id === 'timeStartDate' ||
+        target.id === 'timeEndDate' ||
+        target.name === 'timePreset';
+
+      if (isPrimaryFilter) {
         updateLabel();
         updateMapData();
-      });
-    });
+        refreshDataComponents({csa: true, mso: true});
+        return;
+      }
 
-    if (startInput) startInput.addEventListener('change', function() {
-      updateLabel();
-      updateMapData();
-    });
-
-    if (endInput) endInput.addEventListener('change', function() {
-      updateLabel();
-      updateMapData();
-    });
-
-    if (geoSelect) geoSelect.addEventListener('change', function() {
-      updateMapData();
+      if (target.id === 'msoSourceSelect') {
+        refreshDataComponents({mso: true});
+      }
     });
 
     window.addEventListener('resize', function() {
