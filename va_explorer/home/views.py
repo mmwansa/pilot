@@ -20,6 +20,7 @@ from va_explorer.va_data_management.models import (
     CauseCodingIssue,
     CauseOfDeath,
     Location,
+    ODKFormChoice,
     Pregnancy,
     PregnancyOutcome,
 )
@@ -100,6 +101,8 @@ class RegionalOperationsComponentContextMixin:
     )
     csa_column_map = (
         ("name", "CSA Name (Search)"),
+        ("district", "District"),
+        ("ward", "Ward"),
         ("visits", "Visits"),
         ("events", "Events"),
         ("deaths", "Deaths"),
@@ -112,6 +115,7 @@ class RegionalOperationsComponentContextMixin:
     )
     mso_column_map = (
         ("name", "MSO Name (Search)"),
+        ("province", "Province"),
         ("death_events", "Death Events"),
         ("va_scheduled", "VAs Scheduled"),
         ("va_not_complete", "VA Scheduled but Not Complete"),
@@ -253,8 +257,8 @@ class RegionalOperationsComponentContextMixin:
     @staticmethod
     def _format_csa_display_name(raw_name):
         name = (raw_name or "").strip().replace("_", " ")
-        # Drop trailing numeric token after the last space.
-        name = re.sub(r"\s+\d+$", "", name).strip()
+        # Drop any trailing numeric sequence, including digits attached to text.
+        name = re.sub(r"\d+$", "", name).strip()
         return name or "Unassigned CSA"
 
     @staticmethod
@@ -270,6 +274,46 @@ class RegionalOperationsComponentContextMixin:
         text = re.sub(r"\s+\d+$", "", text).strip().lower()
         text = re.sub(r"\s+", " ", text)
         return text
+
+    @staticmethod
+    def _normalize_choice_lookup_value(value):
+        text = str(value or "").strip()
+        if re.fullmatch(r"\d+", text):
+            return str(int(text))
+        return text
+
+    def _get_choice_label_map(self, field_name):
+        cache = getattr(self, "_choice_label_map_cache", None)
+        if cache is None:
+            cache = {}
+            self._choice_label_map_cache = cache
+        if field_name in cache:
+            return cache[field_name]
+
+        lookup = {}
+        choice_rows = (
+            ODKFormChoice.objects.filter(field_name=field_name)
+            .order_by("id")
+            .values("value", "label")
+        )
+        for row in choice_rows:
+            key = self._normalize_choice_lookup_value(row.get("value"))
+            if key and key not in lookup:
+                # Keep the first label match by insertion order.
+                lookup[key] = (row.get("label") or "").strip()
+        cache[field_name] = lookup
+        return lookup
+
+    def _resolve_choice_label(self, field_name, raw_value):
+        text_value = str(raw_value or "").strip()
+        if not text_value:
+            return "—"
+        lookup = self._get_choice_label_map(field_name)
+        normalized = self._normalize_choice_lookup_value(text_value)
+        label = lookup.get(normalized)
+        if label:
+            return label
+        return text_value.replace("_", " ")
 
     def _matches_name_search(self, name_value, raw_query):
         query = self._normalize_name_search_text(raw_query)
@@ -419,6 +463,8 @@ class RegionalOperationsComponentContextMixin:
         reverse = sort_dir == "desc"
         if sort_key == "name":
             return sorted(rows, key=lambda r: str(r.get("name", "")).lower(), reverse=reverse)
+        if sort_key in {"district", "ward", "province"}:
+            return sorted(rows, key=lambda r: str(r.get(sort_key, "")).lower(), reverse=reverse)
         def numeric_key(row):
             value = row.get(sort_key, 0)
             if value in (None, ""):
@@ -458,6 +504,8 @@ class RegionalOperationsComponentContextMixin:
         counts_by_csa = defaultdict(
             lambda: {
                 "name": "",
+                "district": "",
+                "ward": "",
                 "visits": 0,
                 "events": 0,
                 "deaths": 0,
@@ -466,6 +514,7 @@ class RegionalOperationsComponentContextMixin:
                 "overdue_without_interview": 0,
             }
         )
+        tracker_enumerator_names = set()
         tracker_rows = CSADailyTracker.objects.filter(
             self._province_access_q("province", province_scope)
         ).filter(self._province_filter_q("province", selected_geo))
@@ -478,6 +527,8 @@ class RegionalOperationsComponentContextMixin:
 
         tracker_rows = tracker_rows.values(
             "enumerator",
+            "district",
+            "ward",
             "today",
             "num_death",
             "num_preg",
@@ -486,8 +537,14 @@ class RegionalOperationsComponentContextMixin:
 
         for row in tracker_rows:
             name = self._format_csa_display_name(row.get("enumerator"))
-            entry = counts_by_csa[name]
+            district = self._resolve_choice_label("district", row.get("district"))
+            ward = self._resolve_choice_label("ward", row.get("ward"))
+            group_key = (name, district, ward)
+            entry = counts_by_csa[group_key]
             entry["name"] = name
+            entry["district"] = district
+            entry["ward"] = ward
+            tracker_enumerator_names.add(name)
             entry["visits"] += 1
             deaths = self._to_int(row.get("num_death"))
             pregnancies = self._to_int(row.get("num_preg"))
@@ -514,7 +571,7 @@ class RegionalOperationsComponentContextMixin:
                 PE_10A__lte=end_date_str,
             )
 
-        for row in pregnancy_rows.values("key", "enumerator", "PE_10A"):
+        for row in pregnancy_rows.values("key", "enumerator", "district", "ward", "PE_10A"):
             due_date = self._coerce_date(row.get("PE_10A"))
             if not due_date or due_date > overdue_cutoff:
                 continue
@@ -524,8 +581,15 @@ class RegionalOperationsComponentContextMixin:
                 continue
 
             name = self._format_csa_display_name(row.get("enumerator"))
-            entry = counts_by_csa[name]
+            if name not in tracker_enumerator_names:
+                continue
+            district = self._resolve_choice_label("district", row.get("district"))
+            ward = self._resolve_choice_label("ward", row.get("ward"))
+            group_key = (name, district, ward)
+            entry = counts_by_csa[group_key]
             entry["name"] = name
+            entry["district"] = district
+            entry["ward"] = ward
             entry["overdue_without_interview"] += 1
 
         return list(counts_by_csa.values())
@@ -542,6 +606,7 @@ class RegionalOperationsComponentContextMixin:
         stats_by_mso = defaultdict(
             lambda: {
                 "name": "",
+                "province": "—",
                 "death_events": 0,
                 "va_scheduled": 0,
                 "va_not_complete": 0,
@@ -558,13 +623,26 @@ class RegionalOperationsComponentContextMixin:
         # Base MSO population must come from scoped VA dataset so rows render whenever VAs exist.
         va_to_mso_name = {}
         base_va_records = []
-        for va_row in va_queryset.values("id", "Id10010", "location__name", "province_name"):
+        for va_row in va_queryset.values(
+            "id",
+            "Id10010",
+            "location__name",
+            "province_name",
+            "province",
+        ):
             mso_name = self._mso_name_from_va_row(va_row)
             mso_name_norm = self.normalize_person_name(mso_name)
+            province_value = (
+                va_row.get("province")
+                if va_row.get("province") not in (None, "")
+                else va_row.get("province_name")
+            )
+            province_label = self._resolve_choice_label("province", province_value)
             va_to_mso_name[va_row["id"]] = mso_name
             base_va_records.append(
                 {
                     "name": mso_name,
+                    "province": province_label,
                     "mso_name_norm": mso_name_norm,
                     "va_id": va_row["id"],
                     "location_name": va_row.get("location__name"),
@@ -575,21 +653,26 @@ class RegionalOperationsComponentContextMixin:
         if base_va_records:
             df_base_va = pd.DataFrame.from_records(base_va_records)
             df_va_totals = (
-                df_base_va.groupby(["name", "mso_name_norm"], as_index=False)["va_id"]
-                .count()
-                .rename(columns={"va_id": "va_total"})
+                df_base_va.groupby(["name", "mso_name_norm"], as_index=False)
+                .agg(
+                    va_total=("va_id", "count"),
+                    province=("province", "first"),
+                )
             )
         else:
             df_base_va = pd.DataFrame(
                 columns=[
                     "name",
+                    "province",
                     "mso_name_norm",
                     "va_id",
                     "location_name",
                     "province_name",
                 ]
             )
-            df_va_totals = pd.DataFrame(columns=["name", "mso_name_norm", "va_total"])
+            df_va_totals = pd.DataFrame(
+                columns=["name", "province", "mso_name_norm", "va_total"]
+            )
 
         df_mso = df_va_totals.copy()
         mso_names = sorted(df_mso["name"].dropna().unique().tolist())
@@ -604,6 +687,7 @@ class RegionalOperationsComponentContextMixin:
             mso_name = row["name"]
             entry = stats_by_mso[mso_name]
             entry["name"] = mso_name
+            entry["province"] = row.get("province") or "—"
             entry["va_total"] = int(row.get("va_total", 0))
         unmatched_agg_logs = []
 
@@ -665,6 +749,7 @@ class RegionalOperationsComponentContextMixin:
                     continue
                 entry = stats_by_mso[mso_name]
                 entry["name"] = mso_name
+                entry["province"] = row.get("province") or "—"
                 entry["va_total"] = int(row.get("va_total", 0))
                 entry["valid_cod"] = int(row.get("valid_cod", 0))
                 entry["indeterminate"] = int(row.get("indeterminate", 0))
@@ -1031,6 +1116,7 @@ class RegionalOperationsComponentContextMixin:
 
             row = {
                 "name": self._format_mso_display_name(raw_row.get("name")),
+                "province": raw_row.get("province") or "—",
                 "death_events": 0,
                 "va_scheduled": 0,
                 "va_not_complete": 0,

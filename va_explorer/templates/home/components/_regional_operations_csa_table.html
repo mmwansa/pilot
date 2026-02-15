@@ -4,7 +4,7 @@
     <table class="csa-table">
       <thead>
         <tr>
-          <th style="width: 22%;">
+          <th style="width: 16%;">
             <div class="csa-search csa-table-header">
               <input type="search" placeholder="CSA Name (Search)" aria-label="Search CSA" id="csaNameSearch" value="{{ csa_search }}">
               <a
@@ -15,22 +15,28 @@
               >{% if csa_sort == 'name' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</a>
             </div>
           </th>
-          <th class="numeric" style="width: 9%;">
+          <th style="width: 10%;">
+            <a href="?csa_sort=district&csa_dir={% if csa_sort == 'district' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">District</a><span class="sort-icon">{% if csa_sort == 'district' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+          <th style="width: 10%;">
+            <a href="?csa_sort=ward&csa_dir={% if csa_sort == 'ward' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Ward</a><span class="sort-icon">{% if csa_sort == 'ward' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
+          </th>
+          <th class="numeric" style="width: 8%;">
             <a href="?csa_sort=visits&csa_dir={% if csa_sort == 'visits' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Visits</a><span class="sort-icon">{% if csa_sort == 'visits' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
           </th>
-          <th class="numeric" style="width: 9%;">
+          <th class="numeric" style="width: 8%;">
             <a href="?csa_sort=events&csa_dir={% if csa_sort == 'events' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Events</a><span class="sort-icon">{% if csa_sort == 'events' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
           </th>
-          <th class="numeric" style="width: 9%;">
+          <th class="numeric" style="width: 8%;">
             <a href="?csa_sort=deaths&csa_dir={% if csa_sort == 'deaths' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Deaths</a><span class="sort-icon">{% if csa_sort == 'deaths' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
           </th>
-          <th class="numeric" style="width: 9%;">
+          <th class="numeric" style="width: 8%;">
             <a href="?csa_sort=pregnancies&csa_dir={% if csa_sort == 'pregnancies' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Pregnancies</a><span class="sort-icon">{% if csa_sort == 'pregnancies' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
           </th>
-          <th class="numeric" style="width: 14%;">
+          <th class="numeric" style="width: 10%;">
             <a href="?csa_sort=pregnancy_outcomes&csa_dir={% if csa_sort == 'pregnancy_outcomes' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Pregnancy Outcomes</a><span class="sort-icon">{% if csa_sort == 'pregnancy_outcomes' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
           </th>
-          <th class="numeric" style="width: 18%;">
+          <th class="numeric" style="width: 15%;">
             <a href="?csa_sort=overdue_without_interview&csa_dir={% if csa_sort == 'overdue_without_interview' and csa_dir == 'desc' %}asc{% else %}desc{% endif %}&csa_page=1" class="regional-sort-link" data-table="csa">Pregnancies ≥ 6 mo. Past Due Date Without Interview</a><span class="sort-icon">{% if csa_sort == 'overdue_without_interview' %}{% if csa_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}▲{% endif %}</span>
           </th>
         </tr>
@@ -39,6 +45,8 @@
         {% for row in csa_stats %}
           <tr>
             <td class="csa-name">{{ row.name }}</td>
+            <td>{{ row.district }}</td>
+            <td>{{ row.ward }}</td>
             <td class="numeric">{{ row.visits }}</td>
             <td class="numeric">{{ row.events }}</td>
             <td class="numeric">{{ row.deaths }}</td>
@@ -49,6 +57,8 @@
         {% empty %}
           <tr>
             <td class="csa-name">No CSA data found</td>
+            <td>—</td>
+            <td>—</td>
             <td class="numeric">0</td>
             <td class="numeric">0</td>
             <td class="numeric">0</td>
