@@ -485,3 +485,18 @@
   min-width: 180px;
   flex: 1 1 0;
 }
+
+.filters-reset-btn {
+  margin-left: auto;
+  min-width: 92px;
+  background-color: #2f8a4b;
+  border-color: #2f8a4b;
+  color: #ffffff;
+}
+
+.filters-reset-btn:hover,
+.filters-reset-btn:focus {
+  background-color: #26703d;
+  border-color: #26703d;
+  color: #ffffff;
+}

@@ -18,15 +18,25 @@
     restoreMsoSearch: false,
     msoCaretPos: null
   };
+  var tableSortDefaults = {
+    csa_sort: 'visits',
+    csa_dir: 'desc',
+    csa_search: '',
+    csa_page: '1',
+    mso_sort: 'death_events',
+    mso_dir: 'desc',
+    mso_search: '',
+    mso_page: '1'
+  };
   var tableSortState = {
-    csa_sort: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-sort') || 'visits') : 'visits',
-    csa_dir: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-dir') || 'desc') : 'desc',
+    csa_sort: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-sort') || tableSortDefaults.csa_sort) : tableSortDefaults.csa_sort,
+    csa_dir: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-dir') || tableSortDefaults.csa_dir) : tableSortDefaults.csa_dir,
     csa_search: csaSearchInputEl ? (csaSearchInputEl.value || '') : '',
-    csa_page: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-page') || '1') : '1',
-    mso_sort: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-sort') || 'death_events') : 'death_events',
-    mso_dir: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-dir') || 'desc') : 'desc',
+    csa_page: csaComponentEl ? (csaComponentEl.getAttribute('data-csa-page') || tableSortDefaults.csa_page) : tableSortDefaults.csa_page,
+    mso_sort: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-sort') || tableSortDefaults.mso_sort) : tableSortDefaults.mso_sort,
+    mso_dir: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-dir') || tableSortDefaults.mso_dir) : tableSortDefaults.mso_dir,
     mso_search: msoSearchInputEl ? (msoSearchInputEl.value || '') : '',
-    mso_page: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-page') || '1') : '1'
+    mso_page: msoComponentEl ? (msoComponentEl.getAttribute('data-mso-page') || tableSortDefaults.mso_page) : tableSortDefaults.mso_page
   };
 
   var label = document.getElementById('geographyTimeLabel');
@@ -294,6 +304,44 @@
       });
   }
 
+  function resetAllFilters() {
+    var geoSelect = getEl('geographyFilterSelect');
+    var timeAllPreset = getEl('timeAll');
+    var startDateInput = getEl('timeStartDate');
+    var endDateInput = getEl('timeEndDate');
+    var msoSourceSelect = getEl('msoSourceSelect');
+    var csaSearchInput = getEl('csaNameSearch');
+    var msoSearchInput = getEl('msoNameSearch');
+
+    if (geoSelect) {
+      geoSelect.value = '';
+      if (geoSelect.value !== '' && geoSelect.options.length > 0) {
+        geoSelect.selectedIndex = 0;
+      }
+    }
+    if (timeAllPreset) timeAllPreset.checked = true;
+    if (startDateInput) startDateInput.value = '';
+    if (endDateInput) endDateInput.value = '';
+    if (msoSourceSelect) msoSourceSelect.value = 'community';
+    if (csaSearchInput) csaSearchInput.value = '';
+    if (msoSearchInput) msoSearchInput.value = '';
+
+    tableSortState = {
+      csa_sort: tableSortDefaults.csa_sort,
+      csa_dir: tableSortDefaults.csa_dir,
+      csa_search: tableSortDefaults.csa_search,
+      csa_page: tableSortDefaults.csa_page,
+      mso_sort: tableSortDefaults.mso_sort,
+      mso_dir: tableSortDefaults.mso_dir,
+      mso_search: tableSortDefaults.mso_search,
+      mso_page: tableSortDefaults.mso_page
+    };
+    focusState.restoreCsaSearch = false;
+    focusState.csaCaretPos = null;
+    focusState.restoreMsoSearch = false;
+    focusState.msoCaretPos = null;
+  }
+
   function wireEvents() {
     var csaSearchTimer = null;
     var msoSearchTimer = null;
@@ -319,6 +367,16 @@
     });
 
     document.addEventListener('click', function(event) {
+      if (event.target && event.target.id === 'regionalFiltersReset') {
+        if (csaSearchTimer) clearTimeout(csaSearchTimer);
+        if (msoSearchTimer) clearTimeout(msoSearchTimer);
+        resetAllFilters();
+        updateLabel();
+        updateMapData();
+        refreshDataComponents({csa: true, mso: true});
+        return;
+      }
+
       var link = event.target.closest('.regional-sort-link, .regional-page-link');
       if (!link) return;
       if (link.classList.contains('disabled') || link.getAttribute('aria-disabled') === 'true') return;

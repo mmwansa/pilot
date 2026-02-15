@@ -420,6 +420,70 @@ class RegionalOperationsComponentContextMixin:
             query |= Q(**{f"{field_name}__exact": code})
         return query
 
+    @staticmethod
+    def _normalize_province_name(value):
+        text = str(value or "").strip().lower()
+        text = re.sub(r"\s+", " ", text)
+        if text.endswith(" province"):
+            text = text[: -len(" province")].strip()
+        return text
+
+    def _geo_match_meta(self, geo_value):
+        if not geo_value or geo_value == "national":
+            return None
+        raw_meta = self.geo_filter_map.get(geo_value)
+        if not raw_meta:
+            return None
+
+        names = {
+            self._normalize_province_name(name)
+            for name in raw_meta.get("names", ())
+            if self._normalize_province_name(name)
+        }
+        codes = {
+            self._normalize_choice_lookup_value(code)
+            for code in raw_meta.get("codes", ())
+            if str(code or "").strip()
+        }
+        province_lookup = self._get_choice_label_map("province")
+        normalized_lookup = {
+            self._normalize_choice_lookup_value(key): (value or "").strip()
+            for key, value in province_lookup.items()
+        }
+
+        for code in list(codes):
+            label = normalized_lookup.get(code, "")
+            if label:
+                names.add(self._normalize_province_name(label))
+
+        for code, label in normalized_lookup.items():
+            if self._normalize_province_name(label) in names:
+                codes.add(code)
+
+        return {"names": names, "codes": codes}
+
+    def _matches_geo_by_province(self, province_value, geo_value):
+        if not geo_value or geo_value == "national":
+            return True
+
+        meta = self._geo_match_meta(geo_value)
+        if not meta:
+            return True
+
+        province_text = str(province_value or "").strip()
+        if not province_text:
+            return False
+
+        resolved_label = self._resolve_choice_label("province", province_text)
+
+        if self._normalize_province_name(province_text) in meta["names"]:
+            return True
+
+        if self._normalize_province_name(resolved_label) in meta["names"]:
+            return True
+
+        return self._normalize_choice_lookup_value(province_text) in meta["codes"]
+
     def _allowed_province_names(self):
         restrictions = list(self.request.user.location_restrictions.all())
         if not restrictions:
@@ -504,6 +568,7 @@ class RegionalOperationsComponentContextMixin:
         counts_by_csa = defaultdict(
             lambda: {
                 "name": "",
+                "province": "—",
                 "district": "",
                 "ward": "",
                 "visits": 0,
@@ -527,6 +592,7 @@ class RegionalOperationsComponentContextMixin:
 
         tracker_rows = tracker_rows.values(
             "enumerator",
+            "province",
             "district",
             "ward",
             "today",
@@ -537,11 +603,13 @@ class RegionalOperationsComponentContextMixin:
 
         for row in tracker_rows:
             name = self._format_csa_display_name(row.get("enumerator"))
+            province = self._resolve_choice_label("province", row.get("province"))
             district = self._resolve_choice_label("district", row.get("district"))
             ward = self._resolve_choice_label("ward", row.get("ward"))
-            group_key = (name, district, ward)
+            group_key = (name, province, district, ward)
             entry = counts_by_csa[group_key]
             entry["name"] = name
+            entry["province"] = province
             entry["district"] = district
             entry["ward"] = ward
             tracker_enumerator_names.add(name)
@@ -571,7 +639,14 @@ class RegionalOperationsComponentContextMixin:
                 PE_10A__lte=end_date_str,
             )
 
-        for row in pregnancy_rows.values("key", "enumerator", "district", "ward", "PE_10A"):
+        for row in pregnancy_rows.values(
+            "key",
+            "enumerator",
+            "province",
+            "district",
+            "ward",
+            "PE_10A",
+        ):
             due_date = self._coerce_date(row.get("PE_10A"))
             if not due_date or due_date > overdue_cutoff:
                 continue
@@ -583,11 +658,13 @@ class RegionalOperationsComponentContextMixin:
             name = self._format_csa_display_name(row.get("enumerator"))
             if name not in tracker_enumerator_names:
                 continue
+            province = self._resolve_choice_label("province", row.get("province"))
             district = self._resolve_choice_label("district", row.get("district"))
             ward = self._resolve_choice_label("ward", row.get("ward"))
-            group_key = (name, district, ward)
+            group_key = (name, province, district, ward)
             entry = counts_by_csa[group_key]
             entry["name"] = name
+            entry["province"] = province
             entry["district"] = district
             entry["ward"] = ward
             entry["overdue_without_interview"] += 1
@@ -1168,7 +1245,6 @@ class RegionalOperationsComponentContextMixin:
                 )[:1]
             )
         )
-        va_queryset = va_queryset.filter(self._province_filter_q("province_name", selected_geo))
         if time_window["start_date_str"] and time_window["end_date_str"]:
             va_queryset = va_queryset.filter(
                 Id10012__gte=time_window["start_date_str"],
@@ -1181,6 +1257,12 @@ class RegionalOperationsComponentContextMixin:
                 time_window["end_date_str"],
                 province_scope,
             )
+        if selected_geo and selected_geo != "national":
+            csa_rows = [
+                row
+                for row in csa_rows
+                if self._matches_geo_by_province(row.get("province"), selected_geo)
+            ]
         if csa_search:
             csa_rows = [
                 row for row in csa_rows if self._matches_name_search(row.get("name", ""), csa_search)
@@ -1198,6 +1280,12 @@ class RegionalOperationsComponentContextMixin:
             time_window["start_date_str"],
             time_window["end_date_str"],
         )
+        if selected_geo and selected_geo != "national":
+            mso_rows = [
+                row
+                for row in mso_rows
+                if self._matches_geo_by_province(row.get("province"), selected_geo)
+            ]
         if mso_search:
             mso_search_lower = mso_search.lower()
             mso_rows = [
