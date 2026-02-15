@@ -212,7 +212,7 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   font-weight: 600;
   color: #223044;
-  text-align: left;
+  text-align: center;
   vertical-align: bottom;
 }
 
@@ -241,6 +241,11 @@
 
 .csa-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.csa-table thead th:not(:last-child),
+.csa-table tbody td:not(:last-child) {
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .csa-table .numeric {
@@ -368,6 +373,11 @@
   border-bottom: none;
 }
 
+.mso-table thead th:not(:last-child),
+.mso-table tbody td:not(:last-child) {
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 .mso-table .numeric {
   text-align: right;
 }
@@ -376,7 +386,8 @@
   text-align: left;
 }
 
-.mso-table .group-sep {
+.mso-table thead th.group-sep,
+.mso-table tbody td.group-sep {
   border-right: 1px dotted rgba(0, 0, 0, 0.25);
 }
 
@@ -394,6 +405,8 @@
 
 .mso-search input {
   width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 6px 10px 6px 28px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 8px;

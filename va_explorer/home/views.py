@@ -1,9 +1,11 @@
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 import difflib
+import logging
 import re
 from zoneinfo import ZoneInfo
 
+import pandas as pd
 from django.db.models import Count, OuterRef, Q, Subquery
 from django.db.models.functions import Substr
 from django.http import JsonResponse
@@ -15,6 +17,8 @@ from va_explorer.home.va_trends import get_trends_data
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.models import (
     CSADailyTracker,
+    CauseCodingIssue,
+    CauseOfDeath,
     Location,
     Pregnancy,
     PregnancyOutcome,
@@ -22,6 +26,8 @@ from va_explorer.va_data_management.models import (
 from va_explorer.va_data_management.utils.date_parsing import parse_date
 from va_explorer.va_data_management.utils.loading import get_va_summary_stats
 from va_explorer.vacms.cmsmodels.events import Event
+
+logger = logging.getLogger(__name__)
 
 
 class Index(CustomAuthMixin, TemplateView):
@@ -76,6 +82,7 @@ class About(CustomAuthMixin, TemplateView):
 
 
 class RegionalOperationsComponentContextMixin:
+    INDETERMINATE_LABEL = "Indeterminate"
     geography_options = (
         {"value": "national", "label": "National"},
         {"value": "lusaka", "label": "Lusaka"},
@@ -179,11 +186,83 @@ class RegionalOperationsComponentContextMixin:
         )
 
     @staticmethod
+    def _mso_name_from_va_row(va_row):
+        raw_name = (
+            (va_row.get("Id10010") or "").strip()
+            or (va_row.get("location__name") or "").strip()
+        )
+        return RegionalOperationsComponentContextMixin._format_mso_display_name(raw_name)
+
+    @staticmethod
+    def normalize_person_name(value):
+        text = (value or "").strip().replace("_", " ")
+        text = re.sub(r"[^\w\s]", " ", text)
+        text = re.sub(r"\s+", " ", text).strip().lower()
+        return text
+
+    @staticmethod
+    def _best_match_name_norm(query_norm, candidate_norms, threshold=85):
+        query = (query_norm or "").strip()
+        if not query or not candidate_norms:
+            return None
+
+        try:
+            from rapidfuzz import fuzz, process
+
+            best = process.extractOne(query, candidate_norms, scorer=fuzz.ratio)
+            if not best:
+                return None
+            matched_norm, score, _ = best
+            return matched_norm if score >= threshold else None
+        except Exception:
+            best_score = 0
+            best_match = None
+            for candidate in candidate_norms:
+                score = difflib.SequenceMatcher(None, query, candidate).ratio() * 100
+                if score > best_score:
+                    best_score = score
+                    best_match = candidate
+            return best_match if best_score >= threshold else None
+
+    @staticmethod
+    def _best_match_name_norm_with_score(query_norm, candidate_norms, threshold=85):
+        query = (query_norm or "").strip()
+        if not query or not candidate_norms:
+            return (None, None, 0.0)
+
+        try:
+            from rapidfuzz import fuzz, process
+
+            best = process.extractOne(query, candidate_norms, scorer=fuzz.ratio)
+            if not best:
+                return (None, None, 0.0)
+            best_norm, score, _ = best
+            matched = best_norm if score >= threshold else None
+            return (matched, best_norm, float(score))
+        except Exception:
+            best_score = 0.0
+            best_norm = None
+            for candidate in candidate_norms:
+                score = difflib.SequenceMatcher(None, query, candidate).ratio() * 100
+                if score > best_score:
+                    best_score = score
+                    best_norm = candidate
+            matched = best_norm if best_score >= threshold else None
+            return (matched, best_norm, float(best_score))
+
+    @staticmethod
     def _format_csa_display_name(raw_name):
         name = (raw_name or "").strip().replace("_", " ")
         # Drop trailing numeric token after the last space.
         name = re.sub(r"\s+\d+$", "", name).strip()
         return name or "Unassigned CSA"
+
+    @staticmethod
+    def _format_mso_display_name(raw_name):
+        name = (raw_name or "").strip().replace("_", " ")
+        # Drop trailing numeric token after the last space.
+        name = re.sub(r"\s+\d+$", "", name).strip()
+        return name or "Unassigned MSO"
 
     @staticmethod
     def _normalize_name_search_text(value):
@@ -340,7 +419,21 @@ class RegionalOperationsComponentContextMixin:
         reverse = sort_dir == "desc"
         if sort_key == "name":
             return sorted(rows, key=lambda r: str(r.get("name", "")).lower(), reverse=reverse)
-        return sorted(rows, key=lambda r: r.get(sort_key, 0), reverse=reverse)
+        def numeric_key(row):
+            value = row.get(sort_key, 0)
+            if value in (None, ""):
+                return 0
+            try:
+                if pd.isna(value):
+                    return 0
+            except TypeError:
+                pass
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return 0
+
+        return sorted(rows, key=numeric_key, reverse=reverse)
 
     @staticmethod
     def _paginate_rows(rows, page, per_page=5):
@@ -443,6 +536,8 @@ class RegionalOperationsComponentContextMixin:
         selected_mso_source,
         va_queryset,
         province_scope,
+        start_date_str="",
+        end_date_str="",
     ):
         stats_by_mso = defaultdict(
             lambda: {
@@ -460,74 +555,497 @@ class RegionalOperationsComponentContextMixin:
             }
         )
 
-        events = (
-            Event.objects.filter(va_id__in=Subquery(va_queryset.values("id")))
-            .filter(self._province_access_q("province", province_scope))
-            .filter(self._province_filter_q("province", selected_geo))
-            .select_related("va_interview_staff", "death", "va")
-            .prefetch_related(
-                "va__causes",
-                "va__coding_issues",
+        # Base MSO population must come from scoped VA dataset so rows render whenever VAs exist.
+        va_to_mso_name = {}
+        base_va_records = []
+        for va_row in va_queryset.values("id", "Id10010", "location__name", "province_name"):
+            mso_name = self._mso_name_from_va_row(va_row)
+            mso_name_norm = self.normalize_person_name(mso_name)
+            va_to_mso_name[va_row["id"]] = mso_name
+            base_va_records.append(
+                {
+                    "name": mso_name,
+                    "mso_name_norm": mso_name_norm,
+                    "va_id": va_row["id"],
+                    "location_name": va_row.get("location__name"),
+                    "province_name": va_row.get("province_name"),
+                }
             )
+
+        if base_va_records:
+            df_base_va = pd.DataFrame.from_records(base_va_records)
+            df_va_totals = (
+                df_base_va.groupby(["name", "mso_name_norm"], as_index=False)["va_id"]
+                .count()
+                .rename(columns={"va_id": "va_total"})
+            )
+        else:
+            df_base_va = pd.DataFrame(
+                columns=[
+                    "name",
+                    "mso_name_norm",
+                    "va_id",
+                    "location_name",
+                    "province_name",
+                ]
+            )
+            df_va_totals = pd.DataFrame(columns=["name", "mso_name_norm", "va_total"])
+
+        df_mso = df_va_totals.copy()
+        mso_names = sorted(df_mso["name"].dropna().unique().tolist())
+        df_mso["mso_name_norm"] = df_mso["name"].apply(self.normalize_person_name)
+        mso_name_norm_to_name = {
+            row["mso_name_norm"]: row["name"]
+            for _, row in df_mso[["name", "mso_name_norm"]].drop_duplicates().iterrows()
+            if row["mso_name_norm"]
+        }
+        mso_name_norms = sorted(mso_name_norm_to_name.keys())
+        for row in df_mso.to_dict("records"):
+            mso_name = row["name"]
+            entry = stats_by_mso[mso_name]
+            entry["name"] = mso_name
+            entry["va_total"] = int(row.get("va_total", 0))
+        unmatched_agg_logs = []
+
+        scoped_va_queryset = (
+            va_queryset.select_related("location").prefetch_related("causes", "coding_issues")
+        )
+        va_metric_records = []
+        for va in scoped_va_queryset:
+            mso_name = va_to_mso_name.get(va.id) or self._mso_name_from_va_row(
+                {
+                    "Id10010": getattr(va, "Id10010", None),
+                    "location__name": (
+                        va.location.name
+                        if getattr(va, "location", None) is not None
+                        else None
+                    ),
+                }
+            )
+            causes = [cause.cause for cause in va.causes.all()]
+            valid_cod = int(
+                any(
+                    (cause or "").strip()
+                    and cause != self.INDETERMINATE_LABEL
+                    for cause in causes
+                )
+            )
+            indeterminate = int(
+                any(cause == self.INDETERMINATE_LABEL for cause in causes)
+            )
+            error = int(
+                any(issue.severity == "error" for issue in va.coding_issues.all())
+            )
+            va_metric_records.append(
+                {
+                    "name": mso_name,
+                    "mso_name_norm": self.normalize_person_name(mso_name),
+                    "valid_cod": valid_cod,
+                    "indeterminate": indeterminate,
+                    "error": error,
+                }
+            )
+
+        if va_metric_records:
+            df_va_metrics = (
+                pd.DataFrame.from_records(va_metric_records)
+                .groupby(["name", "mso_name_norm"], as_index=False)[
+                    ["valid_cod", "indeterminate", "error"]
+                ]
+                .sum()
+            )
+            df_mso = df_mso.merge(df_va_metrics, on=["name", "mso_name_norm"], how="outer")
+            for col in ("va_total", "valid_cod", "indeterminate", "error"):
+                if col not in df_mso:
+                    df_mso[col] = 0
+                df_mso[col] = df_mso[col].fillna(0).astype(int)
+            for row in df_mso.to_dict("records"):
+                mso_name = row.get("name")
+                if not mso_name:
+                    continue
+                entry = stats_by_mso[mso_name]
+                entry["name"] = mso_name
+                entry["va_total"] = int(row.get("va_total", 0))
+                entry["valid_cod"] = int(row.get("valid_cod", 0))
+                entry["indeterminate"] = int(row.get("indeterminate", 0))
+                entry["error"] = int(row.get("error", 0))
+
+        death_records = []
+        start_date_obj = self._coerce_date(start_date_str)
+        end_date_obj = self._coerce_date(end_date_str)
+        death_rows = Event.objects.filter(
+            self._province_access_q("province", province_scope)
+        ).filter(self._province_filter_q("province", selected_geo))
+        death_rows = death_rows.filter(death__isnull=False, va__isnull=False)
+        for death in death_rows.values("death_id", "death__DE_06", "va__Id10010"):
+            death_date = self._coerce_date(death.get("death__DE_06"))
+            if not death_date:
+                continue
+            if start_date_obj and death_date < start_date_obj:
+                continue
+            if end_date_obj and death_date > end_date_obj:
+                continue
+            death_name_raw = (death.get("va__Id10010") or "").strip()
+            if not death_name_raw:
+                continue
+            death_name = self._format_mso_display_name(death_name_raw)
+            death_records.append(
+                {
+                    "agg_name": death_name,
+                    "agg_name_norm": self.normalize_person_name(death_name),
+                    "death_id": death.get("death_id"),
+                    "death_events": 1,
+                }
+            )
+
+        if death_records:
+            df_death = pd.DataFrame.from_records(death_records)
+            df_death = df_death.dropna(subset=["death_id"])
+            if not df_death.empty:
+                df_death = df_death.drop_duplicates(subset=["agg_name", "death_id"])
+                df_death[["matched_norm", "best_norm", "best_score"]] = df_death[
+                    "agg_name_norm"
+                ].apply(
+                    lambda value: pd.Series(
+                        self._best_match_name_norm_with_score(value, mso_name_norms, 85)
+                    )
+                )
+                unmatched_agg_logs.extend(
+                    [
+                        {
+                            "source": "death_events",
+                            "agg_name": row.get("agg_name"),
+                            "best_match": mso_name_norm_to_name.get(row.get("best_norm"), row.get("best_norm")),
+                            "score": row.get("best_score", 0.0),
+                        }
+                        for _, row in df_death[df_death["matched_norm"].isna()].iterrows()
+                    ]
+                )
+                df_death = df_death[df_death["matched_norm"].notna()]
+                df_death["name"] = df_death["matched_norm"].map(mso_name_norm_to_name)
+                df_death = df_death[df_death["name"].notna()]
+                df_death = (
+                    df_death.groupby("name", as_index=False)["death_events"]
+                    .sum()
+                )
+                df_mso = df_mso.merge(df_death, on="name", how="left")
+                if "death_events" not in df_mso:
+                    df_mso["death_events"] = 0
+                df_mso["death_events"] = df_mso["death_events"].fillna(0).astype(int)
+                for row in df_mso.to_dict("records"):
+                    mso_name = row.get("name")
+                    if not mso_name:
+                        continue
+                    entry = stats_by_mso[mso_name]
+                    entry["name"] = mso_name
+                    entry["death_events"] = int(row.get("death_events", 0))
+
+        event_rows = Event.objects.filter(
+            self._province_access_q("province", province_scope)
+        ).filter(self._province_filter_q("province", selected_geo))
+        if start_date_str and end_date_str:
+            event_rows = event_rows.filter(
+                Q(interview_complete_date__gte=start_date_str, interview_complete_date__lte=end_date_str)
+                | Q(interview_scheduled_date__gte=start_date_str, interview_scheduled_date__lte=end_date_str)
+                | Q(submission_date__gte=start_date_str, submission_date__lte=end_date_str)
+            )
+        # Death-related events only, without requiring explicit death/VA links.
+        event_rows = event_rows.filter(
+            Q(event_type=Event.EventType.DEATH) | Q(event_type_code__icontains="death")
         )
 
-        if selected_mso_source == "community":
-            events = events.exclude(household__isnull=True)
-        elif selected_mso_source == "facility":
-            events = events.filter(household__isnull=True)
-
-        for event in events:
-            name = self._staff_name(event.va_interview_staff, fallback=event.supervisor or "")
-            entry = stats_by_mso[name]
-            entry["name"] = name
-
-            if event.death_id:
-                entry["death_events"] += 1
-
-            if event.interview_scheduled_date:
-                entry["va_scheduled"] += 1
-
-            if event.interview_scheduled_date and not event.interview_complete_date:
-                entry["va_not_complete"] += 1
-
-            sched_to_complete_days = self._safe_days(
-                event.interview_scheduled_date,
-                event.interview_complete_date,
-            )
-            if sched_to_complete_days is not None:
-                if sched_to_complete_days <= 15 or sched_to_complete_days >= 90:
-                    entry["duration_outliers"] += 1
-
-            death_date = self._coerce_date(getattr(event.death, "DE_06", None))
-            death_to_complete_days = self._safe_days(
-                death_date,
-                event.interview_complete_date,
-            )
-            if death_to_complete_days is not None:
-                entry["_death_to_complete_days"].append(death_to_complete_days)
-
-            va = event.va
-            if not va:
+        scheduling_records = []
+        for event in event_rows.values(
+            "event_status",
+            "va_interview_status",
+            "interview_scheduled_date",
+            "interview_complete_date",
+            "va__Id10010",
+        ):
+            mso_name_raw = (event.get("va__Id10010") or "").strip()
+            if not mso_name_raw:
                 continue
-
-            entry["va_total"] += 1
-
-            causes = [cause.cause for cause in va.causes.all()]
-            issues = list(va.coding_issues.all())
-            if any(cause and cause != "Indeterminate" for cause in causes):
-                entry["valid_cod"] += 1
-            if any(cause == "Indeterminate" for cause in causes):
-                entry["indeterminate"] += 1
-            if any(issue.severity == "error" for issue in issues):
-                entry["error"] += 1
-
-        rows = []
-        for row in stats_by_mso.values():
-            row["mean_death_to_va_complete"] = self._mean(
-                row.pop("_death_to_complete_days")
+            mso_name = self._format_mso_display_name(mso_name_raw)
+            is_scheduled = (
+                event.get("event_status") == Event.EventStatus.VA_INTERVIEW_SCHEDULED
+                or (
+                    event.get("va_interview_status") == Event.VAInterviewStatus.SCHEDULED
+                    and event.get("interview_scheduled_date") is not None
+                )
             )
-            rows.append(row)
-        return rows
+            is_not_complete = (
+                event.get("va_interview_status") == Event.VAInterviewStatus.SCHEDULED
+                and event.get("interview_complete_date") is None
+            )
+            scheduling_records.append(
+                {
+                    "agg_name": mso_name,
+                    "agg_name_norm": self.normalize_person_name(mso_name),
+                    "va_scheduled": int(is_scheduled),
+                    "va_not_complete": int(is_not_complete),
+                }
+            )
+
+        if scheduling_records:
+            df_scheduling = pd.DataFrame.from_records(scheduling_records)
+            df_scheduling[["matched_norm", "best_norm", "best_score"]] = df_scheduling[
+                "agg_name_norm"
+            ].apply(
+                lambda value: pd.Series(
+                    self._best_match_name_norm_with_score(value, mso_name_norms, 85)
+                )
+            )
+            unmatched_agg_logs.extend(
+                [
+                    {
+                        "source": "scheduling",
+                        "agg_name": row.get("agg_name"),
+                        "best_match": mso_name_norm_to_name.get(row.get("best_norm"), row.get("best_norm")),
+                        "score": row.get("best_score", 0.0),
+                    }
+                    for _, row in df_scheduling[df_scheduling["matched_norm"].isna()].iterrows()
+                ]
+            )
+            df_scheduling = df_scheduling[df_scheduling["matched_norm"].notna()]
+            df_scheduling["name"] = df_scheduling["matched_norm"].map(mso_name_norm_to_name)
+            df_scheduling = df_scheduling[df_scheduling["name"].notna()]
+            df_scheduling = (
+                df_scheduling.groupby("name", as_index=False)[
+                    ["va_scheduled", "va_not_complete"]
+                ]
+                .sum()
+            )
+            df_mso = df_mso.merge(df_scheduling, on="name", how="left")
+            for col in ("va_scheduled", "va_not_complete"):
+                if col not in df_mso:
+                    df_mso[col] = 0
+                df_mso[col] = df_mso[col].fillna(0).astype(int)
+            for row in df_mso.to_dict("records"):
+                mso_name = row.get("name")
+                if not mso_name:
+                    continue
+                entry = stats_by_mso[mso_name]
+                entry["name"] = mso_name
+                entry["va_scheduled"] = int(row.get("va_scheduled", 0))
+                entry["va_not_complete"] = int(row.get("va_not_complete", 0))
+
+        mean_days_records = []
+        for event in event_rows.filter(
+            death__isnull=False,
+            interview_complete_date__isnull=False,
+        ).values(
+            "death_id",
+            "death__DE_06",
+            "interview_complete_date",
+            "va__Id10010",
+        ):
+            death_date = self._coerce_date(event.get("death__DE_06"))
+            complete_date = event.get("interview_complete_date")
+            if not death_date or not complete_date:
+                continue
+            mean_name_raw = (event.get("va__Id10010") or "").strip()
+            if not mean_name_raw:
+                continue
+            mean_name = self._format_mso_display_name(mean_name_raw)
+            mean_days_records.append(
+                {
+                    "agg_name": mean_name,
+                    "agg_name_norm": self.normalize_person_name(mean_name),
+                    "days_to_complete": (complete_date - death_date).days,
+                }
+            )
+
+        if mean_days_records:
+            df_mean_days = pd.DataFrame.from_records(mean_days_records)
+            df_mean_days[["matched_norm", "best_norm", "best_score"]] = df_mean_days[
+                "agg_name_norm"
+            ].apply(
+                lambda value: pd.Series(
+                    self._best_match_name_norm_with_score(value, mso_name_norms, 85)
+                )
+            )
+            unmatched_agg_logs.extend(
+                [
+                    {
+                        "source": "mean_days",
+                        "agg_name": row.get("agg_name"),
+                        "best_match": mso_name_norm_to_name.get(row.get("best_norm"), row.get("best_norm")),
+                        "score": row.get("best_score", 0.0),
+                    }
+                    for _, row in df_mean_days[df_mean_days["matched_norm"].isna()].iterrows()
+                ]
+            )
+            df_mean_days = df_mean_days[df_mean_days["matched_norm"].notna()]
+            df_mean_days["name"] = df_mean_days["matched_norm"].map(mso_name_norm_to_name)
+            df_mean_days = df_mean_days[df_mean_days["name"].notna()]
+            df_mean_days = (
+                df_mean_days.groupby("name", as_index=False)["days_to_complete"]
+                .mean()
+                .round(1)
+                .rename(columns={"days_to_complete": "mean_death_to_va_complete"})
+            )
+            df_mso = df_mso.merge(df_mean_days, on="name", how="left")
+            if "mean_death_to_va_complete" not in df_mso:
+                df_mso["mean_death_to_va_complete"] = ""
+            df_mso["mean_death_to_va_complete"] = df_mso[
+                "mean_death_to_va_complete"
+            ].where(
+                pd.notna(df_mso["mean_death_to_va_complete"]),
+                "",
+            )
+            for row in df_mso.to_dict("records"):
+                mso_name = row.get("name")
+                if not mso_name:
+                    continue
+                entry = stats_by_mso[mso_name]
+                entry["name"] = mso_name
+                entry["mean_death_to_va_complete"] = row.get(
+                    "mean_death_to_va_complete", ""
+                )
+
+        duration_records = []
+        for va_row in scoped_va_queryset.values("id", "Id10012", "Id10011", "Id10481", "Id10010", "location__name"):
+            mso_name = va_to_mso_name.get(va_row["id"]) or self._mso_name_from_va_row(
+                {
+                    "Id10010": va_row.get("Id10010"),
+                    "location__name": va_row.get("location__name"),
+                }
+            )
+            duration_records.append(
+                {
+                    "name": mso_name,
+                    "mso_name_norm": self.normalize_person_name(mso_name),
+                    "interview_date": va_row.get("Id10012"),
+                    "start_time": va_row.get("Id10011"),
+                    "end_datetime": va_row.get("Id10481"),
+                }
+            )
+
+        if duration_records:
+            df_duration = pd.DataFrame.from_records(duration_records)
+            start_dt_text = (
+                df_duration["interview_date"].fillna("").astype(str).str.strip()
+                + " "
+                + df_duration["start_time"].fillna("").astype(str).str.strip()
+            ).str.strip()
+            df_duration["start_dt"] = pd.to_datetime(
+                start_dt_text,
+                errors="coerce",
+                utc=True,
+            )
+            df_duration["end_dt"] = pd.to_datetime(
+                df_duration["end_datetime"],
+                errors="coerce",
+                utc=True,
+            )
+            df_duration = df_duration.dropna(subset=["start_dt", "end_dt"])
+            if not df_duration.empty:
+                duration_delta = df_duration["end_dt"].sub(df_duration["start_dt"])
+                df_duration["duration_minutes"] = (
+                    duration_delta.dt.total_seconds() / 60.0
+                )
+                df_duration["duration_outlier"] = (
+                    (df_duration["duration_minutes"] < 15)
+                    | (df_duration["duration_minutes"] > 90)
+                ).astype(int)
+                df_duration_metrics = (
+                    df_duration.groupby("name", as_index=False)["duration_outlier"]
+                    .sum()
+                    .rename(columns={"duration_outlier": "duration_outliers"})
+                )
+                df_duration_metrics["mso_name_norm"] = df_duration_metrics["name"].apply(
+                    self.normalize_person_name
+                )
+                df_mso = df_mso.merge(
+                    df_duration_metrics,
+                    on=["name", "mso_name_norm"],
+                    how="outer",
+                )
+                if "duration_outliers" not in df_mso:
+                    df_mso["duration_outliers"] = 0
+                df_mso["duration_outliers"] = (
+                    df_mso["duration_outliers"].fillna(0).astype(int)
+                )
+                for row in df_mso.to_dict("records"):
+                    mso_name = row.get("name")
+                    if not mso_name:
+                        continue
+                    entry = stats_by_mso[mso_name]
+                    entry["name"] = mso_name
+                    entry["duration_outliers"] = int(row.get("duration_outliers", 0))
+
+        if mso_names:
+            df_mso = df_mso[df_mso["name"].isin(mso_names)].copy()
+        else:
+            df_mso = df_mso.iloc[0:0].copy()
+
+        for col in (
+            "death_events",
+            "va_scheduled",
+            "va_not_complete",
+            "va_total",
+            "valid_cod",
+            "indeterminate",
+            "error",
+            "duration_outliers",
+        ):
+            if col not in df_mso:
+                df_mso[col] = 0
+            df_mso[col] = df_mso[col].fillna(0).astype(int)
+        if "mean_death_to_va_complete" not in df_mso:
+            df_mso["mean_death_to_va_complete"] = ""
+        df_mso["mean_death_to_va_complete"] = df_mso[
+            "mean_death_to_va_complete"
+        ].where(pd.notna(df_mso["mean_death_to_va_complete"]), "")
+
+        if unmatched_agg_logs:
+            unmatched_count = len(unmatched_agg_logs)
+            top_unmatched = sorted(
+                unmatched_agg_logs,
+                key=lambda item: item.get("score", 0.0),
+                reverse=True,
+            )[:20]
+            logger.debug(
+                "MSO unmatched aggregate names: %s | Top 20: %s",
+                unmatched_count,
+                top_unmatched,
+            )
+
+        count_columns = (
+            "death_events",
+            "va_scheduled",
+            "va_not_complete",
+            "va_total",
+            "valid_cod",
+            "indeterminate",
+            "error",
+            "duration_outliers",
+        )
+        final_rows = []
+        for raw_row in df_mso.to_dict("records"):
+            mean_value = raw_row.get("mean_death_to_va_complete", "")
+            if pd.isna(mean_value) or mean_value in (None, ""):
+                mean_value = ""
+            else:
+                mean_value = round(float(mean_value), 1)
+
+            row = {
+                "name": self._format_mso_display_name(raw_row.get("name")),
+                "death_events": 0,
+                "va_scheduled": 0,
+                "va_not_complete": 0,
+                "mean_death_to_va_complete": mean_value,
+                "va_total": 0,
+                "valid_cod": 0,
+                "indeterminate": 0,
+                "error": 0,
+                "duration_outliers": 0,
+            }
+            for key in count_columns:
+                value = raw_row.get(key, 0)
+                row[key] = 0 if pd.isna(value) else int(value)
+            final_rows.append(row)
+        return final_rows
 
     def get_regional_operations_context(self):
         selected_geo = self._normalized_geo()
@@ -591,10 +1109,15 @@ class RegionalOperationsComponentContextMixin:
             selected_mso_source,
             va_queryset,
             province_scope,
+            time_window["start_date_str"],
+            time_window["end_date_str"],
         )
         if mso_search:
+            mso_search_lower = mso_search.lower()
             mso_rows = [
-                row for row in mso_rows if self._matches_name_search(row.get("name", ""), mso_search)
+                row
+                for row in mso_rows
+                if mso_search_lower in str(row.get("name", "")).lower()
             ]
         mso_rows_sorted = self._sort_rows(
             mso_rows,
