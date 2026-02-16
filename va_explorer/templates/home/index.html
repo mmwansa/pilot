@@ -40,7 +40,7 @@
     <!-- Tab panes -->
     <div class="tab-content mt-4" id="homeTabsContent">
     <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="tab-1-tab">
-        <div id="national-operational-view">
+        <div id="national-operational-view" data-filter-url="{% url 'home:national_operational_filter_data' %}">
           <div class="national-operational-view-shell">
             <h4 class="mb-3">National Operational View</h4>
             <ul class="nav nav-tabs mb-3" id="nationalOperationalTabs" role="tablist">
@@ -64,7 +64,7 @@
             <div class="tab-content" id="nationalOperationalTabsContent">
               <div class="tab-pane fade show active" id="nov-overview" role="tabpanel" aria-labelledby="nov-overview-tab">
                 <div class="national-operational-grid">
-                  <section class="events-chart-container">
+                  <section id="novEventsChartContainer" class="events-chart-container">
                     <div class="mb-3">
                       <div class="d-flex flex-wrap align-items-center gap-3 mb-2" role="radiogroup" aria-label="Global time filters">
                         <div class="form-check">
@@ -100,63 +100,63 @@
                     {{ pregnancy_outcome_values|json_script:"nov-pregnancy-outcome-values" }}
                     {{ death_values|json_script:"nov-death-values" }}
                   </section>
-                  <aside class="kpi-cards-container">
+                  <aside id="novKpiCardsContainer" class="kpi-cards-container">
                     <h5 class="mb-3">KPI Cards</h5>
                     <div class="nov-kpi-cards">
                       <article class="nov-kpi-card">
                         <h6>Number of clusters ever visited</h6>
                         <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong>{{ today_eas }}</strong></div>
-                          <div><span>This week</span><strong>{{ week_eas }}</strong></div>
-                          <div><span>Cummulative Total</span><strong>{{ total_eas }}</strong></div>
+                          <div><span>Today</span><strong id="nov-kpi-today-eas">{{ today_eas }}</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-eas">{{ week_eas }}</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-eas">{{ total_eas }}</strong></div>
                         </div>
                       </article>
                       <article class="nov-kpi-card">
                         <h6>Number of households</h6>
                         <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong>{{ today_households }}</strong></div>
-                          <div><span>This week</span><strong>{{ week_households }}</strong></div>
-                          <div><span>Cummulative Total</span><strong>{{ total_households }}</strong></div>
+                          <div><span>Today</span><strong id="nov-kpi-today-households">{{ today_households }}</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-households">{{ week_households }}</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-households">{{ total_households }}</strong></div>
                         </div>
                       </article>
                       <article class="nov-kpi-card">
                         <h6>Number of people counted</h6>
                         <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong>{{ today_people }}</strong></div>
-                          <div><span>This week</span><strong>{{ week_people }}</strong></div>
-                          <div><span>Cummulative Total</span><strong>{{ total_people }}</strong></div>
+                          <div><span>Today</span><strong id="nov-kpi-today-people">{{ today_people }}</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-people">{{ week_people }}</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-people">{{ total_people }}</strong></div>
                         </div>
                       </article>
                       <article class="nov-kpi-card">
                         <h6>Pregnancies</h6>
                         <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong>{{ today_pregnancies }}</strong></div>
-                          <div><span>This week</span><strong>{{ week_pregnancies }}</strong></div>
-                          <div><span>Cummulative Total</span><strong>{{ total_pregnancies }}</strong></div>
+                          <div><span>Today</span><strong id="nov-kpi-today-pregnancies">{{ today_pregnancies }}</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-pregnancies">{{ week_pregnancies }}</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-pregnancies">{{ total_pregnancies }}</strong></div>
                         </div>
                       </article>
                       <article class="nov-kpi-card">
                         <h6>Pregnancy Outcomes</h6>
                         <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong>{{ today_preg_outcomes }}</strong></div>
-                          <div><span>This week</span><strong>{{ week_preg_outcomes }}</strong></div>
-                          <div><span>Cummulative Total</span><strong>{{ total_preg_outcomes }}</strong></div>
+                          <div><span>Today</span><strong id="nov-kpi-today-preg-outcomes">{{ today_preg_outcomes }}</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-preg-outcomes">{{ week_preg_outcomes }}</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-preg-outcomes">{{ total_preg_outcomes }}</strong></div>
                         </div>
                       </article>
                       <article class="nov-kpi-card">
                         <h6>Deaths</h6>
                         <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong>{{ today_deaths }}</strong></div>
-                          <div><span>This week</span><strong>{{ week_deaths }}</strong></div>
-                          <div><span>Cummulative Total</span><strong>{{ total_deaths }}</strong></div>
+                          <div><span>Today</span><strong id="nov-kpi-today-deaths">{{ today_deaths }}</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-deaths">{{ week_deaths }}</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-deaths">{{ total_deaths }}</strong></div>
                         </div>
                       </article>
                       <article class="nov-kpi-card">
                         <h6>Verbal Autopsies</h6>
                         <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong>{{ today_vas }}</strong></div>
-                          <div><span>This week</span><strong>{{ week_vas }}</strong></div>
-                          <div><span>Cummulative Total</span><strong>{{ total_vas }}</strong></div>
+                          <div><span>Today</span><strong id="nov-kpi-today-vas">{{ today_vas }}</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-vas">{{ week_vas }}</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-vas">{{ total_vas }}</strong></div>
                         </div>
                       </article>
                     </div>

@@ -1,7 +1,7 @@
 from django.urls import path
 
 from . import views
-from .views import trends_endpoint_view
+from .views import national_operational_filter_data_view, trends_endpoint_view
 
 app_name = "home"
 
@@ -34,4 +34,9 @@ urlpatterns = [
     ),
     path("about/", view=views.About.as_view(), name="about"),
     path("trends/", trends_endpoint_view, name="charts"),
+    path(
+        "national-operational/filter-data/",
+        national_operational_filter_data_view,
+        name="national_operational_filter_data",
+    ),
 ]

@@ -6,6 +6,8 @@ GRAPH_OPTIONS = {
 
 BORDER_COLOR = "#037BFE"
 let novEventsChartInstance = null;
+let novFiltersBound = false;
+let novFilterRequestId = 0;
 
 const setVATrendsTableData = (vaTableData) => {
   document.getElementById('interviewed-past-24-hours').innerHTML = vaTableData.collected["24"];
@@ -182,6 +184,181 @@ const initNationalOperationalEventsChart = () => {
   });
 }
 
+const updateNationalOperationalEventsChart = (labels, pregnancyValues, pregnancyOutcomeValues, deathValues) => {
+  const canvas = document.getElementById("novEventsChart");
+  if (!canvas || typeof Chart === "undefined") return;
+
+  if (!novEventsChartInstance) {
+    initNationalOperationalEventsChart();
+  }
+  if (!novEventsChartInstance) return;
+
+  novEventsChartInstance.data.labels = labels || [];
+  novEventsChartInstance.data.datasets[0].data = pregnancyValues || [];
+  novEventsChartInstance.data.datasets[1].data = pregnancyOutcomeValues || [];
+  novEventsChartInstance.data.datasets[2].data = deathValues || [];
+  novEventsChartInstance.update();
+}
+
+const setElementTextById = (id, value) => {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value ?? 0;
+}
+
+const updateNationalOperationalKpis = (kpis) => {
+  if (!kpis) return;
+  const eas = kpis.eas || {};
+  const households = kpis.households || {};
+  const people = kpis.people || {};
+  const pregnancies = kpis.pregnancies || {};
+  const pregOutcomes = kpis.preg_outcomes || {};
+  const deaths = kpis.deaths || {};
+  const vas = kpis.vas || {};
+
+  setElementTextById("nov-kpi-today-eas", eas.today);
+  setElementTextById("nov-kpi-week-eas", eas.week);
+  setElementTextById("nov-kpi-total-eas", eas.total);
+
+  setElementTextById("nov-kpi-today-households", households.today);
+  setElementTextById("nov-kpi-week-households", households.week);
+  setElementTextById("nov-kpi-total-households", households.total);
+
+  setElementTextById("nov-kpi-today-people", people.today);
+  setElementTextById("nov-kpi-week-people", people.week);
+  setElementTextById("nov-kpi-total-people", people.total);
+
+  setElementTextById("nov-kpi-today-pregnancies", pregnancies.today);
+  setElementTextById("nov-kpi-week-pregnancies", pregnancies.week);
+  setElementTextById("nov-kpi-total-pregnancies", pregnancies.total);
+
+  setElementTextById("nov-kpi-today-preg-outcomes", pregOutcomes.today);
+  setElementTextById("nov-kpi-week-preg-outcomes", pregOutcomes.week);
+  setElementTextById("nov-kpi-total-preg-outcomes", pregOutcomes.total);
+
+  setElementTextById("nov-kpi-today-deaths", deaths.today);
+  setElementTextById("nov-kpi-week-deaths", deaths.week);
+  setElementTextById("nov-kpi-total-deaths", deaths.total);
+
+  setElementTextById("nov-kpi-today-vas", vas.today);
+  setElementTextById("nov-kpi-week-vas", vas.week);
+  setElementTextById("nov-kpi-total-vas", vas.total);
+}
+
+const toggleNovLoadingState = (isLoading) => {
+  const chartContainer = document.getElementById("novEventsChartContainer");
+  const kpiContainer = document.getElementById("novKpiCardsContainer");
+  [chartContainer, kpiContainer].forEach((container) => {
+    if (!container) return;
+    container.style.opacity = isLoading ? "0.6" : "1";
+    container.style.pointerEvents = isLoading ? "none" : "auto";
+  });
+}
+
+const selectedNovPreset = () => {
+  if (document.getElementById("novTime30")?.checked) return "30";
+  if (document.getElementById("novTime7")?.checked) return "7";
+  if (document.getElementById("novTime24")?.checked) return "24";
+  return "all";
+}
+
+const toDatetimeLocalString = (dateObj) => {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
+}
+
+const applyPresetToDatetimeInputs = (preset) => {
+  const startInput = document.getElementById("novStartDatetime");
+  const endInput = document.getElementById("novEndDatetime");
+  if (!startInput || !endInput) return;
+
+  if (preset === "all") {
+    startInput.value = "";
+    endInput.value = "";
+    return;
+  }
+
+  const now = new Date();
+  const start = new Date(now);
+  if (preset === "30") start.setDate(start.getDate() - 30);
+  if (preset === "7") start.setDate(start.getDate() - 7);
+  if (preset === "24") start.setHours(start.getHours() - 24);
+  startInput.value = toDatetimeLocalString(start);
+  endInput.value = toDatetimeLocalString(now);
+}
+
+const clearPresetSelection = () => {
+  ["novTimeAll", "novTime30", "novTime7", "novTime24"].forEach((id) => {
+    const input = document.getElementById(id);
+    if (input) input.checked = false;
+  });
+}
+
+const requestNationalOperationalFilterData = () => {
+  const root = document.getElementById("national-operational-view");
+  if (!root) return;
+  const endpoint = root.dataset.filterUrl;
+  if (!endpoint) return;
+
+  const startInput = document.getElementById("novStartDatetime");
+  const endInput = document.getElementById("novEndDatetime");
+  const requestId = ++novFilterRequestId;
+
+  toggleNovLoadingState(true);
+  $.ajax({
+    url: endpoint,
+    type: "GET",
+    dataType: "json",
+    data: {
+      preset: selectedNovPreset(),
+      start: startInput?.value || "",
+      end: endInput?.value || "",
+    },
+    success: (jsonResponse) => {
+      if (requestId !== novFilterRequestId) return;
+      updateNationalOperationalEventsChart(
+        jsonResponse.chart_labels || [],
+        jsonResponse.pregnancy_values || [],
+        jsonResponse.pregnancy_outcome_values || [],
+        jsonResponse.death_values || []
+      );
+      updateNationalOperationalKpis(jsonResponse.kpis || {});
+    },
+    complete: () => {
+      if (requestId === novFilterRequestId) {
+        toggleNovLoadingState(false);
+      }
+    },
+    error: () => console.log("Failed to fetch National Operational View filter data"),
+  });
+}
+
+const initNationalOperationalFilters = () => {
+  const root = document.getElementById("national-operational-view");
+  if (!root || novFiltersBound) return;
+  novFiltersBound = true;
+
+  ["novTimeAll", "novTime30", "novTime7", "novTime24"].forEach((id) => {
+    const radio = document.getElementById(id);
+    if (!radio) return;
+    radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      const preset = selectedNovPreset();
+      applyPresetToDatetimeInputs(preset);
+      requestNationalOperationalFilterData();
+    });
+  });
+
+  const startInput = document.getElementById("novStartDatetime");
+  const endInput = document.getElementById("novEndDatetime");
+  [startInput, endInput].forEach((input) => {
+    if (!input) return;
+    input.addEventListener("change", () => {
+      clearPresetSelection();
+      requestNationalOperationalFilterData();
+    });
+  });
+}
+
 const setSingleMetricTrendsTableData = (prefix, trendTable) => {
   const row = (trendTable && trendTable.recorded) ? trendTable.recorded : {};
   const values = {
@@ -273,3 +450,4 @@ const loadAllData = () => {
 
 loadAllData();
 initNationalOperationalEventsChart();
+initNationalOperationalFilters();

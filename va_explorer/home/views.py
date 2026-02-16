@@ -1,5 +1,5 @@
-from collections import defaultdict
-from datetime import date, datetime, timedelta
+from collections import Counter, defaultdict
+from datetime import date, datetime, time, timedelta
 import difflib
 import logging
 import re
@@ -10,6 +10,7 @@ from django.db.models import Count, OuterRef, Q, Subquery
 from django.db.models.functions import Substr
 from django.http import JsonResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime as django_parse_datetime
 from django.views.generic import TemplateView, View
 
 from va_explorer.home.dashboard_metrics import get_homepage_metrics
@@ -20,16 +21,294 @@ from va_explorer.va_data_management.models import (
     CSADailyTracker,
     CauseCodingIssue,
     CauseOfDeath,
+    Death,
+    Household,
+    HouseholdMember,
     Location,
     ODKFormChoice,
     Pregnancy,
     PregnancyOutcome,
+    VerbalAutopsy,
 )
 from va_explorer.va_data_management.utils.date_parsing import parse_date
 from va_explorer.va_data_management.utils.loading import get_va_summary_stats
 from va_explorer.vacms.cmsmodels.events import Event
 
 logger = logging.getLogger(__name__)
+
+
+def _fix_tz_offset(text):
+    if len(text) >= 5 and (text[-5] in "+-") and text[-4:].isdigit():
+        return text[:-5] + text[-5:-2] + ":" + text[-2:]
+    return text
+
+
+def _parse_submission_timestamp(value):
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, date):
+        dt = datetime.combine(value, time.min)
+    else:
+        raw = str(value or "").strip()
+        if not raw:
+            return None
+        normalized = _fix_tz_offset(raw.replace("Z", "+00:00"))
+        candidates = [normalized]
+        if "T" in normalized:
+            candidates.append(_fix_tz_offset(normalized.replace("T", " ")))
+
+        dt = None
+        for candidate in candidates:
+            dt = django_parse_datetime(candidate)
+            if dt:
+                break
+        if dt is None:
+            return None
+
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return timezone.localtime(dt)
+
+
+def _first_valid_timestamp(record, date_fields):
+    for field in date_fields:
+        timestamp = _parse_submission_timestamp(getattr(record, field, None))
+        if timestamp is not None:
+            return timestamp
+    return None
+
+
+def _latest_timestamps_by_identifier(queryset, key_field, date_fields):
+    filtered = queryset.exclude(**{f"{key_field}__isnull": True}).exclude(**{key_field: ""})
+    latest_by_key = {}
+    only_fields = list(date_fields) + [key_field]
+    for record in filtered.only(*only_fields):
+        identifier = getattr(record, key_field, None)
+        if not identifier:
+            continue
+        timestamp = _first_valid_timestamp(record, date_fields)
+        if timestamp is None:
+            continue
+        existing = latest_by_key.get(identifier)
+        if existing is None or timestamp > existing:
+            latest_by_key[identifier] = timestamp
+    return latest_by_key
+
+
+def _iter_month_starts(start_dt, end_dt):
+    current = start_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    end_month = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    while current <= end_month:
+        yield current
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
+
+
+def _filter_timestamps(timestamps, start_dt, end_dt):
+    return [
+        ts
+        for ts in timestamps
+        if (start_dt is None or ts >= start_dt) and (end_dt is None or ts <= end_dt)
+    ]
+
+
+def _windowed_counts(timestamps, start_dt, end_dt):
+    filtered = _filter_timestamps(timestamps, start_dt, end_dt)
+    if not filtered:
+        return {"today": 0, "week": 0, "total": 0}
+
+    effective_end = end_dt or timezone.localtime(timezone.now())
+    today_start = effective_end - timedelta(days=1)
+    week_start = effective_end - timedelta(days=7)
+    if start_dt is not None:
+        today_start = max(today_start, start_dt)
+        week_start = max(week_start, start_dt)
+
+    return {
+        "today": sum(1 for ts in filtered if today_start <= ts <= effective_end),
+        "week": sum(1 for ts in filtered if week_start <= ts <= effective_end),
+        "total": len(filtered),
+    }
+
+
+def _build_chart_series(pregnancy_ts, outcome_ts, death_ts, start_dt, end_dt):
+    series = {
+        "pregnancy": _filter_timestamps(pregnancy_ts, start_dt, end_dt),
+        "pregnancy_outcome": _filter_timestamps(outcome_ts, start_dt, end_dt),
+        "death": _filter_timestamps(death_ts, start_dt, end_dt),
+    }
+
+    all_values = series["pregnancy"] + series["pregnancy_outcome"] + series["death"]
+    if not all_values:
+        return {"labels": [], "pregnancy": [], "pregnancy_outcome": [], "death": []}
+
+    chart_start = start_dt or min(all_values)
+    chart_end = end_dt or max(all_values)
+    day_span = (chart_end.date() - chart_start.date()).days
+    use_daily = day_span <= 62
+
+    if use_daily:
+        labels = []
+        label = chart_start.date()
+        end_label = chart_end.date()
+        while label <= end_label:
+            labels.append(label.isoformat())
+            label += timedelta(days=1)
+        keyed = {name: Counter(ts.date().isoformat() for ts in values) for name, values in series.items()}
+    else:
+        labels = [month.strftime("%Y-%m") for month in _iter_month_starts(chart_start, chart_end)]
+        keyed = {name: Counter(ts.strftime("%Y-%m") for ts in values) for name, values in series.items()}
+
+    return {
+        "labels": labels,
+        "pregnancy": [keyed["pregnancy"].get(label, 0) for label in labels],
+        "pregnancy_outcome": [keyed["pregnancy_outcome"].get(label, 0) for label in labels],
+        "death": [keyed["death"].get(label, 0) for label in labels],
+    }
+
+
+def _parse_filter_range(request):
+    now_local = timezone.localtime(timezone.now())
+    preset = (request.GET.get("preset") or "all").strip().lower()
+    start_dt = None
+    end_dt = now_local
+
+    if preset == "30":
+        start_dt = now_local - timedelta(days=30)
+    elif preset == "7":
+        start_dt = now_local - timedelta(days=7)
+    elif preset == "24":
+        start_dt = now_local - timedelta(days=1)
+
+    start_raw = (request.GET.get("start") or "").strip()
+    end_raw = (request.GET.get("end") or "").strip()
+
+    parsed_start = django_parse_datetime(start_raw) if start_raw else None
+    parsed_end = django_parse_datetime(end_raw) if end_raw else None
+    if parsed_start is not None:
+        if timezone.is_naive(parsed_start):
+            parsed_start = timezone.make_aware(parsed_start, timezone.get_current_timezone())
+        start_dt = timezone.localtime(parsed_start)
+    if parsed_end is not None:
+        if timezone.is_naive(parsed_end):
+            parsed_end = timezone.make_aware(parsed_end, timezone.get_current_timezone())
+        end_dt = timezone.localtime(parsed_end)
+
+    if start_dt is not None and end_dt is not None and start_dt > end_dt:
+        start_dt, end_dt = end_dt, start_dt
+
+    return preset, start_dt, end_dt
+
+
+def _get_national_operational_view_data(start_dt=None, end_dt=None):
+    if end_dt is None:
+        end_dt = timezone.localtime(timezone.now())
+
+    households_by_key = _latest_timestamps_by_identifier(
+        Household.objects.all(),
+        "key",
+        ("submissiondate", "start", "today"),
+    )
+    eas_by_key = _latest_timestamps_by_identifier(
+        Household.objects.all(),
+        "ea",
+        ("submissiondate", "start", "today"),
+    )
+    pregnancies_by_key = _latest_timestamps_by_identifier(
+        Pregnancy.objects.all(),
+        "key",
+        ("submissiondate", "start", "today"),
+    )
+    pregnancy_outcomes_by_key = _latest_timestamps_by_identifier(
+        PregnancyOutcome.objects.all(),
+        "key",
+        ("submissiondate", "start", "today"),
+    )
+    deaths_by_key = _latest_timestamps_by_identifier(
+        Death.objects.all(),
+        "key",
+        ("submissiondate", "start", "today"),
+    )
+    vas_by_key = _latest_timestamps_by_identifier(
+        VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False),
+        "instanceid",
+        ("submissiondate", "Id10012", "created"),
+    )
+
+    households_totals = _windowed_counts(list(households_by_key.values()), start_dt, end_dt)
+    eas_totals = _windowed_counts(list(eas_by_key.values()), start_dt, end_dt)
+    pregnancies_totals = _windowed_counts(list(pregnancies_by_key.values()), start_dt, end_dt)
+    pregnancy_outcomes_totals = _windowed_counts(
+        list(pregnancy_outcomes_by_key.values()), start_dt, end_dt
+    )
+    deaths_totals = _windowed_counts(list(deaths_by_key.values()), start_dt, end_dt)
+    vas_totals = _windowed_counts(list(vas_by_key.values()), start_dt, end_dt)
+
+    household_keys_total = {
+        key
+        for key, ts in households_by_key.items()
+        if (start_dt is None or ts >= start_dt) and ts <= end_dt
+    }
+    household_keys_today = {
+        key
+        for key, ts in households_by_key.items()
+        if ts <= end_dt
+        and ts >= max(
+            end_dt - timedelta(days=1),
+            start_dt or datetime.min.replace(tzinfo=end_dt.tzinfo),
+        )
+    }
+    household_keys_week = {
+        key
+        for key, ts in households_by_key.items()
+        if ts <= end_dt
+        and ts >= max(
+            end_dt - timedelta(days=7),
+            start_dt or datetime.min.replace(tzinfo=end_dt.tzinfo),
+        )
+    }
+
+    people_total = (
+        HouseholdMember.objects.filter(household__key__in=list(household_keys_total)).count()
+        if household_keys_total
+        else 0
+    )
+    people_today = (
+        HouseholdMember.objects.filter(household__key__in=list(household_keys_today)).count()
+        if household_keys_today
+        else 0
+    )
+    people_week = (
+        HouseholdMember.objects.filter(household__key__in=list(household_keys_week)).count()
+        if household_keys_week
+        else 0
+    )
+
+    chart_data = _build_chart_series(
+        list(pregnancies_by_key.values()),
+        list(pregnancy_outcomes_by_key.values()),
+        list(deaths_by_key.values()),
+        start_dt,
+        end_dt,
+    )
+
+    return {
+        "chart_labels": chart_data["labels"],
+        "pregnancy_values": chart_data["pregnancy"],
+        "pregnancy_outcome_values": chart_data["pregnancy_outcome"],
+        "death_values": chart_data["death"],
+        "kpis": {
+            "eas": eas_totals,
+            "households": households_totals,
+            "people": {"today": people_today, "week": people_week, "total": people_total},
+            "pregnancies": pregnancies_totals,
+            "preg_outcomes": pregnancy_outcomes_totals,
+            "deaths": deaths_totals,
+            "vas": vas_totals,
+        },
+    }
 
 
 class Index(CustomAuthMixin, TemplateView):
@@ -53,17 +332,33 @@ class Index(CustomAuthMixin, TemplateView):
         regional_context_provider.request = self.request
         context.update(regional_context_provider.get_regional_operations_context())
 
-        model_trends = get_model_trends_data()
-        pregnancies_graph = model_trends.get("pregnancies", {}).get("graphs", {}).get("recorded", {})
-        pregnancy_outcomes_graph = (
-            model_trends.get("pregnancy_outcomes", {}).get("graphs", {}).get("recorded", {})
-        )
-        deaths_graph = model_trends.get("deaths", {}).get("graphs", {}).get("recorded", {})
+        nov_data = _get_national_operational_view_data()
+        context["chart_labels"] = nov_data["chart_labels"]
+        context["pregnancy_values"] = nov_data["pregnancy_values"]
+        context["pregnancy_outcome_values"] = nov_data["pregnancy_outcome_values"]
+        context["death_values"] = nov_data["death_values"]
 
-        context["chart_labels"] = pregnancies_graph.get("x", [])
-        context["pregnancy_values"] = pregnancies_graph.get("y", [])
-        context["pregnancy_outcome_values"] = pregnancy_outcomes_graph.get("y", [])
-        context["death_values"] = deaths_graph.get("y", [])
+        context["today_eas"] = nov_data["kpis"]["eas"]["today"]
+        context["week_eas"] = nov_data["kpis"]["eas"]["week"]
+        context["total_eas"] = nov_data["kpis"]["eas"]["total"]
+        context["today_households"] = nov_data["kpis"]["households"]["today"]
+        context["week_households"] = nov_data["kpis"]["households"]["week"]
+        context["total_households"] = nov_data["kpis"]["households"]["total"]
+        context["today_people"] = nov_data["kpis"]["people"]["today"]
+        context["week_people"] = nov_data["kpis"]["people"]["week"]
+        context["total_people"] = nov_data["kpis"]["people"]["total"]
+        context["today_pregnancies"] = nov_data["kpis"]["pregnancies"]["today"]
+        context["week_pregnancies"] = nov_data["kpis"]["pregnancies"]["week"]
+        context["total_pregnancies"] = nov_data["kpis"]["pregnancies"]["total"]
+        context["today_preg_outcomes"] = nov_data["kpis"]["preg_outcomes"]["today"]
+        context["week_preg_outcomes"] = nov_data["kpis"]["preg_outcomes"]["week"]
+        context["total_preg_outcomes"] = nov_data["kpis"]["preg_outcomes"]["total"]
+        context["today_deaths"] = nov_data["kpis"]["deaths"]["today"]
+        context["week_deaths"] = nov_data["kpis"]["deaths"]["week"]
+        context["total_deaths"] = nov_data["kpis"]["deaths"]["total"]
+        context["today_vas"] = nov_data["kpis"]["vas"]["today"]
+        context["week_vas"] = nov_data["kpis"]["vas"]["week"]
+        context["total_vas"] = nov_data["kpis"]["vas"]["total"]
 
         return context
 
@@ -95,6 +390,16 @@ class Trends(CustomAuthMixin, View):
 
 
 trends_endpoint_view = Trends.as_view()
+
+
+class NationalOperationalFilterData(CustomAuthMixin, View):
+    def get(self, request, *args, **kwargs):
+        _, start_dt, end_dt = _parse_filter_range(request)
+        payload = _get_national_operational_view_data(start_dt=start_dt, end_dt=end_dt)
+        return JsonResponse(payload)
+
+
+national_operational_filter_data_view = NationalOperationalFilterData.as_view()
 
 
 class About(CustomAuthMixin, TemplateView):
