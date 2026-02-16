@@ -100,18 +100,22 @@ const initNationalOperationalEventsChart = () => {
   const canvas = document.getElementById("novEventsChart");
   if (!canvas || typeof Chart === "undefined") return;
 
-  const labels = [
-    "2026-01-01",
-    "2026-01-08",
-    "2026-01-15",
-    "2026-01-22",
-    "2026-01-29",
-    "2026-02-05",
-    "2026-02-12",
-  ];
-  const placeholderPregnancy = [18, 22, 19, 25, 24, 28, 27];
-  const placeholderOutcome = [10, 13, 12, 15, 14, 17, 16];
-  const placeholderDeath = [7, 6, 8, 9, 8, 10, 9];
+  const parseJsonScript = (id) => {
+    const node = document.getElementById(id);
+    if (!node) return [];
+    try {
+      const parsed = JSON.parse(node.textContent);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error(`Failed to parse chart data from ${id}`, error);
+      return [];
+    }
+  };
+
+  const labels = parseJsonScript("nov-chart-labels");
+  const pregnancyValues = parseJsonScript("nov-pregnancy-values");
+  const pregnancyOutcomeValues = parseJsonScript("nov-pregnancy-outcome-values");
+  const deathValues = parseJsonScript("nov-death-values");
 
   if (novEventsChartInstance) {
     novEventsChartInstance.destroy();
@@ -124,7 +128,7 @@ const initNationalOperationalEventsChart = () => {
       datasets: [
         {
           label: "Pregnancy",
-          data: placeholderPregnancy,
+          data: pregnancyValues,
           borderColor: "#2d6cdf",
           backgroundColor: "#2d6cdf",
           tension: 0.25,
@@ -133,7 +137,7 @@ const initNationalOperationalEventsChart = () => {
         },
         {
           label: "Pregnancy Outcome",
-          data: placeholderOutcome,
+          data: pregnancyOutcomeValues,
           borderColor: "#f5c542",
           backgroundColor: "#f5c542",
           tension: 0.25,
@@ -142,7 +146,7 @@ const initNationalOperationalEventsChart = () => {
         },
         {
           label: "Death",
-          data: placeholderDeath,
+          data: deathValues,
           borderColor: "#dc3545",
           backgroundColor: "#dc3545",
           tension: 0.25,

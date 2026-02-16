@@ -53,6 +53,18 @@ class Index(CustomAuthMixin, TemplateView):
         regional_context_provider.request = self.request
         context.update(regional_context_provider.get_regional_operations_context())
 
+        model_trends = get_model_trends_data()
+        pregnancies_graph = model_trends.get("pregnancies", {}).get("graphs", {}).get("recorded", {})
+        pregnancy_outcomes_graph = (
+            model_trends.get("pregnancy_outcomes", {}).get("graphs", {}).get("recorded", {})
+        )
+        deaths_graph = model_trends.get("deaths", {}).get("graphs", {}).get("recorded", {})
+
+        context["chart_labels"] = pregnancies_graph.get("x", [])
+        context["pregnancy_values"] = pregnancies_graph.get("y", [])
+        context["pregnancy_outcome_values"] = pregnancy_outcomes_graph.get("y", [])
+        context["death_values"] = deaths_graph.get("y", [])
+
         return context
 
 

@@ -95,6 +95,10 @@
                     <div class="events-chart-canvas-wrap">
                       <canvas id="novEventsChart"></canvas>
                     </div>
+                    {{ chart_labels|json_script:"nov-chart-labels" }}
+                    {{ pregnancy_values|json_script:"nov-pregnancy-values" }}
+                    {{ pregnancy_outcome_values|json_script:"nov-pregnancy-outcome-values" }}
+                    {{ death_values|json_script:"nov-death-values" }}
                   </section>
                   <aside class="kpi-cards-container">
                     <h5 class="mb-3">KPI Cards</h5>
