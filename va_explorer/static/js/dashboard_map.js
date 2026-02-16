@@ -157,6 +157,54 @@ const dashboard = new Vue({
     methods: {
         // Function to reproject from EPSG:3857 (Web Mercator) to EPSG:4326 (WGS84)
         reproject3857to4326(geojson) {
+            // Check CRS - if it's already WGS84/CRS84, don't reproject
+            if (geojson.crs) {
+                const crsName = geojson.crs.properties?.name || '';
+                // CRS84 and EPSG:4326 are both WGS84 (just different axis order)
+                if (crsName.includes('CRS84') || crsName.includes('4326') || crsName.includes('WGS84')) {
+                    console.log(`[Reproject] GeoJSON is already in WGS84 (CRS: ${crsName}), skipping reprojection`);
+                    delete geojson.crs;
+                    return geojson;
+                }
+                // Only reproject if it's EPSG:3857
+                if (!crsName.includes('3857')) {
+                    console.log(`[Reproject] Unknown CRS: ${crsName}, checking coordinates to determine if reprojection needed`);
+                }
+            }
+            
+            // Check if coordinates look like they're already in WGS84 (lat/lng range)
+            // WGS84: lat -90 to 90, lng -180 to 180
+            // EPSG:3857: x -20037508 to 20037508, y -20037508 to 20037508
+            let sampleCoords = null;
+            if (geojson.features && geojson.features.length > 0) {
+                const firstFeature = geojson.features[0];
+                if (firstFeature.geometry && firstFeature.geometry.coordinates) {
+                    const coords = firstFeature.geometry.coordinates;
+                    // Get first coordinate
+                    if (Array.isArray(coords[0])) {
+                        if (Array.isArray(coords[0][0])) {
+                            sampleCoords = coords[0][0][0];
+                        } else {
+                            sampleCoords = coords[0];
+                        }
+                    } else {
+                        sampleCoords = coords;
+                    }
+                }
+            }
+            
+            const looksLikeWGS84 = sampleCoords && 
+                Math.abs(sampleCoords[0]) <= 180 && 
+                Math.abs(sampleCoords[1]) <= 90;
+            
+            if (looksLikeWGS84) {
+                console.log(`[Reproject] Coordinates appear to already be in WGS84 (sample: [${sampleCoords[0]}, ${sampleCoords[1]}]), skipping reprojection`);
+                delete geojson.crs;
+                return geojson;
+            }
+            
+            console.log(`[Reproject] Reprojecting from EPSG:3857 to EPSG:4326. Sample coords before: [${sampleCoords ? sampleCoords.join(', ') : 'N/A'}]`);
+            
             const R = 6378137; // Earth's radius in meters
             const reprojectCoords = (coords) => {
                 if (Array.isArray(coords[0])) {
@@ -192,20 +240,49 @@ const dashboard = new Vue({
 
             // Remove or update CRS to indicate WGS84
             delete geojson.crs;
+            
+            if (sampleCoords && geojson.features.length > 0) {
+                const reprojectedSample = geojson.features[0].geometry.coordinates;
+                let reprojectedCoords = null;
+                if (Array.isArray(reprojectedSample[0])) {
+                    if (Array.isArray(reprojectedSample[0][0])) {
+                        reprojectedCoords = reprojectedSample[0][0][0];
+                    } else {
+                        reprojectedCoords = reprojectedSample[0];
+                    }
+                } else {
+                    reprojectedCoords = reprojectedSample;
+                }
+                console.log(`[Reproject] Sample coords after: [${reprojectedCoords[0]}, ${reprojectedCoords[1]}]`);
+            }
 
             return geojson;
         },
-        async loadGeojsonLevel(level) {
+        async loadGeojsonLevel(level, forceReload = false) {
             // Lazy load GeoJSON for a specific level with caching
-            if (this.geojsonCache[level]) {
+            if (this.geojsonCache[level] && !forceReload) {
+                console.log(`[Cache] Using cached GeoJSON for level ${level}`);
                 return this.geojsonCache[level];
             }
 
             try {
                 const url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}/static/data/geojson/`;
                 const filename = LEVEL_CONFIG[level].file;
-                const response = await fetch(`${url}${filename}`);
+                // Add cache busting to ensure we get fresh data
+                const cacheBuster = `?v=${Date.now()}`;
+                const response = await fetch(`${url}${filename}${cacheBuster}`);
                 const geojson = await response.json();
+                
+                console.log(`[Load] Loaded ${geojson.features.length} features from ${filename}`);
+                // Log sample area_ids for debugging
+                if (geojson.features.length > 0) {
+                    const sampleIds = geojson.features.slice(0, 5).map(f => ({
+                        area_id: f.properties.area_id,
+                        area_name: f.properties.area_name,
+                        parent_id: f.properties.parent_id
+                    }));
+                    console.log(`[Load] Sample features from ${filename}:`, sampleIds);
+                }
                 
                 // Reproject from EPSG:3857 to EPSG:4326
                 const reprojectedGeojson = this.reproject3857to4326(geojson);
@@ -341,13 +418,21 @@ const dashboard = new Vue({
             this.map.keyboard.disable();
 
             const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 10,
+                maxZoom: 19, // Allow deep zooming for EA level features
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(this.map);
 
             // Add explicit zoom control at top-left (prevent CSS/layout moving it)
+            // Enable zoom controls with higher max zoom for EA level features
             try {
-                L.control.zoom({ position: 'topleft' }).addTo(this.map);
+                L.control.zoom({ 
+                    position: 'topleft',
+                    zoomInTitle: 'Zoom in',
+                    zoomOutTitle: 'Zoom out'
+                }).addTo(this.map);
+                // Ensure zoom is enabled
+                this.map.scrollWheelZoom.enable();
+                this.map.doubleClickZoom.enable();
             } catch (err) {
                 console.warn('Could not add zoom control:', err);
             }
@@ -383,16 +468,67 @@ const dashboard = new Vue({
 
             // Filter features based on current drill-down path
             let filteredGeojson = JSON.parse(JSON.stringify(geojson));
+            
+            // Log drilldown path for debugging
+            console.log(`[Level ${this.currentLevel}] Drilldown path:`, this.drilldownPath.map(p => ({
+                level: p.level,
+                name: p.name,
+                levelIndex: p.levelIndex,
+                area_id: p.id
+            })));
+            
             filteredGeojson.features = filteredGeojson.features.filter(feature => {
                 // For provincial level with no drill-down, show all provinces (parent_id null)
                 if (this.drilldownPath.length === 0) {
                     return feature.properties.parent_id == null;
                 }
                 
-                // For other levels, filter by parent_id
+                // For all levels, filter by parent_id of the most recent drill-down
                 const parent = this.drilldownPath[this.drilldownPath.length - 1];
-                return feature.properties.parent_id === parent.id;
+                const matches = feature.properties.parent_id === parent.id;
+                
+                // Log first few features for debugging
+                if (filteredGeojson.features.indexOf(feature) < 3) {
+                    console.log(`[Level ${this.currentLevel}] Feature: area_id=${feature.properties.area_id}, area_name="${feature.properties.area_name}", parent_id=${feature.properties.parent_id}, looking for parent.id=${parent.id}, matches=${matches}`);
+                }
+                
+                return matches;
             });
+
+            console.log(`[Level ${this.currentLevel}] Filtered features: ${filteredGeojson.features.length} out of ${geojson.features.length} total`);
+            
+            // Log which features were found
+            if (filteredGeojson.features.length > 0) {
+                console.log(`[Level ${this.currentLevel}] Found features:`, filteredGeojson.features.map(f => {
+                    // Check geometry type and get sample coordinates
+                    let sampleCoords = 'N/A';
+                    if (f.geometry && f.geometry.coordinates) {
+                        if (f.geometry.type === 'Point') {
+                            sampleCoords = f.geometry.coordinates;
+                        } else if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
+                            // Get first coordinate from first ring
+                            const coords = f.geometry.coordinates;
+                            if (coords && coords[0] && coords[0][0] && coords[0][0][0]) {
+                                sampleCoords = coords[0][0][0];
+                            }
+                        }
+                    }
+                    return {
+                        area_id: f.properties.area_id,
+                        area_name: f.properties.area_name,
+                        parent_id: f.properties.parent_id,
+                        geometry_type: f.geometry ? f.geometry.type : 'missing',
+                        sample_coords: sampleCoords
+                    };
+                }));
+            }
+            
+            // If no features found, log more details
+            if (filteredGeojson.features.length === 0 && this.drilldownPath.length > 0) {
+                const parent = this.drilldownPath[this.drilldownPath.length - 1];
+                console.warn(`[Level ${this.currentLevel}] No features found! Looking for parent_id=${parent.id} (${parent.name} ${parent.level}), but available parent_ids in data:`, 
+                    [...new Set(geojson.features.slice(0, 10).map(f => f.properties.parent_id))]);
+            }
 
             this.layer = L.geoJson(filteredGeojson, {
                 style: function (feature) {
@@ -433,11 +569,79 @@ const dashboard = new Vue({
             // Center and zoom to the current layer's full extent.
             // Run inside a short timeout so the browser has applied layout changes.
             setTimeout(() => {
-                const bounds = this.layer.getBounds();
-                if (bounds && bounds.isValid()) {
-                    this.map.fitBounds(bounds, { padding: [20, 20] });
-                    // second invalidate to ensure tiles render correctly after fit
-                    try { this.map.invalidateSize(); } catch (e) {}
+                if (this.layer && filteredGeojson.features.length > 0) {
+                    const bounds = this.layer.getBounds();
+                    console.log(`[Bounds] Calculated bounds for level ${this.currentLevel}:`, bounds ? {
+                        isValid: bounds.isValid(),
+                        north: bounds.getNorth(),
+                        south: bounds.getSouth(),
+                        east: bounds.getEast(),
+                        west: bounds.getWest()
+                    } : 'null');
+                    
+                    if (bounds && bounds.isValid()) {
+                        // Validate bounds are within Zambia's approximate boundaries
+                        // Zambia is roughly: lat -8 to -18, lng 22 to 33
+                        const north = bounds.getNorth();
+                        const south = bounds.getSouth();
+                        const east = bounds.getEast();
+                        const west = bounds.getWest();
+                        
+                        const isWithinZambia = north < -8 && south > -18 && east < 33 && west > 22;
+                        
+                        if (!isWithinZambia) {
+                            console.warn(`[Bounds] Calculated bounds are outside Zambia! North: ${north}, South: ${south}, East: ${east}, West: ${west}`);
+                            console.warn(`[Bounds] Resetting to Zambia bounds instead`);
+                            this.map.setView([-13, 27], 6);
+                            this.map.setMaxBounds([
+                                [-6, 20],
+                                [-20, 34],
+                            ]);
+                        } else {
+                            // Use minimal padding for tighter zoom to features
+                            // For level 5 (EA), use even tighter padding since features are very small
+                            const padding = this.currentLevel === 5 ? [3, 3] : [5, 5];
+                            this.map.fitBounds(bounds, { 
+                                padding: padding,
+                                maxZoom: 18 // Allow deeper zoom for small features
+                            });
+                            // second invalidate to ensure tiles render correctly after fit
+                            try { this.map.invalidateSize(); } catch (e) {}
+                            
+                            // For level 5, ensure we can zoom in even more if needed
+                            if (this.currentLevel === 5) {
+                                // Check if we're at max zoom and features are still small
+                                const currentZoom = this.map.getZoom();
+                                const boundsSize = bounds.getNorthEast().distanceTo(bounds.getSouthWest());
+                                console.log(`[Bounds] Level 5 - Current zoom: ${currentZoom}, bounds size: ${boundsSize.toFixed(2)}m`);
+                                
+                                // If bounds are very small and we're not at max zoom, try to zoom in more
+                                if (boundsSize < 50000 && currentZoom < 18) {
+                                    // Manually zoom in a bit more
+                                    setTimeout(() => {
+                                        const newZoom = Math.min(currentZoom + 2, 18);
+                                        this.map.setZoom(newZoom, { animate: true });
+                                        console.log(`[Bounds] Level 5 - Zooming in to ${newZoom} for better feature visibility`);
+                                    }, 100);
+                                }
+                            }
+                        }
+                    } else {
+                        console.warn(`[Bounds] Invalid bounds calculated, resetting to Zambia bounds`);
+                        this.map.setView([-13, 27], 6);
+                        this.map.setMaxBounds([
+                            [-6, 20],
+                            [-20, 34],
+                        ]);
+                    }
+                } else {
+                    // If no features, reset to Zambia bounds to prevent zooming outside
+                    console.warn(`[Bounds] No features found for level ${this.currentLevel}, resetting to Zambia bounds`);
+                    this.map.setView([-13, 27], 6);
+                    this.map.setMaxBounds([
+                        [-6, 20],
+                        [-20, 34],
+                    ]);
                 }
             }, 50);
         },
@@ -453,14 +657,62 @@ const dashboard = new Vue({
 
             const regionName = feature.properties.area_name;
             const regionLevel = LEVEL_CONFIG[this.currentLevel].label;
+            const regionAreaId = feature.properties.area_id;
 
-            // Add to breadcrumb path
-            this.drilldownPath.push({
-                level: regionLevel,
-                name: regionName,
-                levelIndex: this.currentLevel,
-                id: feature.properties.area_id
-            });
+            console.log(`[Drill Down] Clicked on ${regionLevel}: "${regionName}" with area_id=${regionAreaId}, parent_id=${feature.properties.parent_id}`);
+            
+            // Verify the clicked feature's area_id matches what's in the current GeoJSON cache
+            // This helps detect cache mismatches
+            const currentGeojson = this.geojsonCache[this.currentLevel];
+            if (currentGeojson) {
+                const matchingFeature = currentGeojson.features.find(f => 
+                    f.properties.area_name === regionName && 
+                    f.properties.area_id === regionAreaId
+                );
+                if (!matchingFeature) {
+                    console.warn(`[Drill Down] WARNING: Clicked feature (area_id=${regionAreaId}) not found in cached GeoJSON for level ${this.currentLevel}. Possible cache mismatch!`);
+                    // Try to find by name only
+                    const byName = currentGeojson.features.find(f => f.properties.area_name === regionName);
+                    if (byName) {
+                        console.warn(`[Drill Down] Found feature with same name but different area_id: ${byName.properties.area_id}. Using this instead.`);
+                        // Use the correct area_id from the cache
+                        const correctedAreaId = byName.properties.area_id;
+                        this.drilldownPath.push({
+                            level: regionLevel,
+                            name: regionName,
+                            levelIndex: this.currentLevel,
+                            id: correctedAreaId
+                        });
+                        console.log(`[Drill Down] Using corrected area_id=${correctedAreaId} instead of ${regionAreaId}`);
+                    } else {
+                        // Fallback: use the clicked feature's area_id
+                        this.drilldownPath.push({
+                            level: regionLevel,
+                            name: regionName,
+                            levelIndex: this.currentLevel,
+                            id: regionAreaId
+                        });
+                    }
+                } else {
+                    // Feature matches, use it
+                    this.drilldownPath.push({
+                        level: regionLevel,
+                        name: regionName,
+                        levelIndex: this.currentLevel,
+                        id: regionAreaId
+                    });
+                }
+            } else {
+                // No cache, use clicked feature
+                this.drilldownPath.push({
+                    level: regionLevel,
+                    name: regionName,
+                    levelIndex: this.currentLevel,
+                    id: regionAreaId
+                });
+            }
+
+            console.log(`[Drill Down] Moving from level ${this.currentLevel} to level ${this.currentLevel + 1}`);
 
             // Move to next level
             this.currentLevel += 1;
@@ -478,14 +730,47 @@ const dashboard = new Vue({
         },
         async drillbackToLevel(breadcrumbIndex) {
             // Jump back to specific breadcrumb level
-            // breadcrumbIndex 0 is country, so go to provinces
+            // breadcrumbIndex 0 = Country (Zambia), breadcrumbIndex 1 = Province, breadcrumbIndex 2 = District, etc.
+            // drilldownBreadcrumbs structure: [Country, ...drilldownPath]
+            // drilldownPath structure: [Province, District, Constituency, ...]
+            
+            console.log(`[Breadcrumb] Clicked on breadcrumb index ${breadcrumbIndex}`);
+            
             if (breadcrumbIndex === 0) {
+                // Clicked on Country (Zambia) - show all provinces (level 1)
                 this.currentLevel = 1;
                 this.drilldownPath = [];
+                console.log(`[Breadcrumb] Navigating to level 1 (Provinces), cleared drilldown path`);
             } else {
-                // Keep only breadcrumbs up to and including target
+                // Get the breadcrumb that was clicked
+                const breadcrumbs = this.drilldownBreadcrumbs;
+                const clickedBreadcrumb = breadcrumbs[breadcrumbIndex];
+                
+                if (!clickedBreadcrumb) {
+                    console.warn(`[Breadcrumb] Invalid breadcrumb index ${breadcrumbIndex}`);
+                    return;
+                }
+                
+                // The clicked breadcrumb's levelIndex tells us what level to show
+                const targetLevel = clickedBreadcrumb.levelIndex;
+                
+                // When clicking on a breadcrumb, we want to show the NEXT level's features
+                // Click Province -> show Districts (level 2) of that province
+                // Click District -> show Constituencies (level 3) of that district
+                // So we need to keep breadcrumbs up to the clicked one, and show level targetLevel + 1
+                
+                // Keep breadcrumbs up to and including the clicked one
+                // breadcrumbIndex 1 = Province -> keep drilldownPath[0] (the province)
+                // breadcrumbIndex 2 = District -> keep drilldownPath[0,1] (province and district)
+                // Since breadcrumbIndex 0 is Country, breadcrumbIndex - 1 gives us the drilldownPath slice end
                 this.drilldownPath = this.drilldownPath.slice(0, breadcrumbIndex);
-                this.currentLevel = breadcrumbIndex;
+                
+                // Set currentLevel to show the children of the clicked breadcrumb
+                // If clicked Province (level 1), show Districts (level 2)
+                // If clicked District (level 2), show Constituencies (level 3)
+                this.currentLevel = targetLevel + 1;
+                
+                console.log(`[Breadcrumb] Clicked on ${clickedBreadcrumb.name} (level ${targetLevel}), navigating to level ${this.currentLevel} (${LEVEL_CONFIG[this.currentLevel].label}), drilldownPath:`, this.drilldownPath.map(p => p.name));
             }
             
             await this.updateDataAndMap();
@@ -583,7 +868,16 @@ const dashboard = new Vue({
             this.currentLevel = 1;
             this.drilldownPath = [];
             
+            // Clear GeoJSON cache to force reload with fresh data
+            this.geojsonCache = {};
+            console.log("[Reset] Cleared GeoJSON cache");
+            
             await this.updateDataAndMap();
+        },
+        clearGeojsonCache() {
+            // Method to manually clear the cache if needed
+            this.geojsonCache = {};
+            console.log("[Cache] GeoJSON cache cleared manually");
         },
     },
     watch: {
