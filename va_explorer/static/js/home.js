@@ -8,6 +8,7 @@ BORDER_COLOR = "#037BFE"
 let novEventsChartInstance = null;
 let novFiltersBound = false;
 let novFilterRequestId = 0;
+let novChartHeightSynced = false;
 
 const setVATrendsTableData = (vaTableData) => {
   document.getElementById('interviewed-past-24-hours').innerHTML = vaTableData.collected["24"];
@@ -182,6 +183,7 @@ const initNationalOperationalEventsChart = () => {
       },
     },
   });
+  syncNovChartHeightToKpiCards();
 }
 
 const updateNationalOperationalEventsChart = (labels, pregnancyValues, pregnancyOutcomeValues, deathValues) => {
@@ -198,6 +200,32 @@ const updateNationalOperationalEventsChart = (labels, pregnancyValues, pregnancy
   novEventsChartInstance.data.datasets[1].data = pregnancyOutcomeValues || [];
   novEventsChartInstance.data.datasets[2].data = deathValues || [];
   novEventsChartInstance.update();
+}
+
+const syncNovChartHeightToKpiCards = () => {
+  const chartWrap = document.querySelector("#novEventsChartContainer .events-chart-canvas-wrap");
+  const kpiCards = document.querySelectorAll("#novKpiCardsContainer .nov-kpi-card");
+  const kpiCardsGrid = document.querySelector("#novKpiCardsContainer .nov-kpi-cards");
+  if (!chartWrap || !kpiCardsGrid || kpiCards.length < 4) return;
+
+  // Only force this alignment when the two-column layout is active.
+  if (window.matchMedia("(max-width: 991.98px)").matches) {
+    chartWrap.style.height = "";
+    if (novEventsChartInstance) novEventsChartInstance.resize();
+    return;
+  }
+
+  const gap = parseFloat(window.getComputedStyle(kpiCardsGrid).rowGap || "0") || 0;
+  const totalHeight =
+    kpiCards[1].offsetHeight +
+    kpiCards[2].offsetHeight +
+    kpiCards[3].offsetHeight +
+    (gap * 2);
+
+  if (totalHeight > 0) {
+    chartWrap.style.height = `${Math.round(totalHeight)}px`;
+    if (novEventsChartInstance) novEventsChartInstance.resize();
+  }
 }
 
 const setElementTextById = (id, value) => {
@@ -242,6 +270,7 @@ const updateNationalOperationalKpis = (kpis) => {
   setElementTextById("nov-kpi-today-vas", vas.today);
   setElementTextById("nov-kpi-week-vas", vas.week);
   setElementTextById("nov-kpi-total-vas", vas.total);
+  syncNovChartHeightToKpiCards();
 }
 
 const toggleNovLoadingState = (isLoading) => {
@@ -293,6 +322,55 @@ const clearPresetSelection = () => {
   });
 }
 
+const NOV_LOCATION_OPTIONS = {
+  national: [],
+  province: ["Central", "Copperbelt", "Eastern", "Southern", "Lusaka", "Western"],
+  district: ["Chirundu", "Chongwe", "Kazungula", "Lusaka", "Namwala"],
+  constituency: [
+    "Chirundu Constituency",
+    "Chongwe Constituency",
+    "Kazungula Constituency",
+    "Lusaka Central Constituency",
+    "Namwala Constituency",
+  ],
+  ward: [
+    "Chirundu Ward",
+    "Kanakantapa Ward",
+    "Kazungula Ward",
+    "Kanyama Ward",
+    "Namwala Central Ward",
+  ],
+}
+
+const updateNovLocationValueOptions = () => {
+  const levelSelect = document.getElementById("novLocationLevel");
+  const valueSelect = document.getElementById("novLocationValue");
+  if (!levelSelect || !valueSelect) return;
+
+  const level = levelSelect.value || "national";
+  const options = NOV_LOCATION_OPTIONS[level] || [];
+  const disableValue = level === "national" || options.length === 0;
+
+  valueSelect.innerHTML = "";
+  if (disableValue) {
+    valueSelect.disabled = true;
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "All National";
+    valueSelect.appendChild(option);
+    return;
+  }
+
+  valueSelect.disabled = false;
+  options.forEach((item, index) => {
+    const option = document.createElement("option");
+    option.value = item;
+    option.textContent = item;
+    if (index === 0) option.selected = true;
+    valueSelect.appendChild(option);
+  });
+}
+
 const requestNationalOperationalFilterData = () => {
   const root = document.getElementById("national-operational-view");
   if (!root) return;
@@ -312,6 +390,8 @@ const requestNationalOperationalFilterData = () => {
       preset: selectedNovPreset(),
       start: startInput?.value || "",
       end: endInput?.value || "",
+      location_level: document.getElementById("novLocationLevel")?.value || "national",
+      location_value: document.getElementById("novLocationValue")?.value || "",
     },
     success: (jsonResponse) => {
       if (requestId !== novFilterRequestId) return;
@@ -350,6 +430,24 @@ const initNationalOperationalFilters = () => {
 
   const startInput = document.getElementById("novStartDatetime");
   const endInput = document.getElementById("novEndDatetime");
+  const locationLevel = document.getElementById("novLocationLevel");
+  const locationValue = document.getElementById("novLocationValue");
+
+  updateNovLocationValueOptions();
+
+  if (locationLevel) {
+    locationLevel.addEventListener("change", () => {
+      updateNovLocationValueOptions();
+      requestNationalOperationalFilterData();
+    });
+  }
+
+  if (locationValue) {
+    locationValue.addEventListener("change", () => {
+      requestNationalOperationalFilterData();
+    });
+  }
+
   [startInput, endInput].forEach((input) => {
     if (!input) return;
     input.addEventListener("change", () => {
@@ -357,6 +455,15 @@ const initNationalOperationalFilters = () => {
       requestNationalOperationalFilterData();
     });
   });
+}
+
+const initNovChartHeightSync = () => {
+  if (novChartHeightSynced) return;
+  novChartHeightSynced = true;
+
+  const runSync = () => syncNovChartHeightToKpiCards();
+  window.addEventListener("resize", runSync);
+  runSync();
 }
 
 const setSingleMetricTrendsTableData = (prefix, trendTable) => {
@@ -451,3 +558,4 @@ const loadAllData = () => {
 loadAllData();
 initNationalOperationalEventsChart();
 initNationalOperationalFilters();
+initNovChartHeightSync();

@@ -21,8 +21,8 @@
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-2-tab" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab" aria-controls="tab-2" aria-selected="false">
-          Operations &amp; Supervision
+        <button class="nav-link" id="tab-4-tab" data-bs-toggle="tab" data-bs-target="#tab-4" type="button" role="tab" aria-controls="tab-4" aria-selected="false">
+          Trends
         </button>
       </li>
       <li class="nav-item" role="presentation">
@@ -31,8 +31,8 @@
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-4-tab" data-bs-toggle="tab" data-bs-target="#tab-4" type="button" role="tab" aria-controls="tab-4" aria-selected="false">
-          Trends
+        <button class="nav-link" id="tab-2-tab" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab" aria-controls="tab-2" aria-selected="false">
+          Operations &amp; Supervision
         </button>
       </li>
     </ul>
@@ -42,69 +42,53 @@
     <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="tab-1-tab">
         <div id="national-operational-view" data-filter-url="{% url 'home:national_operational_filter_data' %}">
           <div class="national-operational-view-shell">
-            <h4 class="mb-3">National Operational View</h4>
-            <ul class="nav nav-tabs mb-3" id="nationalOperationalTabs" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="nov-overview-tab" data-bs-toggle="tab" data-bs-target="#nov-overview" type="button" role="tab" aria-controls="nov-overview" aria-selected="true">
-                  Overview
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link" id="nov-death-summary-tab" data-bs-toggle="tab" data-bs-target="#nov-death-summary" type="button" role="tab" aria-controls="nov-death-summary" aria-selected="false">
-                  Death Summary
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link" id="nov-rumor-surveillance-tab" data-bs-toggle="tab" data-bs-target="#nov-rumor-surveillance" type="button" role="tab" aria-controls="nov-rumor-surveillance" aria-selected="false">
-                  Rumor Surveillance
-                </button>
-              </li>
-            </ul>
-
-            <div class="tab-content" id="nationalOperationalTabsContent">
-              <div class="tab-pane fade show active" id="nov-overview" role="tabpanel" aria-labelledby="nov-overview-tab">
-                <div class="national-operational-grid">
-                  <section id="novEventsChartContainer" class="events-chart-container">
-                    <div class="mb-3">
-                      <div class="d-flex flex-wrap align-items-center gap-3 mb-2" role="radiogroup" aria-label="Global time filters">
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTimeAll" checked>
-                          <label class="form-check-label" for="novTimeAll">All time</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime30">
-                          <label class="form-check-label" for="novTime30">Last 30 days</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime7">
-                          <label class="form-check-label" for="novTime7">Last 7 days</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime24">
-                          <label class="form-check-label" for="novTime24">Last 24 hours</label>
-                        </div>
-                      </div>
-                      <div class="d-flex flex-wrap align-items-center gap-2">
-                        <label for="novStartDatetime" class="mb-0">Start:</label>
-                        <input id="novStartDatetime" type="datetime-local" class="form-control form-control-sm" style="max-width: 230px;">
-                        <label for="novEndDatetime" class="mb-0">End:</label>
-                        <input id="novEndDatetime" type="datetime-local" class="form-control form-control-sm" style="max-width: 230px;">
-                      </div>
-                    </div>
-                    <h5 class="mb-3">Events Chart</h5>
-                    <div class="events-chart-canvas-wrap">
-                      <canvas id="novEventsChart"></canvas>
-                    </div>
-                    {{ chart_labels|json_script:"nov-chart-labels" }}
-                    {{ pregnancy_values|json_script:"nov-pregnancy-values" }}
-                    {{ pregnancy_outcome_values|json_script:"nov-pregnancy-outcome-values" }}
-                    {{ death_values|json_script:"nov-death-values" }}
-                  </section>
-                  <aside id="novKpiCardsContainer" class="kpi-cards-container">
-                    <h5 class="mb-3">KPI Cards</h5>
-                    <div class="nov-kpi-cards">
+            <div class="nov-filters-row mb-3">
+              <div class="nov-filter-select-wrap">
+                <select id="novLocationLevel" class="form-select form-select-sm nov-filter-select" aria-label="Location level">
+                  <option value="national" selected>National</option>
+                  <option value="province">Province</option>
+                  <option value="district">District</option>
+                  <option value="constituency">Constituency</option>
+                  <option value="ward">Ward</option>
+                </select>
+              </div>
+              <div class="nov-filter-select-wrap">
+                <select id="novLocationValue" class="form-select form-select-sm nov-filter-select" aria-label="Location value" disabled>
+                  <option value="">All National</option>
+                </select>
+              </div>
+              <div class="nov-filter-radios" role="radiogroup" aria-label="Global time filters">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTimeAll" checked>
+                  <label class="form-check-label" for="novTimeAll">All time</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime30">
+                  <label class="form-check-label" for="novTime30">Last 30 days</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime7">
+                  <label class="form-check-label" for="novTime7">Last 7 days</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime24">
+                  <label class="form-check-label" for="novTime24">Last 24 hours</label>
+                </div>
+              </div>
+              <div class="nov-filter-datetime">
+                <label for="novStartDatetime" class="mb-0">Start:</label>
+                <input id="novStartDatetime" type="datetime-local" class="form-control form-control-sm nov-filter-input">
+              </div>
+              <div class="nov-filter-datetime">
+                <label for="novEndDatetime" class="mb-0">End:</label>
+                <input id="novEndDatetime" type="datetime-local" class="form-control form-control-sm nov-filter-input">
+              </div>
+            </div>
+            <div class="national-operational-grid">
+              <section id="novEventsChartContainer" class="events-chart-container">
+                    <div class="nov-kpi-cards nov-kpi-cards-inline mb-3">
                       <article class="nov-kpi-card">
-                        <h6>Number of clusters ever visited</h6>
+                        <h6>Number of Clusters Visited</h6>
                         <div class="nov-kpi-metrics">
                           <div><span>Today</span><strong id="nov-kpi-today-eas">{{ today_eas }}</strong></div>
                           <div><span>This week</span><strong id="nov-kpi-week-eas">{{ week_eas }}</strong></div>
@@ -127,6 +111,17 @@
                           <div><span>Cummulative Total</span><strong id="nov-kpi-total-people">{{ total_people }}</strong></div>
                         </div>
                       </article>
+                    </div>
+                    <div class="events-chart-canvas-wrap">
+                      <canvas id="novEventsChart"></canvas>
+                    </div>
+                    {{ chart_labels|json_script:"nov-chart-labels" }}
+                    {{ pregnancy_values|json_script:"nov-pregnancy-values" }}
+                    {{ pregnancy_outcome_values|json_script:"nov-pregnancy-outcome-values" }}
+                    {{ death_values|json_script:"nov-death-values" }}
+              </section>
+              <aside id="novKpiCardsContainer" class="kpi-cards-container">
+                    <div class="nov-kpi-cards">
                       <article class="nov-kpi-card">
                         <h6>Pregnancies</h6>
                         <div class="nov-kpi-metrics">
@@ -160,15 +155,7 @@
                         </div>
                       </article>
                     </div>
-                  </aside>
-                </div>
-              </div>
-              <div class="tab-pane fade" id="nov-death-summary" role="tabpanel" aria-labelledby="nov-death-summary-tab">
-                <div class="placeholder-panel">Death Summary content</div>
-              </div>
-              <div class="tab-pane fade" id="nov-rumor-surveillance" role="tabpanel" aria-labelledby="nov-rumor-surveillance-tab">
-                <div class="placeholder-panel">Rumor Surveillance content</div>
-              </div>
+              </aside>
             </div>
           </div>
         </div>

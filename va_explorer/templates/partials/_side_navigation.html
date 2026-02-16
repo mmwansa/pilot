@@ -23,6 +23,16 @@
           <span class="nav-label">Home</span>
         </a>
       </li>
+      <li class="nav-item">
+        <a
+          class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+          href="{% url 'va_analytics:dashboard' %}"
+          data-tooltip="Dashboard"
+        >
+          <i class="fas fa-chart-line nav-icon"></i>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </li>
 
       <ul
         class="collapse-section"
