@@ -892,6 +892,14 @@ table thead th,
   color: #64748b;
 }
 
+#national-operational-view .events-chart-canvas-wrap {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  height: 360px;
+  padding: 10px;
+}
+
 @media (max-width: 991.98px) {
   #national-operational-view .national-operational-grid {
     grid-template-columns: 1fr;

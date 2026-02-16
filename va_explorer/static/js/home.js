@@ -5,6 +5,7 @@ GRAPH_OPTIONS = {
 };
 
 BORDER_COLOR = "#037BFE"
+let novEventsChartInstance = null;
 
 const setVATrendsTableData = (vaTableData) => {
   document.getElementById('interviewed-past-24-hours').innerHTML = vaTableData.collected["24"];
@@ -93,6 +94,88 @@ const setVACharts = (graphData) => {
   setVAChart(graphData.collected.x, graphData.collected.y, interviewedCtx);
   setVAChart(graphData.coded.x, graphData.coded.y,codedCtx);
   setVAChart(graphData.uncoded.x, graphData.uncoded.y, notYetCodedCtx);
+}
+
+const initNationalOperationalEventsChart = () => {
+  const canvas = document.getElementById("novEventsChart");
+  if (!canvas || typeof Chart === "undefined") return;
+
+  const labels = [
+    "2026-01-01",
+    "2026-01-08",
+    "2026-01-15",
+    "2026-01-22",
+    "2026-01-29",
+    "2026-02-05",
+    "2026-02-12",
+  ];
+  const placeholderPregnancy = [18, 22, 19, 25, 24, 28, 27];
+  const placeholderOutcome = [10, 13, 12, 15, 14, 17, 16];
+  const placeholderDeath = [7, 6, 8, 9, 8, 10, 9];
+
+  if (novEventsChartInstance) {
+    novEventsChartInstance.destroy();
+  }
+
+  novEventsChartInstance = new Chart(canvas.getContext("2d"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Pregnancy",
+          data: placeholderPregnancy,
+          borderColor: "#2d6cdf",
+          backgroundColor: "#2d6cdf",
+          tension: 0.25,
+          pointRadius: 2,
+          fill: false,
+        },
+        {
+          label: "Pregnancy Outcome",
+          data: placeholderOutcome,
+          borderColor: "#f5c542",
+          backgroundColor: "#f5c542",
+          tension: 0.25,
+          pointRadius: 2,
+          fill: false,
+        },
+        {
+          label: "Death",
+          data: placeholderDeath,
+          borderColor: "#dc3545",
+          backgroundColor: "#dc3545",
+          tension: 0.25,
+          pointRadius: 2,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: { display: true, position: "top" },
+        tooltip: { enabled: true },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "Date" },
+          grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "Event count" },
+          grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
+          ticks: { precision: 0 },
+        },
+      },
+    },
+  });
 }
 
 const setSingleMetricTrendsTableData = (prefix, trendTable) => {
@@ -185,3 +268,4 @@ const loadAllData = () => {
 }
 
 loadAllData();
+initNationalOperationalEventsChart();
