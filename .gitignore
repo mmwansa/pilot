@@ -100,4 +100,4 @@ Icon
 *.xlsx
 
 # DB DUMP
-/*.dump
+*.dump
