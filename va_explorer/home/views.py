@@ -48,6 +48,10 @@ class Index(CustomAuthMixin, TemplateView):
                 [location.name for location in user.location_restrictions.all()]
             )
 
+        regional_context_provider = RegionalOperationsComponentContextMixin()
+        regional_context_provider.request = self.request
+        context.update(regional_context_provider.get_regional_operations_context())
+
         return context
 
 
@@ -60,6 +64,7 @@ class Trends(CustomAuthMixin, View):
             indeterminate_cod_list,
             additional_issues,
             additional_indeterminate_cods,
+            additional_trends,
         ) = get_trends_data(request.user)
 
         return JsonResponse(
@@ -71,6 +76,7 @@ class Trends(CustomAuthMixin, View):
                 "additionalIssues": additional_issues,
                 "additionalIndeterminateCods": additional_indeterminate_cods,
                 "isFieldWorker": request.user.is_fieldworker(),
+                "additionalTrends": additional_trends,
             }
         )
 

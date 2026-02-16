@@ -91,6 +91,44 @@ const setVACharts = (graphData) => {
   setVAChart(graphData.uncoded.x, graphData.uncoded.y, notYetCodedCtx);
 }
 
+const setSingleMetricTrendsTableData = (prefix, trendTable) => {
+  const row = trendTable.recorded || {};
+  const keyMap = {
+    "24": "24-hours",
+    "1 week": "week",
+    "1 month": "month",
+    "Overall": "overall",
+  };
+  Object.entries(keyMap).forEach(([sourceKey, suffix]) => {
+    const el = document.getElementById(`${prefix}-past-${suffix}`);
+    if (el) el.innerHTML = row[sourceKey] || 0;
+  });
+}
+
+const setSingleMetricTrendChart = (canvasId, trendGraphs) => {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !trendGraphs || !trendGraphs.recorded) return;
+  const ctx = canvas.getContext("2d");
+  setVAChart(trendGraphs.recorded.x, trendGraphs.recorded.y, ctx);
+}
+
+const setAdditionalTrendVisualizations = (additionalTrends) => {
+  if (!additionalTrends) return;
+
+  const pregnancy = additionalTrends.pregnancy || {};
+  const pregnancyOutcome = additionalTrends.pregnancy_outcome || {};
+  const death = additionalTrends.death || {};
+
+  setSingleMetricTrendsTableData("pregnancies", pregnancy.table || {});
+  setSingleMetricTrendChart("pregnanciesChart", pregnancy.graphs || {});
+
+  setSingleMetricTrendsTableData("pregnancy-outcomes", pregnancyOutcome.table || {});
+  setSingleMetricTrendChart("pregnancyOutcomesChart", pregnancyOutcome.graphs || {});
+
+  setSingleMetricTrendsTableData("deaths", death.table || {});
+  setSingleMetricTrendChart("deathsChart", death.graphs || {});
+}
+
 const loadAllData = () => {
   const endpoint = "/trends";
   $.ajax({
@@ -102,6 +140,8 @@ const loadAllData = () => {
       setVATrendsTableData(jsonResponse.vaTable);
       // Set VA Charts
       setVACharts(jsonResponse.graphs);
+      // Set non-VA model trend visualizations
+      setAdditionalTrendVisualizations(jsonResponse.additionalTrends);
       // Set Coding Issues Table data
       if(jsonResponse.issueList.length > 0) {
         setCodingIssuesTableData(jsonResponse.issueList, jsonResponse.isFieldWorker);
