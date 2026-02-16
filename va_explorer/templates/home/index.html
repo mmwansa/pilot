@@ -65,6 +65,32 @@
               <div class="tab-pane fade show active" id="nov-overview" role="tabpanel" aria-labelledby="nov-overview-tab">
                 <div class="national-operational-grid">
                   <section class="events-chart-container">
+                    <div class="mb-3">
+                      <div class="d-flex flex-wrap align-items-center gap-3 mb-2" role="radiogroup" aria-label="Global time filters">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTimeAll" checked>
+                          <label class="form-check-label" for="novTimeAll">All time</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime30">
+                          <label class="form-check-label" for="novTime30">Last 30 days</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime7">
+                          <label class="form-check-label" for="novTime7">Last 7 days</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="novGlobalTimeFilter" id="novTime24">
+                          <label class="form-check-label" for="novTime24">Last 24 hours</label>
+                        </div>
+                      </div>
+                      <div class="d-flex flex-wrap align-items-center gap-2">
+                        <label for="novStartDatetime" class="mb-0">Start:</label>
+                        <input id="novStartDatetime" type="datetime-local" class="form-control form-control-sm" style="max-width: 230px;">
+                        <label for="novEndDatetime" class="mb-0">End:</label>
+                        <input id="novEndDatetime" type="datetime-local" class="form-control form-control-sm" style="max-width: 230px;">
+                      </div>
+                    </div>
                     <h5 class="mb-3">Events Chart</h5>
                     <div class="placeholder-panel">Chart area</div>
                   </section>
