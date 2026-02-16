@@ -900,6 +900,48 @@ table thead th,
   padding: 10px;
 }
 
+#national-operational-view .nov-kpi-cards {
+  display: grid;
+  gap: 10px;
+}
+
+#national-operational-view .nov-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+#national-operational-view .nov-kpi-card h6 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+#national-operational-view .nov-kpi-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+#national-operational-view .nov-kpi-metrics div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#national-operational-view .nov-kpi-metrics span {
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+#national-operational-view .nov-kpi-metrics strong {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
 @media (max-width: 991.98px) {
   #national-operational-view .national-operational-grid {
     grid-template-columns: 1fr;
