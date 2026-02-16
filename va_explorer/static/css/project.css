@@ -862,3 +862,38 @@ table thead th,
 .smaller-cards {
     height:300px; border-radius: 0.75rem;
 }
+
+#national-operational-view .national-operational-view-shell {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+#national-operational-view .national-operational-grid {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  gap: 16px;
+}
+
+#national-operational-view .events-chart-container,
+#national-operational-view .kpi-cards-container {
+  min-width: 0;
+}
+
+#national-operational-view .placeholder-panel {
+  min-height: 320px;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+@media (max-width: 991.98px) {
+  #national-operational-view .national-operational-grid {
+    grid-template-columns: 1fr;
+  }
+}
