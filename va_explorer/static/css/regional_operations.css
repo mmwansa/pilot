@@ -437,13 +437,17 @@
 .filters-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
 }
 
 .filters-bar #geographyFilterSelect {
-  flex: 0 0 180px;
-  width: auto;
+  flex: 0 1 130px;
+  width: 100%;
+  min-width: 88px;
+  max-width: 140px;
 }
 
 .filters-title {
@@ -456,10 +460,13 @@
 .filters-radio-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 4px 8px;
   background: #f4f6f9;
   border-radius: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .filters-radio-group .form-check {
@@ -468,30 +475,34 @@
 }
 
 .filters-radio-group .form-check-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #3a4a5e;
 }
 
 .filters-datetime-group {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-left: 12px;
-  flex: 1 1 auto;
-  min-width: 240px;
+  gap: 8px;
+  margin-left: 6px;
+  flex: 1 1 260px;
+  min-width: 0;
 }
 
 .filters-datetime-group .form-control {
-  min-width: 180px;
+  min-width: 0;
+  max-width: none;
   flex: 1 1 0;
 }
 
 .filters-reset-btn {
   margin-left: auto;
-  min-width: 92px;
+  min-width: 58px;
+  padding: 0.25rem 0.5rem;
   background-color: #2f8a4b;
   border-color: #2f8a4b;
   color: #ffffff;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .filters-reset-btn:hover,
