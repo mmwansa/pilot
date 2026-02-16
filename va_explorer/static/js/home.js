@@ -82,9 +82,13 @@ const setVAChart = (x, y, ctx) => {
 }
 
 const setVACharts = (graphData) => {
-  const interviewedCtx = document.getElementById("interviewedChart").getContext("2d");
-  const codedCtx = document.getElementById("codedChart").getContext("2d");
-  const notYetCodedCtx = document.getElementById("notYetCodedChart").getContext("2d");
+  const interviewedCanvas = document.getElementById("interviewedChart");
+  const codedCanvas = document.getElementById("codedChart");
+  const notYetCodedCanvas = document.getElementById("notYetCodedChart");
+  if (!interviewedCanvas || !codedCanvas || !notYetCodedCanvas) return;
+  const interviewedCtx = interviewedCanvas.getContext("2d");
+  const codedCtx = codedCanvas.getContext("2d");
+  const notYetCodedCtx = notYetCodedCanvas.getContext("2d");
 
   setVAChart(graphData.collected.x, graphData.collected.y, interviewedCtx);
   setVAChart(graphData.coded.x, graphData.coded.y,codedCtx);
@@ -92,41 +96,46 @@ const setVACharts = (graphData) => {
 }
 
 const setSingleMetricTrendsTableData = (prefix, trendTable) => {
-  const row = trendTable.recorded || {};
-  const keyMap = {
-    "24": "24-hours",
-    "1 week": "week",
-    "1 month": "month",
-    "Overall": "overall",
+  const row = (trendTable && trendTable.recorded) ? trendTable.recorded : {};
+  const values = {
+    "24-hours": row["24"] || 0,
+    "week": row["1 week"] || 0,
+    "month": row["1 month"] || 0,
+    "overall": row["Overall"] || 0,
   };
-  Object.entries(keyMap).forEach(([sourceKey, suffix]) => {
+
+  Object.entries(values).forEach(([suffix, value]) => {
     const el = document.getElementById(`${prefix}-past-${suffix}`);
-    if (el) el.innerHTML = row[sourceKey] || 0;
+    if (el) el.innerHTML = value;
   });
 }
 
 const setSingleMetricTrendChart = (canvasId, trendGraphs) => {
   const canvas = document.getElementById(canvasId);
   if (!canvas || !trendGraphs || !trendGraphs.recorded) return;
-  const ctx = canvas.getContext("2d");
-  setVAChart(trendGraphs.recorded.x, trendGraphs.recorded.y, ctx);
+  const x = trendGraphs.recorded.x || [];
+  const y = trendGraphs.recorded.y || [];
+  setVAChart(x, y, canvas.getContext("2d"));
 }
 
-const setAdditionalTrendVisualizations = (additionalTrends) => {
-  if (!additionalTrends) return;
+const setModelTrendVisualizations = (modelTrends) => {
+  if (!modelTrends) return;
 
-  const pregnancy = additionalTrends.pregnancy || {};
-  const pregnancyOutcome = additionalTrends.pregnancy_outcome || {};
-  const death = additionalTrends.death || {};
+  const households = modelTrends.households || {};
+  setSingleMetricTrendsTableData("households", households.table);
+  setSingleMetricTrendChart("householdsChart", households.graphs);
 
-  setSingleMetricTrendsTableData("pregnancies", pregnancy.table || {});
-  setSingleMetricTrendChart("pregnanciesChart", pregnancy.graphs || {});
+  const pregnancies = modelTrends.pregnancies || {};
+  setSingleMetricTrendsTableData("pregnancies", pregnancies.table);
+  setSingleMetricTrendChart("pregnanciesChart", pregnancies.graphs);
 
-  setSingleMetricTrendsTableData("pregnancy-outcomes", pregnancyOutcome.table || {});
-  setSingleMetricTrendChart("pregnancyOutcomesChart", pregnancyOutcome.graphs || {});
+  const pregnancyOutcomes = modelTrends.pregnancy_outcomes || {};
+  setSingleMetricTrendsTableData("pregnancy-outcomes", pregnancyOutcomes.table);
+  setSingleMetricTrendChart("pregnancyOutcomesChart", pregnancyOutcomes.graphs);
 
-  setSingleMetricTrendsTableData("deaths", death.table || {});
-  setSingleMetricTrendChart("deathsChart", death.graphs || {});
+  const deaths = modelTrends.deaths || {};
+  setSingleMetricTrendsTableData("deaths", deaths.table);
+  setSingleMetricTrendChart("deathsChart", deaths.graphs);
 }
 
 const loadAllData = () => {
@@ -140,8 +149,8 @@ const loadAllData = () => {
       setVATrendsTableData(jsonResponse.vaTable);
       // Set VA Charts
       setVACharts(jsonResponse.graphs);
-      // Set non-VA model trend visualizations
-      setAdditionalTrendVisualizations(jsonResponse.additionalTrends);
+      // Set household/pregnancy/pregnancy outcome/death trends
+      setModelTrendVisualizations(jsonResponse.modelTrends);
       // Set Coding Issues Table data
       if(jsonResponse.issueList.length > 0) {
         setCodingIssuesTableData(jsonResponse.issueList, jsonResponse.isFieldWorker);

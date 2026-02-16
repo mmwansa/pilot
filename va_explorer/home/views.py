@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.views.generic import TemplateView, View
 
 from va_explorer.home.dashboard_metrics import get_homepage_metrics
+from va_explorer.home.model_trends import get_model_trends_data
 from va_explorer.home.va_trends import get_trends_data
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.models import (
@@ -64,8 +65,8 @@ class Trends(CustomAuthMixin, View):
             indeterminate_cod_list,
             additional_issues,
             additional_indeterminate_cods,
-            additional_trends,
         ) = get_trends_data(request.user)
+        model_trends = get_model_trends_data()
 
         return JsonResponse(
             {
@@ -76,7 +77,7 @@ class Trends(CustomAuthMixin, View):
                 "additionalIssues": additional_issues,
                 "additionalIndeterminateCods": additional_indeterminate_cods,
                 "isFieldWorker": request.user.is_fieldworker(),
-                "additionalTrends": additional_trends,
+                "modelTrends": model_trends,
             }
         )
 

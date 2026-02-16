@@ -5,7 +5,6 @@ from django.db.models import F
 from pandas.tseries.offsets import DateOffset
 
 from va_explorer.va_data_management.constants import REDACTED_STRING
-from va_explorer.va_data_management.models import Death, Pregnancy, PregnancyOutcome
 from va_explorer.va_data_management.utils.date_parsing import (
     get_interview_dates,
     parse_date,
@@ -72,75 +71,6 @@ def empty_graph_data():
     return graphs
 
 
-def empty_single_metric_table():
-    return {"recorded": {col: 0 for col in VA_TABLE_COLUMNS}}
-
-
-def empty_single_metric_graph():
-    return {
-        "recorded": {
-            "x": VA_GRAPH_X_DATA.copy(),
-            "y": VA_GRAPH_Y_DATA.copy(),
-        }
-    }
-
-
-def _first_valid_datetime_column(df, columns):
-    parsed = pd.Series(pd.NaT, index=df.index)
-    for column in columns:
-        if column not in df.columns:
-            continue
-        candidate = pd.to_datetime(df[column], errors="coerce")
-        parsed = parsed.fillna(candidate)
-    return parsed
-
-
-def build_single_metric_trends(queryset, date_columns):
-    table = empty_single_metric_table()
-    graphs = empty_single_metric_graph()
-
-    if queryset.count() == 0:
-        return table, graphs
-
-    df = pd.DataFrame(queryset.values(*date_columns, "id"))
-    if df.empty:
-        return table, graphs
-
-    df["date"] = _first_valid_datetime_column(df, date_columns)
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    valid_df = df[df["date"].notna()].copy()
-    if valid_df["date"].dt.tz is not None:
-        valid_df["date"] = valid_df["date"].dt.tz_convert(None)
-    valid_df["date"] = valid_df["date"].dt.normalize()
-    valid_df["yearmonth"] = valid_df["date"].dt.strftime("%Y-%m")
-
-    recorded_24_hours = valid_df[valid_df["date"] == TODAY].shape[0]
-    recorded_1_week = valid_df[valid_df["date"] >= (TODAY - timedelta(days=7))].shape[0]
-    recorded_1_month = valid_df[valid_df["date"] >= (TODAY - DateOffset(months=1))].shape[0]
-    recorded_overall = df.shape[0]
-
-    table["recorded"]["24"] = recorded_24_hours
-    table["recorded"]["1 week"] = recorded_1_week
-    table["recorded"]["1 month"] = recorded_1_month
-    table["recorded"]["Overall"] = recorded_overall
-
-    x = [month.strftime("%b") for month in MONTHS]
-    plot_df = pd.DataFrame({"yearmonth": VA_GRAPH_X_DATA, "x": x})
-    plot_df = plot_df.merge(
-        valid_df.query("date >= @START_MONTH")
-        .groupby("yearmonth")["id"]
-        .count()
-        .rename("y_recorded")
-        .reset_index(),
-        how="left",
-    ).fillna(0)
-
-    graphs["recorded"]["x"] = plot_df["x"].values.tolist()
-    graphs["recorded"]["y"] = plot_df["y_recorded"].values.tolist()
-
-    return table, graphs
-
-
 def get_context_for_va_table(va_list, user):
     context = [
         {
@@ -185,18 +115,6 @@ def get_trends_data(user):
     indeterminate_cod_list = []
     additional_issues = 0
     additional_indeterminate_cods = 0
-    pregnancy_table, pregnancy_graphs = build_single_metric_trends(
-        Pregnancy.objects.all(),
-        ("today", "submissiondate", "start"),
-    )
-    pregnancy_outcome_table, pregnancy_outcome_graphs = build_single_metric_trends(
-        PregnancyOutcome.objects.all(),
-        ("today", "submissiondate", "start"),
-    )
-    death_table, death_graphs = build_single_metric_trends(
-        Death.objects.all(),
-        ("today", "submissiondate", "start"),
-    )
 
     if user_vas.count() > 0:
         va_df = pd.DataFrame(
@@ -331,18 +249,4 @@ def get_trends_data(user):
         indeterminate_cod_list,
         additional_issues,
         additional_indeterminate_cods,
-        {
-            "pregnancy": {
-                "table": pregnancy_table,
-                "graphs": pregnancy_graphs,
-            },
-            "pregnancy_outcome": {
-                "table": pregnancy_outcome_table,
-                "graphs": pregnancy_outcome_graphs,
-            },
-            "death": {
-                "table": death_table,
-                "graphs": death_graphs,
-            },
-        },
     )

@@ -295,87 +295,106 @@
         </div>
       </div>      
       <div class="tab-pane fade" id="tab-4" role="tabpanel" aria-labelledby="tab-4-tab">
-        <div class="row mt-2">
-          <div class="col">
-            <h2 class="mb-4">Pregnancy Collection Overview for {{ locations }}</h2>
-            <table class="table home-page-statistics">
+        <h2 class="mb-4">Collection Trends</h2>
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <h5>Households</h5>
+            <table class="table table-sm home-page-statistics">
               <thead>
                 <tr>
-                  <th scope="col">Pregnancies</th>
-                  <th scope="col">24 hours</th>
-                  <th scope="col">1 week</th>
-                  <th scope="col">1 month</th>
-                  <th scope="col">Overall</th>
-                  <th scope="col">Collection Trends</th>
+                  <th>Metric</th>
+                  <th>24 hours</th>
+                  <th>1 week</th>
+                  <th>1 month</th>
+                  <th>Overall</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <th scope="row">Recorded</th>
-                  <td id="pregnancies-past-24-hours"></td>
-                  <td id="pregnancies-past-week"></td>
-                  <td id="pregnancies-past-month"></td>
-                  <td id="pregnancies-past-overall"></td>
-                  <td><canvas id="pregnanciesChart"></canvas></td>
+                  <td>Recorded</td>
+                  <td id="households-past-24-hours">0</td>
+                  <td id="households-past-week">0</td>
+                  <td id="households-past-month">0</td>
+                  <td id="households-past-overall">0</td>
                 </tr>
               </tbody>
             </table>
+            <canvas id="householdsChart"></canvas>
           </div>
-        </div>
 
-        <div class="row mt-4">
-          <div class="col">
-            <h2 class="mb-4">Pregnancy Outcomes Overview for {{ locations }}</h2>
-            <table class="table home-page-statistics">
+          <div class="col-md-6 mb-4">
+            <h5>Pregnancies</h5>
+            <table class="table table-sm home-page-statistics">
               <thead>
                 <tr>
-                  <th scope="col">Pregnancy Outcomes</th>
-                  <th scope="col">24 hours</th>
-                  <th scope="col">1 week</th>
-                  <th scope="col">1 month</th>
-                  <th scope="col">Overall</th>
-                  <th scope="col">Collection Trends</th>
+                  <th>Metric</th>
+                  <th>24 hours</th>
+                  <th>1 week</th>
+                  <th>1 month</th>
+                  <th>Overall</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <th scope="row">Recorded</th>
-                  <td id="pregnancy-outcomes-past-24-hours"></td>
-                  <td id="pregnancy-outcomes-past-week"></td>
-                  <td id="pregnancy-outcomes-past-month"></td>
-                  <td id="pregnancy-outcomes-past-overall"></td>
-                  <td><canvas id="pregnancyOutcomesChart"></canvas></td>
+                  <td>Recorded</td>
+                  <td id="pregnancies-past-24-hours">0</td>
+                  <td id="pregnancies-past-week">0</td>
+                  <td id="pregnancies-past-month">0</td>
+                  <td id="pregnancies-past-overall">0</td>
                 </tr>
               </tbody>
             </table>
+            <canvas id="pregnanciesChart"></canvas>
           </div>
-        </div>
 
-        <div class="row mt-4">
-          <div class="col">
-            <h2 class="mb-4">Death Collection Overview for {{ locations }}</h2>
-            <table class="table home-page-statistics">
+          <div class="col-md-6 mb-4">
+            <h5>Pregnancy Outcomes</h5>
+            <table class="table table-sm home-page-statistics">
               <thead>
                 <tr>
-                  <th scope="col">Deaths</th>
-                  <th scope="col">24 hours</th>
-                  <th scope="col">1 week</th>
-                  <th scope="col">1 month</th>
-                  <th scope="col">Overall</th>
-                  <th scope="col">Collection Trends</th>
+                  <th>Metric</th>
+                  <th>24 hours</th>
+                  <th>1 week</th>
+                  <th>1 month</th>
+                  <th>Overall</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <th scope="row">Recorded</th>
-                  <td id="deaths-past-24-hours"></td>
-                  <td id="deaths-past-week"></td>
-                  <td id="deaths-past-month"></td>
-                  <td id="deaths-past-overall"></td>
-                  <td><canvas id="deathsChart"></canvas></td>
+                  <td>Recorded</td>
+                  <td id="pregnancy-outcomes-past-24-hours">0</td>
+                  <td id="pregnancy-outcomes-past-week">0</td>
+                  <td id="pregnancy-outcomes-past-month">0</td>
+                  <td id="pregnancy-outcomes-past-overall">0</td>
                 </tr>
               </tbody>
             </table>
+            <canvas id="pregnancyOutcomesChart"></canvas>
+          </div>
+
+          <div class="col-md-6 mb-4">
+            <h5>Deaths</h5>
+            <table class="table table-sm home-page-statistics">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>24 hours</th>
+                  <th>1 week</th>
+                  <th>1 month</th>
+                  <th>Overall</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Recorded</td>
+                  <td id="deaths-past-24-hours">0</td>
+                  <td id="deaths-past-week">0</td>
+                  <td id="deaths-past-month">0</td>
+                  <td id="deaths-past-overall">0</td>
+                </tr>
+              </tbody>
+            </table>
+            <canvas id="deathsChart"></canvas>
           </div>
         </div>
       </div>
