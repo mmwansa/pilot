@@ -199,10 +199,11 @@ def _parse_filter_range(request):
     if start_dt is not None and end_dt is not None and start_dt > end_dt:
         start_dt, end_dt = end_dt, start_dt
 
-    return preset, start_dt, end_dt
+    has_custom_range = bool(start_raw or end_raw)
+    return preset, start_dt, end_dt, has_custom_range
 
 
-def _get_national_operational_view_data(start_dt=None, end_dt=None):
+def _get_national_operational_view_data(start_dt=None, end_dt=None, use_legacy_metrics=False):
     if end_dt is None:
         end_dt = timezone.localtime(timezone.now())
 
@@ -294,20 +295,62 @@ def _get_national_operational_view_data(start_dt=None, end_dt=None):
         end_dt,
     )
 
+    kpis = {
+        "eas": eas_totals,
+        "households": households_totals,
+        "people": {"today": people_today, "week": people_week, "total": people_total},
+        "pregnancies": pregnancies_totals,
+        "preg_outcomes": pregnancy_outcomes_totals,
+        "deaths": deaths_totals,
+        "vas": vas_totals,
+    }
+
+    if use_legacy_metrics and start_dt is None:
+        metrics = get_homepage_metrics()
+        kpis = {
+            "eas": {
+                "today": metrics.get("today_eas", 0),
+                "week": metrics.get("week_eas", 0),
+                "total": metrics.get("total_eas", 0),
+            },
+            "households": {
+                "today": metrics.get("today_households", 0),
+                "week": metrics.get("week_households", 0),
+                "total": metrics.get("total_households", 0),
+            },
+            "people": {
+                "today": metrics.get("today_people", 0),
+                "week": metrics.get("week_people", 0),
+                "total": metrics.get("total_people", 0),
+            },
+            "pregnancies": {
+                "today": metrics.get("today_pregnancies", 0),
+                "week": metrics.get("week_pregnancies", 0),
+                "total": metrics.get("total_pregnancies", 0),
+            },
+            "preg_outcomes": {
+                "today": metrics.get("today_preg_outcomes", 0),
+                "week": metrics.get("week_preg_outcomes", 0),
+                "total": metrics.get("total_preg_outcomes", 0),
+            },
+            "deaths": {
+                "today": metrics.get("today_deaths", 0),
+                "week": metrics.get("week_deaths", 0),
+                "total": metrics.get("total_deaths", 0),
+            },
+            "vas": {
+                "today": metrics.get("today_vas", 0),
+                "week": metrics.get("week_vas", 0),
+                "total": metrics.get("total_vas", 0),
+            },
+        }
+
     return {
         "chart_labels": chart_data["labels"],
         "pregnancy_values": chart_data["pregnancy"],
         "pregnancy_outcome_values": chart_data["pregnancy_outcome"],
         "death_values": chart_data["death"],
-        "kpis": {
-            "eas": eas_totals,
-            "households": households_totals,
-            "people": {"today": people_today, "week": people_week, "total": people_total},
-            "pregnancies": pregnancies_totals,
-            "preg_outcomes": pregnancy_outcomes_totals,
-            "deaths": deaths_totals,
-            "vas": vas_totals,
-        },
+        "kpis": kpis,
     }
 
 
@@ -332,7 +375,7 @@ class Index(CustomAuthMixin, TemplateView):
         regional_context_provider.request = self.request
         context.update(regional_context_provider.get_regional_operations_context())
 
-        nov_data = _get_national_operational_view_data()
+        nov_data = _get_national_operational_view_data(use_legacy_metrics=True)
         context["chart_labels"] = nov_data["chart_labels"]
         context["pregnancy_values"] = nov_data["pregnancy_values"]
         context["pregnancy_outcome_values"] = nov_data["pregnancy_outcome_values"]
@@ -394,8 +437,12 @@ trends_endpoint_view = Trends.as_view()
 
 class NationalOperationalFilterData(CustomAuthMixin, View):
     def get(self, request, *args, **kwargs):
-        _, start_dt, end_dt = _parse_filter_range(request)
-        payload = _get_national_operational_view_data(start_dt=start_dt, end_dt=end_dt)
+        preset, start_dt, end_dt, has_custom_range = _parse_filter_range(request)
+        payload = _get_national_operational_view_data(
+            start_dt=start_dt,
+            end_dt=end_dt,
+            use_legacy_metrics=(preset == "all" and not has_custom_range),
+        )
         return JsonResponse(payload)
 
 
