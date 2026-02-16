@@ -51,6 +51,14 @@ class DashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateView):
 dashboard_view = DashboardView.as_view()
 
 
+class DashboardMapView(CustomAuthMixin, PermissionRequiredMixin, TemplateView):
+    template_name = "va_analytics/dashboard_map.html"
+    permission_required = "va_analytics.view_dashboard"
+
+
+dashboard_map_view = DashboardMapView.as_view()
+
+
 class UserSupervisionView(CustomAuthMixin, PermissionRequiredMixin, ListView):
     permission_required = "va_analytics.supervise_users"
     template_name = "va_analytics/user_supervision_view.html"

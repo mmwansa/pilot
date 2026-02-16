@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "country_0",
+        "area_name": "Zambia",
+        "area_level": 0,
+        "level_name": "Country",
+        "parent_id": null,
+        "parent_nam": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [23.0, -8.0],
+          [34.0, -8.0],
+          [34.0, -18.0],
+          [23.0, -18.0],
+          [23.0, -8.0]
+        ]]
+      }
+    }
+  ]
+}

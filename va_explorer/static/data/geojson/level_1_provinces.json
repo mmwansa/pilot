@@ -1,0 +1,173 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_1",
+        "area_name": "Lusaka",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [28.0, -14.0],
+          [29.5, -14.0],
+          [29.5, -15.5],
+          [28.0, -15.5],
+          [28.0, -14.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_2",
+        "area_name": "Central",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [27.0, -13.0],
+          [28.5, -13.0],
+          [28.5, -14.5],
+          [27.0, -14.5],
+          [27.0, -13.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_3",
+        "area_name": "Copperbelt",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [28.0, -12.0],
+          [29.5, -12.0],
+          [29.5, -13.5],
+          [28.0, -13.5],
+          [28.0, -12.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_4",
+        "area_name": "Eastern",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [31.0, -12.0],
+          [33.5, -12.0],
+          [33.5, -15.0],
+          [31.0, -15.0],
+          [31.0, -12.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_5",
+        "area_name": "Northern",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [28.0, -8.5],
+          [34.0, -8.5],
+          [34.0, -11.5],
+          [28.0, -11.5],
+          [28.0, -8.5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_6",
+        "area_name": "North Western",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [23.0, -10.0],
+          [26.5, -10.0],
+          [26.5, -13.5],
+          [23.0, -13.5],
+          [23.0, -10.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_7",
+        "area_name": "Southern",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [25.0, -16.0],
+          [30.0, -16.0],
+          [30.0, -18.0],
+          [25.0, -18.0],
+          [25.0, -16.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "province_8",
+        "area_name": "Western",
+        "area_level": 1,
+        "level_name": "Province",
+        "parent_id": "country_0",
+        "parent_nam": "Zambia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [23.0, -15.0],
+          [25.5, -15.0],
+          [25.5, -18.0],
+          [23.0, -18.0],
+          [23.0, -15.0]
+        ]]
+      }
+    }
+  ]
+}

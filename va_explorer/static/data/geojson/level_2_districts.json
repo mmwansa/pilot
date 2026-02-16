@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "district_11",
+        "area_name": "Lusaka",
+        "area_level": 2,
+        "level_name": "District",
+        "parent_id": "province_1",
+        "parent_nam": "Lusaka"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [28.4, -14.2],
+          [29.0, -14.2],
+          [29.0, -14.9],
+          [28.4, -14.9],
+          [28.4, -14.2]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "district_12",
+        "area_name": "Kafue",
+        "area_level": 2,
+        "level_name": "District",
+        "parent_id": "province_1",
+        "parent_nam": "Lusaka"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [28.1, -14.9],
+          [29.0, -14.9],
+          [29.0, -15.5],
+          [28.1, -15.5],
+          [28.1, -14.9]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "district_21",
+        "area_name": "Kabwe",
+        "area_level": 2,
+        "level_name": "District",
+        "parent_id": "province_2",
+        "parent_nam": "Central"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [27.5, -14.0],
+          [28.5, -14.0],
+          [28.5, -14.5],
+          [27.5, -14.5],
+          [27.5, -14.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_id": "district_22",
+        "area_name": "Kapiri Mposhi",
+        "area_level": 2,
+        "level_name": "District",
+        "parent_id": "province_2",
+        "parent_nam": "Central"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [27.0, -13.0],
+          [28.0, -13.0],
+          [28.0, -13.8],
+          [27.0, -13.8],
+          [27.0, -13.0]
+        ]]
+      }
+    }
+  ]
+}
