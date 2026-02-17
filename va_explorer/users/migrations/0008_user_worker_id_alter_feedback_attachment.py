@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='worker_id',
-            field=models.CharField(blank=True, max_length=255, unique=True, verbose_name='Worker ID'),
+            field=models.CharField(blank=True, null=True, max_length=255, unique=True, verbose_name='Worker ID'),
         ),
         migrations.AlterField(
             model_name='feedback',

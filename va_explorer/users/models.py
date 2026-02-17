@@ -99,7 +99,7 @@ class User(AbstractUser):
     mobile1 = models.CharField(_("Mobile 1"), blank=True, max_length=255)
     mobile2 = models.CharField(_("Mobile 2"), blank=True, max_length=255)
     address = models.CharField(_("Address"), blank=True, max_length=255)
-    worker_id = models.CharField(_("Worker ID"), blank=True, max_length=255) # ID to be used in ODK for assignment.
+    worker_id = models.CharField(_("Worker ID"), null=True, blank=True,  unique=True, max_length=255) # ID to be used in ODK for assignment.
     #end new fields
     has_valid_password = models.BooleanField(
         _("The user has a user-defined password"), default=False
