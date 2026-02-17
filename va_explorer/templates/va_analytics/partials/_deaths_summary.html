@@ -1,0 +1,47 @@
+<div class="highlightsContainer" id="deathsSummaryCards" data-component="summary">
+  <div class="highlight"><h3>Last Data Update</h3><p id="deathsCardLastDataUpdate">{{ death_card_last_data_update }}</p></div>
+  <div class="highlight"><h3>Last Death Date</h3><p id="deathsCardLastDeathDate">{{ death_card_last_death_date }}</p></div>
+  <div class="highlight"><h3>Total Death Events</h3><p id="deathsCardTotalEvents">{{ death_card_total_events }}</p></div>
+  <div class="highlight"><h3>% Under-5 Deaths</h3><p id="deathsCardUnder5Pct">{{ death_card_under_5_pct }}%</p></div>
+  <div class="highlight"><h3>Median Delay (days)</h3><p id="deathsCardMedianDelayDays">{% if death_card_median_delay_days is not None %}{{ death_card_median_delay_days }}{% else %}N/A{% endif %}</p></div>
+</div>
+<form id="deathsFiltersForm" class="controls" method="get" action="" data-component="filters">
+  <small style="font-style: italic; font-size: 0.65rem;">Filters update mortality trend and map.</small>
+  <div class="mainFiltersContainer" style="gap: 0.5rem; flex-wrap: wrap;">
+    <label for="deathsFilterTimePreset">Date of Death:</label>
+    <select id="deathsFilterTimePreset" class="select" name="time_preset">
+      <option value="all_time">All time</option>
+      <option value="last_30_days">Last 30 days</option>
+      <option value="last_7_days">Last 7 days</option>
+      <option value="last_24_hours">Last 24 hours</option>
+      <option value="custom">Custom</option>
+    </select>
+
+    <label for="deathsFilterSex">Sex:</label>
+    <select id="deathsFilterSex" class="select" name="sex">
+      <option value="">All</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
+
+    <label for="deathsFilterAgeGroup">Age Group:</label>
+    <select id="deathsFilterAgeGroup" class="select" name="age_group">
+      <option value="">All</option>
+      <option value="neonate">Neonate</option>
+      <option value="child">Child</option>
+      <option value="adult">Adult</option>
+    </select>
+
+    <label for="deathsFilterPlace">Place:</label>
+    <input id="deathsFilterPlace" class="input" type="text" name="place_of_death" placeholder="All places">
+    <label for="deathsFilterCodedOnly">Coded only:</label>
+    <input id="deathsFilterCodedOnly" type="checkbox" name="coded_only" value="1">
+  </div>
+  <div class="betweenDatesContainer">
+    <span>Between</span>
+    <input id="deathsFilterStartDatetime" class="input" type="datetime-local" name="start_datetime">
+    <span>and</span>
+    <input id="deathsFilterEndDatetime" class="input" type="datetime-local" name="end_datetime">
+    <button id="deathsFiltersReset" type="button" class="button resetBtn">Reset</button>
+  </div>
+</form>

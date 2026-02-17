@@ -1,0 +1,13 @@
+<h2>Place of Death Distribution</h2>
+<div>
+  <input id="deathsPlaceModeCount" type="radio" value="count" name="deaths_place_mode" checked>
+  <label for="deathsPlaceModeCount" style="vertical-align: super; font-size: 12px">Count</label>
+  <input id="deathsPlaceModePercentage" type="radio" value="percentage" name="deaths_place_mode">
+  <label for="deathsPlaceModePercentage" style="vertical-align: super; font-size: 12px">Percentage</label>
+</div>
+<div class="chartsContainer">
+  <div style="height: 260px;">
+    <canvas id="deathsPlaceChart" data-component="place-chart"></canvas>
+  </div>
+</div>
+<p id="deathsPlaceEmpty" class="po-empty-state" hidden>No place-of-death data available for the selected filters.</p>

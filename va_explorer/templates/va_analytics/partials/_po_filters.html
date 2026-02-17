@@ -1,0 +1,41 @@
+<form id="poFiltersForm" class="controls" data-component="filters" method="get" action="{% url 'va_analytics:outcomes-dashboard' %}">
+  <small style="font-style: italic; font-size: 0.65rem;">
+    Note: this dashboard visualizes coded pregnancy outcomes and all charts sum to the coded total above.
+  </small>
+
+  <div class="mainFiltersContainer">
+    <label for="poFilterPregnancyOutcome">Pregnancy Outcome:</label>
+    <select id="poFilterPregnancyOutcome" class="select" name="pregnancy_outcome">
+      <option value="">All</option>
+      {% for option in pregnancy_outcome_options %}
+        <option value="{{ option }}" {% if filter_pregnancy_outcome == option %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="betweenDatesContainer">
+    <label for="poFilterTimePreset">Date of Birth:</label>
+    <select id="poFilterTimePreset" class="select" name="time_preset">
+      <option value="all_time" {% if filter_time_preset == "all_time" %}selected{% endif %}>All time</option>
+      <option value="last_30_days" {% if filter_time_preset == "last_30_days" %}selected{% endif %}>Last 30 days</option>
+      <option value="last_7_days" {% if filter_time_preset == "last_7_days" %}selected{% endif %}>Last 7 days</option>
+      <option value="last_24_hours" {% if filter_time_preset == "last_24_hours" %}selected{% endif %}>Last 24 hours</option>
+      <option value="custom" {% if filter_time_preset == "custom" %}selected{% endif %}>Custom</option>
+    </select>
+
+    <div class="customDatesContainer">
+      <span>Between</span>
+      <label for="poFilterStartDatetime" class="sr-only">Start DateTime</label>
+      <input id="poFilterStartDatetime" class="input" type="datetime-local" name="start_datetime" value="{{ filter_start_datetime }}">
+      <span>and</span>
+      <label for="poFilterEndDatetime" class="sr-only">End DateTime</label>
+      <input id="poFilterEndDatetime" class="input" type="datetime-local" name="end_datetime" value="{{ filter_end_datetime }}">
+    </div>
+  </div>
+
+  <div class="formBtnsContainer">
+    <button id="poFiltersReset" type="button" class="button resetBtn">Reset</button>
+    <button type="submit" class="button updateDataBtn" style="margin-left: 10px">Apply</button>
+  </div>
+  <input type="hidden" id="poFilterMapView" name="map_view" value="{{ filter_map_view }}">
+</form>

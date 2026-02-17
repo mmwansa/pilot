@@ -1,0 +1,21 @@
+<h2 style="margin-top: 10px;">Top 10 Causes of Death</h2>
+<div>
+  <input id="deathsTopCauseModeCount" type="radio" value="count" name="deaths_top_cause_mode" checked>
+  <label for="deathsTopCauseModeCount" style="vertical-align: super; font-size: 12px">Count</label>
+  <input id="deathsTopCauseModePercentage" type="radio" value="percentage" name="deaths_top_cause_mode">
+  <label for="deathsTopCauseModePercentage" style="vertical-align: super; font-size: 12px">Percentage</label>
+</div>
+<div class="chartsContainer">
+  <div style="height: 260px;">
+    <canvas id="deathsTopCausesChart" data-component="top-causes-chart"></canvas>
+  </div>
+</div>
+<p id="deathsTopCausesEmpty" class="po-empty-state" hidden>No coded cause data available for the selected filters.</p>
+
+<h2 style="margin-top: 10px;">Cause Trend</h2>
+<div class="chartsContainer">
+  <div style="height: 260px;">
+    <canvas id="deathsCauseTrendChart" data-component="cause-trend-chart"></canvas>
+  </div>
+</div>
+<p id="deathsCauseTrendEmpty" class="po-empty-state" hidden>No coded cause trend data available for the selected filters.</p>

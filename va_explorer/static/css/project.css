@@ -552,6 +552,13 @@ table.home-page-statistics th {
     overflow: hidden;
 }
 
+.sidebar-container .nav-label.outcomes-dashboard-label {
+    white-space: normal;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+}
+
 .nav-label:hover {
     color: #e67816;
 }

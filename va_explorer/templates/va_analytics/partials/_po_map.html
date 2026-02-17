@@ -1,0 +1,16 @@
+<section class="sectionContainer mapView" id="poMapSection" data-component="map">
+  <h2>Geographic Distribution</h2>
+  <div class="controls">
+    <label for="poMapViewSelect">Map View:</label>
+    <div class="select">
+      <select id="poMapViewSelect">
+        <option value="Province" {% if filter_map_view == "Province" %}selected{% endif %}>Province</option>
+        <option value="District" {% if filter_map_view == "District" %}selected{% endif %}>District</option>
+      </select>
+    </div>
+  </div>
+  <div id="poMapContainer">
+    <div id="poMapLegend" class="legend"></div>
+  </div>
+  <p id="poMapEmpty" class="po-empty-state" hidden>No geographic data available for the selected filters.</p>
+</section>

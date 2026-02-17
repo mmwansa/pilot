@@ -1,0 +1,32 @@
+<main
+  id="deathsDashboardApp"
+  data-component="dashboard"
+  data-summary-endpoint="{% url 'va_analytics:outcomes-deaths-summary-api' %}"
+  data-trend-endpoint="{% url 'va_analytics:outcomes-deaths-trend-api' %}"
+  data-map-endpoint="{% url 'va_analytics:outcomes-deaths-map-api' %}"
+  data-age-sex-endpoint="{% url 'va_analytics:outcomes-deaths-age-sex-api' %}"
+  data-place-endpoint="{% url 'va_analytics:outcomes-deaths-place-api' %}"
+  data-top-causes-endpoint="{% url 'va_analytics:outcomes-deaths-top-causes-api' %}"
+  data-cause-trend-endpoint="{% url 'va_analytics:outcomes-deaths-cause-trend-api' %}"
+  data-signals-endpoint="{% url 'va_analytics:outcomes-deaths-signals-api' %}"
+  data-timeliness-endpoint="{% url 'va_analytics:outcomes-deaths-timeliness-api' %}"
+>
+  <section class="sectionContainer panelView" id="deathsPanelSection" data-component="panel">
+    <h2>Summaries and Control Panel</h2>
+    {% include "va_analytics/partials/_deaths_summary.html" %}
+    {% include "va_analytics/partials/_deaths_signals.html" %}
+  </section>
+
+  {% include "va_analytics/partials/_deaths_map.html" %}
+  {% include "va_analytics/partials/_deaths_trend.html" %}
+
+  <section class="sectionContainer" id="deathsCauseSection" data-component="causes-and-place">
+    {% include "va_analytics/partials/_deaths_place.html" %}
+    {% include "va_analytics/partials/_deaths_top_causes.html" %}
+  </section>
+
+  <section class="sectionContainer" id="deathsDemographicsSection" data-component="demographics-and-timeliness">
+    {% include "va_analytics/partials/_deaths_age_sex.html" %}
+    {% include "va_analytics/partials/_deaths_timeliness.html" %}
+  </section>
+</main>

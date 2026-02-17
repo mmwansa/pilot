@@ -33,6 +33,16 @@
           <span class="nav-label">Dashboard</span>
         </a>
       </li>
+      <li class="nav-item">
+        <a
+          class="nav-link {% if request.resolver_match.url_name == 'outcomes-dashboard' %}active{% endif %}"
+          href="{% url 'va_analytics:outcomes-dashboard' %}?tab=deaths"
+          data-tooltip="Outcomes Dashboards"
+        >
+          <i class="fas fa-chart-bar nav-icon"></i>
+          <span class="nav-label outcomes-dashboard-label">Outcomes Dashboards</span>
+        </a>
+      </li>
 
       <ul
         class="collapse-section"

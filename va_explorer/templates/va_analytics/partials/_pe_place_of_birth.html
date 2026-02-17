@@ -1,0 +1,15 @@
+<section class="sectionContainer" id="pePlaceOfBirthSection">
+  <h2>Place of Birth</h2>
+  <div>
+    <input id="pePlaceBirthModeCount" type="radio" value="count" name="po_place_birth_mode" checked>
+    <label for="pePlaceBirthModeCount" style="vertical-align: super; font-size: 12px">Count</label>
+    <input id="pePlaceBirthModePercentage" type="radio" value="percentage" name="po_place_birth_mode">
+    <label for="pePlaceBirthModePercentage" style="vertical-align: super; font-size: 12px">Percentage</label>
+  </div>
+  <div class="chartsContainer">
+    <div style="height: 260px;">
+      <canvas id="pePlaceOfBirthChart"></canvas>
+    </div>
+  </div>
+  <p id="pePlaceOfBirthEmpty" class="po-empty-state" hidden>No place of birth data available for the selected filters.</p>
+</section>
