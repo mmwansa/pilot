@@ -290,9 +290,9 @@ const selectedNovPreset = () => {
   return "all";
 }
 
-const toDatetimeLocalString = (dateObj) => {
+const toDateString = (dateObj) => {
   const pad = (n) => String(n).padStart(2, "0");
-  return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
+  return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
 }
 
 const applyPresetToDatetimeInputs = (preset) => {
@@ -311,8 +311,8 @@ const applyPresetToDatetimeInputs = (preset) => {
   if (preset === "30") start.setDate(start.getDate() - 30);
   if (preset === "7") start.setDate(start.getDate() - 7);
   if (preset === "24") start.setHours(start.getHours() - 24);
-  startInput.value = toDatetimeLocalString(start);
-  endInput.value = toDatetimeLocalString(now);
+  startInput.value = toDateString(start);
+  endInput.value = toDateString(now);
 }
 
 const clearPresetSelection = () => {

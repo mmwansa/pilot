@@ -10,6 +10,7 @@ from django.db.models import Count, OuterRef, Q, Subquery
 from django.db.models.functions import Substr
 from django.http import JsonResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_date as django_parse_date
 from django.utils.dateparse import parse_datetime as django_parse_datetime
 from django.views.generic import TemplateView, View
 
@@ -187,6 +188,14 @@ def _parse_filter_range(request):
 
     parsed_start = django_parse_datetime(start_raw) if start_raw else None
     parsed_end = django_parse_datetime(end_raw) if end_raw else None
+    if parsed_start is None and start_raw:
+        parsed_start_date = django_parse_date(start_raw)
+        if parsed_start_date is not None:
+            parsed_start = datetime.combine(parsed_start_date, time.min)
+    if parsed_end is None and end_raw:
+        parsed_end_date = django_parse_date(end_raw)
+        if parsed_end_date is not None:
+            parsed_end = datetime.combine(parsed_end_date, time.max)
     if parsed_start is not None:
         if timezone.is_naive(parsed_start):
             parsed_start = timezone.make_aware(parsed_start, timezone.get_current_timezone())
