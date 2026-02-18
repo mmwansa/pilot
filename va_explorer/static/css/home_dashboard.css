@@ -127,8 +127,15 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   height: 360px;
+  min-height: 300px;
   padding: 12px;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+#national-operational-view .events-chart-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 #national-operational-view .nov-kpi-cards {

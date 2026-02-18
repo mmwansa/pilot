@@ -5,6 +5,7 @@ GRAPH_OPTIONS = {
 };
 
 BORDER_COLOR = "#037BFE"
+const chartInstances = new WeakMap();
 let novEventsChartInstance = null;
 let novFiltersBound = false;
 let novFilterRequestId = 0;
@@ -71,8 +72,17 @@ const setIndeterminateCODTableData = (codingIssuesData, isFieldWorker) => {
   codingIssuesData.forEach(row => setVARow(root, row, isFieldWorker));
 }
 
-const setVAChart = (x, y, ctx) => {
-  new Chart(ctx, {
+const setVAChart = (x, y, canvas) => {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const existingChart = chartInstances.get(canvas);
+  if (existingChart) {
+    existingChart.destroy();
+  }
+
+  const chart = new Chart(ctx, {
     type: "line",
     data: {
       labels: x,
@@ -83,6 +93,7 @@ const setVAChart = (x, y, ctx) => {
     },
     options: GRAPH_OPTIONS,
   });
+  chartInstances.set(canvas, chart);
 }
 
 const setVACharts = (graphData) => {
@@ -90,13 +101,9 @@ const setVACharts = (graphData) => {
   const codedCanvas = document.getElementById("codedChart");
   const notYetCodedCanvas = document.getElementById("notYetCodedChart");
   if (!interviewedCanvas || !codedCanvas || !notYetCodedCanvas) return;
-  const interviewedCtx = interviewedCanvas.getContext("2d");
-  const codedCtx = codedCanvas.getContext("2d");
-  const notYetCodedCtx = notYetCodedCanvas.getContext("2d");
-
-  setVAChart(graphData.collected.x, graphData.collected.y, interviewedCtx);
-  setVAChart(graphData.coded.x, graphData.coded.y,codedCtx);
-  setVAChart(graphData.uncoded.x, graphData.uncoded.y, notYetCodedCtx);
+  setVAChart(graphData.collected.x, graphData.collected.y, interviewedCanvas);
+  setVAChart(graphData.coded.x, graphData.coded.y, codedCanvas);
+  setVAChart(graphData.uncoded.x, graphData.uncoded.y, notYetCodedCanvas);
 }
 
 const initNationalOperationalEventsChart = () => {
@@ -486,7 +493,7 @@ const setSingleMetricTrendChart = (canvasId, trendGraphs) => {
   if (!canvas || !trendGraphs || !trendGraphs.recorded) return;
   const x = trendGraphs.recorded.x || [];
   const y = trendGraphs.recorded.y || [];
-  setVAChart(x, y, canvas.getContext("2d"));
+  setVAChart(x, y, canvas);
 }
 
 const setModelTrendVisualizations = (modelTrends) => {
@@ -559,3 +566,13 @@ loadAllData();
 initNationalOperationalEventsChart();
 initNationalOperationalFilters();
 initNovChartHeightSync();
+
+document.addEventListener("dashboard:refresh-tab", (event) => {
+  const detail = event?.detail || {};
+  if (detail.shell !== "home") return;
+
+  if (detail.tab === "overview") {
+    initNationalOperationalEventsChart();
+    syncNovChartHeightToKpiCards();
+  }
+});
