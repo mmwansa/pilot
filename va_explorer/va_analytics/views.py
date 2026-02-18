@@ -45,8 +45,8 @@ def get_pregnancy_outcomes_filter_state(request):
     return {
         "pregnancy_outcome": (request.GET.get("pregnancy_outcome") or "").strip(),
         "time_preset": time_preset,
-        "start_datetime": (request.GET.get("start_datetime") or "").strip(),
-        "end_datetime": (request.GET.get("end_datetime") or "").strip(),
+        "start_datetime": _normalize_date_input(request.GET.get("start_datetime")),
+        "end_datetime": _normalize_date_input(request.GET.get("end_datetime")),
         "map_view": map_view,
     }
 
@@ -57,10 +57,18 @@ def _parse_iso_datetime(value):
         return None
     parsed = django_parse_datetime(raw)
     if parsed is None:
-        return None
+        parsed_date = django_parse_date(raw)
+        if parsed_date is None:
+            return None
+        parsed = datetime.combine(parsed_date, time.min)
     if timezone.is_naive(parsed):
         parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
     return timezone.localtime(parsed)
+
+
+def _normalize_date_input(value):
+    parsed = _parse_iso_datetime(value)
+    return parsed.strftime("%Y-%m-%d") if parsed else ""
 
 
 def _parse_outcome_datetime(value, *, end_of_day=False):
@@ -82,9 +90,18 @@ def _parse_outcome_datetime(value, *, end_of_day=False):
 
     if parsed is None:
         parsed_date = django_parse_date(raw)
-        if parsed_date is None:
-            return None
-        parsed = datetime.combine(parsed_date, time.max if end_of_day else time.min)
+        if parsed_date is not None:
+            parsed = datetime.combine(parsed_date, time.max if end_of_day else time.min)
+
+    if parsed is None:
+        fallback_date = parse_date(raw)
+        if fallback_date and fallback_date not in {"dk", "nan"}:
+            parsed_date = django_parse_date(fallback_date)
+            if parsed_date is not None:
+                parsed = datetime.combine(parsed_date, time.max if end_of_day else time.min)
+
+    if parsed is None:
+        return None
 
     if timezone.is_naive(parsed):
         parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
@@ -149,7 +166,7 @@ def _build_outcomes_summary_cards(filtered_qs):
 
     return {
         "card_last_data_update": (
-            last_data_update.strftime("%Y-%m-%d %H:%M") if last_data_update else "N/A"
+            last_data_update.strftime("%Y-%m-%d") if last_data_update else "N/A"
         ),
         "card_last_event_date": (
             last_event_date.strftime("%Y-%m-%d") if last_event_date else "N/A"
@@ -613,8 +630,8 @@ def get_deaths_filter_state(request):
 
     return {
         "time_preset": time_preset,
-        "start_datetime": (request.GET.get("start_datetime") or "").strip(),
-        "end_datetime": (request.GET.get("end_datetime") or "").strip(),
+        "start_datetime": _normalize_date_input(request.GET.get("start_datetime")),
+        "end_datetime": _normalize_date_input(request.GET.get("end_datetime")),
         "sex": sex,
         "age_group": age_group,
         "place_of_death": (request.GET.get("place_of_death") or "").strip(),
@@ -717,6 +734,7 @@ def _build_deaths_summary_cards(filtered_qs):
     last_data_update = None
     last_death_date = None
     under_5_count = 0
+    age_values = []
     delay_days = []
     total_events = filtered_qs.count()
 
@@ -746,20 +764,23 @@ def _build_deaths_summary_cards(filtered_qs):
         age_years, age_days = _compute_death_age_years(row.get("DE_04"), row.get("DE_06"))
         if age_days is None:
             continue
+        age_values.append(age_years)
         if age_years < 5:
             under_5_count += 1
 
     under_5_pct = round((under_5_count / total_events) * 100, 1) if total_events else 0.0
+    mean_age = round(sum(age_values) / len(age_values), 1) if age_values else None
     median_delay = round(float(median(delay_days)), 1) if delay_days else None
 
     return {
         "death_card_last_data_update": (
-            last_data_update.strftime("%Y-%m-%d %H:%M") if last_data_update else "N/A"
+            last_data_update.strftime("%Y-%m-%d") if last_data_update else "N/A"
         ),
         "death_card_last_death_date": (
             last_death_date.strftime("%Y-%m-%d") if last_death_date else "N/A"
         ),
         "death_card_total_events": total_events,
+        "death_card_mean_age": mean_age,
         "death_card_under_5_pct": under_5_pct,
         "death_card_median_delay_days": median_delay,
     }
@@ -816,7 +837,7 @@ def _build_pregnancy_summary_cards(filtered_qs):
 
     last_event_date = None
     total_events = filtered_qs.count()
-    mean_age = filtered_qs.aggregate(mean_age=Avg("PE_07A")).get("mean_age") or 0.0
+    mean_age, _hiv_positive_pct = _build_pregnancy_kpis(filtered_qs)
 
     for row in rows:
         # Use submission date as the pregnancy event/registration date for consistency.
@@ -830,7 +851,7 @@ def _build_pregnancy_summary_cards(filtered_qs):
 
     return {
         "card_last_data_update": (
-            timezone.localtime(latest_update_dt).strftime("%Y-%m-%d %H:%M")
+            timezone.localtime(latest_update_dt).strftime("%Y-%m-%d")
             if latest_update_dt
             else "N/A"
         ),
@@ -838,7 +859,7 @@ def _build_pregnancy_summary_cards(filtered_qs):
             last_event_date.strftime("%Y-%m-%d") if last_event_date else "N/A"
         ),
         "card_number_of_events": total_events,
-        "card_mean_age": round(float(mean_age), 1),
+        "card_mean_age": mean_age,
     }
 
 
@@ -924,8 +945,28 @@ def _build_pregnancy_ga_detection_distribution(filtered_qs):
 
 
 def _build_pregnancy_kpis(filtered_qs):
-    age_agg = filtered_qs.aggregate(mean_age=Avg("PE_07A"))
-    mean_age = round(float(age_agg["mean_age"] or 0.0), 1)
+    age_values = []
+    rows = filtered_qs.values("PE_07A", "PE_07", "submissiondate", "today", "start").iterator()
+    for row in rows:
+        direct_age = row.get("PE_07A")
+        if direct_age is not None:
+            try:
+                parsed_age = float(direct_age)
+            except (TypeError, ValueError):
+                parsed_age = None
+            if parsed_age is not None and parsed_age >= 0:
+                age_values.append(parsed_age)
+                continue
+
+        dob_dt = _parse_outcome_datetime(row.get("PE_07"))
+        event_dt = _parse_outcome_datetime(row.get("submissiondate")) or _parse_outcome_datetime(
+            row.get("today")
+        ) or _parse_outcome_datetime(row.get("start"))
+        if dob_dt is None or event_dt is None or event_dt < dob_dt:
+            continue
+        age_values.append((event_dt - dob_dt).days / 365.25)
+
+    mean_age = round(sum(age_values) / len(age_values), 1) if age_values else 0.0
 
     hiv_known_filter = (
         ~Q(PE_23__isnull=True)
@@ -1006,6 +1047,12 @@ class OutcomesDashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateVi
             "pregnancy-events": "pregnancies",
             "deaths": "deaths",
             "death": "deaths",
+            "verbal_autopsies": "verbal_autopsies",
+            "verbal-autopsies": "verbal_autopsies",
+            "verbal_autopsy": "verbal_autopsies",
+            "verbal-autopsy": "verbal_autopsies",
+            "autopsies": "verbal_autopsies",
+            "va": "verbal_autopsies",
         }
         active_tab = tab_aliases.get(raw_tab, "pregnancies")
 

@@ -73,6 +73,8 @@
 
   const syncUrl = (filters) => {
     const params = buildParams(filters);
+    const currentTab = new URLSearchParams(window.location.search).get("tab");
+    if (currentTab) params.set("tab", currentTab);
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState({}, "", nextUrl);
@@ -100,6 +102,48 @@
     if (el) el.hidden = !isEmpty;
   };
 
+  const isValidDateValue = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || "");
+  const shouldApplyDateRangeChange = () => {
+    if (!filterElements.preset || filterElements.preset.value !== "custom") return true;
+    const start = filterElements.start?.value || "";
+    const end = filterElements.end?.value || "";
+    if (!isValidDateValue(start) || !isValidDateValue(end)) return false;
+    return start <= end;
+  };
+  const setupDateInputs = (inputs) => {
+    const dateInputs = (inputs || []).filter(Boolean);
+    if (!dateInputs.length) return;
+
+    const iconOnlyThresholdPx = 170;
+    const updateIconMode = () => {
+      dateInputs.forEach((input) => {
+        input.classList.toggle("is-icon-only", input.offsetWidth <= iconOnlyThresholdPx);
+      });
+    };
+
+    dateInputs.forEach((input) => {
+      input.addEventListener("pointerdown", () => {
+        if (typeof input.showPicker === "function") {
+          try {
+            input.showPicker();
+          } catch (_error) {
+            input.focus();
+          }
+          return;
+        }
+        input.focus();
+      });
+    });
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(updateIconMode);
+      dateInputs.forEach((input) => observer.observe(input));
+    } else {
+      window.addEventListener("resize", updateIconMode);
+    }
+    updateIconMode();
+  };
+
   const renderSummary = (data) => {
     setText("poCardLastDataUpdate", data.card_last_data_update || "N/A");
     setText("poCardLastEventDate", data.card_last_event_date || "N/A");
@@ -109,9 +153,8 @@
   };
 
   const renderKpis = (data) => {
-    setText("poKpiMeanAge", data.mean_age ?? 0);
-    setText("poKpiHivPct", `${data.hiv_positive_pct ?? 0}%`);
-    setEmptyState("poKpisEmpty", (data.mean_age ?? 0) === 0 && (data.hiv_positive_pct ?? 0) === 0);
+    setText("poCardMeanAge", data.mean_age ?? 0);
+    setText("poCardHivPct", `${data.hiv_positive_pct ?? 0}%`);
   };
 
   const ensureLineChart = () => {
@@ -158,23 +201,19 @@
   const renderBirthOutcomes = (payload) => {
     chartState.birthOutcomesPayload = payload;
     const chart = ensureBarChart("birthOutcomes", "poBirthOutcomesChart", {
-      type: "bar",
+      type: "pie",
       data: { labels: [], datasets: [{ label: "Birth Outcomes", data: [], backgroundColor: ["#2d6cdf", "#f46d43"], borderColor: ["#2d6cdf", "#f46d43"], borderWidth: 1 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { enabled: true } },
-        scales: {
-          x: { grid: { display: false } },
-          y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: "Count" }, grid: { display: true, color: "rgba(148,163,184,0.35)" } },
-        },
+        plugins: { legend: { display: true, position: "bottom" }, tooltip: { enabled: true } },
       },
     });
     if (!chart) return;
     const mode = currentBirthMode();
     chart.data.labels = payload.labels || [];
     chart.data.datasets[0].data = mode === "percentage" ? (payload.percentage_data || []) : (payload.count_data || []);
-    chart.options.scales.y.title.text = mode === "percentage" ? "Percentage (%)" : "Count";
+    chart.data.datasets[0].label = mode === "percentage" ? "Birth Outcomes (%)" : "Birth Outcomes";
     chart.update();
     const sum = (payload.count_data || []).reduce((acc, value) => acc + Number(value || 0), 0);
     setEmptyState("poBirthOutcomesEmpty", sum === 0);
@@ -388,10 +427,29 @@
       });
     }
 
-    [filterElements.outcome, filterElements.preset, filterElements.start, filterElements.end].forEach((el) => {
-      if (!el) return;
-      el.addEventListener("change", () => refreshAll().catch((err) => console.error(err)));
-    });
+    if (filterElements.outcome) {
+      filterElements.outcome.addEventListener("change", () =>
+        refreshAll().catch((err) => console.error(err))
+      );
+    }
+    if (filterElements.preset) {
+      filterElements.preset.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
+    if (filterElements.start) {
+      filterElements.start.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
+    if (filterElements.end) {
+      filterElements.end.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
 
     if (filterElements.mapViewSelect) {
       filterElements.mapViewSelect.addEventListener("change", () => refreshMapOnly().catch((err) => console.error(err)));
@@ -424,6 +482,7 @@
   };
 
   const init = async () => {
+    setupDateInputs([filterElements.start, filterElements.end]);
     bindEvents();
     await refreshAll();
   };

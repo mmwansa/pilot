@@ -73,6 +73,8 @@
 
   const syncUrl = (filters) => {
     const params = buildParams(filters);
+    const currentTab = new URLSearchParams(window.location.search).get("tab");
+    if (currentTab) params.set("tab", currentTab);
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState({}, "", nextUrl);
@@ -98,6 +100,48 @@
   const setEmptyState = (id, isEmpty) => {
     const el = getEl(id);
     if (el) el.hidden = !isEmpty;
+  };
+
+  const isValidDateValue = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || "");
+  const shouldApplyDateRangeChange = () => {
+    if (!filterElements.preset || filterElements.preset.value !== "custom") return true;
+    const start = filterElements.start?.value || "";
+    const end = filterElements.end?.value || "";
+    if (!isValidDateValue(start) || !isValidDateValue(end)) return false;
+    return start <= end;
+  };
+  const setupDateInputs = (inputs) => {
+    const dateInputs = (inputs || []).filter(Boolean);
+    if (!dateInputs.length) return;
+
+    const iconOnlyThresholdPx = 170;
+    const updateIconMode = () => {
+      dateInputs.forEach((input) => {
+        input.classList.toggle("is-icon-only", input.offsetWidth <= iconOnlyThresholdPx);
+      });
+    };
+
+    dateInputs.forEach((input) => {
+      input.addEventListener("pointerdown", () => {
+        if (typeof input.showPicker === "function") {
+          try {
+            input.showPicker();
+          } catch (_error) {
+            input.focus();
+          }
+          return;
+        }
+        input.focus();
+      });
+    });
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(updateIconMode);
+      dateInputs.forEach((input) => observer.observe(input));
+    } else {
+      window.addEventListener("resize", updateIconMode);
+    }
+    updateIconMode();
   };
 
   const renderSummary = (data) => {
@@ -383,10 +427,24 @@
       });
     }
 
-    [filterElements.preset, filterElements.start, filterElements.end].forEach((el) => {
-      if (!el) return;
-      el.addEventListener("change", () => refreshAll().catch((err) => console.error(err)));
-    });
+    if (filterElements.preset) {
+      filterElements.preset.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
+    if (filterElements.start) {
+      filterElements.start.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
+    if (filterElements.end) {
+      filterElements.end.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
 
     if (filterElements.mapViewSelect) {
       filterElements.mapViewSelect.addEventListener("change", () => refreshMapOnly().catch((err) => console.error(err)));
@@ -404,6 +462,7 @@
   };
 
   const init = async () => {
+    setupDateInputs([filterElements.start, filterElements.end]);
     bindEvents();
     await refreshAll();
   };

@@ -1,333 +1,13 @@
 {% extends "base.html" %}
 {% load static i18n %}
 {% block title %}Outcomes Dashboard{% endblock %}
+{% block container-type %}container outcomes-container{% endblock %}
 
 {% block css %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/outcomes_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}">
-  <style>
-    .dashboard-tab-panel {
-      display: none;
-    }
-    .dashboard-tab-panel.is-active {
-      display: block;
-    }
-    .dashboard-shell[data-shell="outcomes"] {
-      --od-surface: #f3f4f6;
-      --od-card: #ffffff;
-      --od-border: #e2e8f0;
-      --od-border-strong: #dbe3ef;
-      --od-text: #111827;
-      --od-muted: #6b7280;
-      --od-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
-      --od-shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.08);
-      --od-radius: 12px;
-      --od-gap: 10px;
-      width: 100%;
-      max-width: 100%;
-      margin: 0;
-      padding-left: 0;
-      padding-right: 0;
-      position: relative;
-      left: 0;
-    }
-    .dashboard-shell[data-shell="outcomes"].row {
-      margin-left: 0;
-      margin-right: 0;
-    }
-    .dashboard-shell[data-shell="outcomes"] > .col {
-      padding-left: 0;
-      padding-right: 0;
-    }
-    #outcomesTabsContent {
-      width: 100%;
-      min-width: 0;
-    }
-    #outcomesTabs {
-      border-bottom: 1px solid var(--od-border-strong);
-    }
-    #outcomesTabs .nav-link {
-      border: 1px solid transparent;
-      border-top-left-radius: 10px;
-      border-top-right-radius: 10px;
-      background: transparent;
-      margin-bottom: -1px;
-    }
-    #outcomesTabs .nav-link.active {
-      background: var(--od-card);
-      border-color: var(--od-border-strong) var(--od-border-strong) var(--od-card);
-    }
-    #pregnancies-pane,
-    #pregnancy-outcomes-pane,
-    #deaths-pane {
-      background: #f3f4f6;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    }
-    .outcomes-dashboard-root {
-      --po-gap: var(--od-gap);
-      background: var(--od-surface);
-      padding: 6px;
-      border-radius: 12px;
-      width: 100%;
-      min-width: 0;
-      max-width: 100%;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      overflow-x: hidden;
-    }
-    .outcomes-dashboard-root .sectionContainer {
-      background: var(--od-card);
-      border: 1px solid var(--od-border);
-      border-radius: var(--od-radius);
-      box-shadow: var(--od-shadow);
-    }
-    .outcomes-dashboard-root .sectionContainer:hover {
-      box-shadow: var(--od-shadow-hover);
-    }
-    .outcomes-dashboard-root .highlight h3 {
-      background: #f8fafc;
-      border-bottom: 1px solid var(--od-border);
-      color: #1f2937;
-      font-weight: 600;
-    }
-    .outcomes-dashboard-root .highlight p {
-      background: var(--od-card);
-      color: #0f172a;
-    }
-    .outcomes-dashboard-root .controls {
-      background: var(--od-card);
-      border: 1px solid var(--od-border);
-      border-radius: var(--od-radius);
-      padding: 10px 12px;
-    }
-    .outcomes-dashboard-root .controls label {
-      line-height: 1.2;
-      margin-bottom: 0;
-    }
-    .outcomes-dashboard-root .controls :is(select, input[type="text"], input[type="date"], input[type="datetime-local"], button) {
-      height: 2.25rem;
-      min-height: 2.25rem;
-      border-radius: 8px;
-      line-height: 1.2;
-      font-size: 0.8rem;
-    }
-    .outcomes-dashboard-root .controls select {
-      padding: 0.35rem 0.65rem;
-    }
-    .outcomes-dashboard-root .controls input[type="text"],
-    .outcomes-dashboard-root .controls input[type="date"],
-    .outcomes-dashboard-root .controls input[type="datetime-local"] {
-      padding: 0.35rem 0.6rem;
-    }
-    .outcomes-dashboard-root .controls button {
-      padding: 0 0.9rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .outcomes-dashboard-root .controls input[type="checkbox"],
-    .outcomes-dashboard-root .controls input[type="radio"] {
-      width: 0.95rem;
-      height: 0.95rem;
-      margin-top: 0;
-    }
-    .outcomes-dashboard-root .mainFiltersContainer {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .outcomes-dashboard-root .betweenDatesContainer,
-    .outcomes-dashboard-root .customDatesContainer,
-    .outcomes-dashboard-root .formBtnsContainer {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .outcomes-dashboard-root .chartsContainer {
-      background: var(--od-card);
-      border-radius: 10px;
-    }
-    .outcomes-dashboard-root .highlightsContainer {
-      gap: var(--od-gap);
-    }
-    .outcomes-dashboard-root .highlight {
-      border-radius: 10px;
-      border: 1px solid var(--od-border);
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-    }
-    .outcomes-dashboard-root h2 {
-      color: var(--od-text);
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-    }
-    .outcomes-dashboard-root .dashboard-note {
-      font-style: italic;
-      font-size: 0.65rem;
-      color: var(--od-muted);
-    }
-    .outcomes-dashboard-root .button.updateDataBtn {
-      margin-left: 10px;
-    }
-    .outcomes-dashboard-root .chart-mode-toggle {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      margin-bottom: 0.35rem;
-      font-size: 0.75rem;
-      color: #1f2937;
-    }
-    .outcomes-dashboard-root .chart-mode-toggle label {
-      margin: 0;
-      font-size: 0.75rem;
-      vertical-align: middle;
-      color: #374151;
-    }
-    .outcomes-dashboard-root .chart-canvas-wrap {
-      height: 260px;
-    }
-    .outcomes-dashboard-root .chart-canvas-wrap.compact {
-      height: 220px;
-    }
-    .outcomes-dashboard-root .section-title-spaced {
-      margin-top: 10px;
-    }
-    #poMapContainer {
-      flex: 1;
-      margin-top: 1rem;
-      border-radius: 0 0 5px 5px;
-    }
-    #poGestationalAgeSection {
-      grid-column: 4/6;
-      grid-row: 5/6;
-      display: flex;
-      flex-direction: column;
-    }
-    #poAncVisitsSection {
-      grid-column: 4/6;
-      grid-row: 6/7;
-      display: flex;
-      flex-direction: column;
-    }
-    #poPlaceOfBirthSection {
-      grid-column: 6/7;
-      grid-row: 5/6;
-      display: flex;
-      flex-direction: column;
-    }
-    #poKpisSection {
-      grid-column: 6/7;
-      grid-row: 6/7;
-      display: flex;
-      flex-direction: column;
-    }
-    #peMapContainer {
-      flex: 1;
-      margin-top: 1rem;
-      border-radius: 0 0 5px 5px;
-    }
-    #peTrendSection {
-      grid-column: 4/7;
-      grid-row: 1/3;
-      display: flex;
-      flex-direction: column;
-    }
-    #peGestationalAgeSection {
-      grid-column: 4/7;
-      grid-row: 3/5;
-      display: flex;
-      flex-direction: column;
-    }
-    #peAncVisitsSection {
-      grid-column: 4/7;
-      grid-row: 6/7;
-      display: flex;
-      flex-direction: column;
-    }
-    #deathsMapContainer {
-      flex: 1;
-      margin-top: 1rem;
-      border-radius: 0 0 5px 5px;
-      min-height: 320px;
-    }
-    #deathsTrendSection {
-      grid-column: 4/7;
-      grid-row: 1/3;
-      display: flex;
-      flex-direction: column;
-    }
-    #deathsCauseSection {
-      grid-column: 4/7;
-      grid-row: 3/5;
-      display: flex;
-      flex-direction: column;
-    }
-    #deathsDemographicsSection {
-      grid-column: 4/7;
-      grid-row: 5/7;
-      display: flex;
-      flex-direction: column;
-    }
-    .outcomesBottomKpis {
-      margin-top: 0.5rem;
-      gap: 0.5rem;
-      flex-direction: column;
-    }
-    .outcomesBottomKpis .highlight h3,
-    .outcomesBottomKpis .highlight p {
-      white-space: normal;
-    }
-    .po-empty-state {
-      margin-top: 0.5rem;
-      font-size: 0.8rem;
-      font-style: italic;
-      color: var(--od-muted);
-      text-align: left;
-    }
-    #deathsFiltersForm .mainFiltersContainer {
-      justify-content: flex-start;
-    }
-    #deathsFiltersForm .betweenDatesContainer {
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    #deathsSignalsPanel .highlight h3 {
-      font-size: 0.82rem;
-    }
-    #deathsSignalsPanel .highlight p {
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-    #outcomesTabs .nav-link {
-      font-weight: bold;
-      font-size: 0.875rem;
-      padding: 0.5rem 1rem;
-      line-height: 1.5;
-      color: #000 !important;
-    }
-    #outcomesTabs .nav-link:hover,
-    #outcomesTabs .nav-link:focus,
-    #outcomesTabs .nav-link.active {
-      color: #000 !important;
-    }
-    @media (max-width: 992px) {
-      #pregnancies-pane,
-      #pregnancy-outcomes-pane,
-      #deaths-pane {
-        padding: 12px;
-      }
-      .outcomes-dashboard-root {
-        padding: 4px;
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-  </style>
 {% endblock %}
 
 {% block content %}
@@ -374,6 +54,19 @@
             Deaths
           </a>
         </li>
+        <li class="nav-item" role="presentation">
+          <a
+            class="nav-link {% if active_tab == 'verbal_autopsies' %}active{% endif %}"
+            id="verbal-autopsies-tab"
+            data-tab="verbal_autopsies"
+            href="{% url 'va_analytics:outcomes-dashboard' %}?tab=verbal_autopsies"
+            role="tab"
+            aria-controls="verbal-autopsies-pane"
+            aria-selected="{% if active_tab == 'verbal_autopsies' %}true{% else %}false{% endif %}"
+          >
+            Verbal Autopsies
+          </a>
+        </li>
       </ul>
 
       <div class="tab-content mt-4" id="outcomesTabsContent">
@@ -384,26 +77,7 @@
           role="tabpanel"
           aria-labelledby="pregnancies-tab"
         >
-          <main
-            id="pregnancyDashboardApp"
-            class="outcomes-dashboard-root"
-            data-component="dashboard"
-            data-summary-endpoint="{% url 'va_analytics:pregnancy-summary-api' %}"
-            data-trend-endpoint="{% url 'va_analytics:pregnancy-trend-api' %}"
-            data-gestational-age-endpoint="{% url 'va_analytics:pregnancy-ga-detection-api' %}"
-            data-anc-visits-endpoint="{% url 'va_analytics:pregnancy-ga-anc-api' %}"
-            data-map-endpoint="{% url 'va_analytics:pregnancy-map-api' %}"
-          >
-            <section class="sectionContainer panelView" id="pePanelSection" data-component="panel">
-              {% include "va_analytics/partials/_pe_summary_cards.html" %}
-              {% include "va_analytics/partials/_pe_filters.html" %}
-            </section>
-
-            {% include "va_analytics/partials/_pe_map.html" %}
-            {% include "va_analytics/partials/_pe_trend.html" %}
-            {% include "va_analytics/partials/_pe_gestational_age.html" %}
-            {% include "va_analytics/partials/_pe_anc_visits.html" %}
-          </main>
+          {% include "va_analytics/partials/_pregnancies_dashboard.html" %}
         </div>
         <div
           class="tab-pane dashboard-tab-panel fade {% if active_tab == 'pregnancy_outcomes' %}show active{% endif %}"
@@ -412,32 +86,7 @@
           role="tabpanel"
           aria-labelledby="pregnancy-outcomes-tab"
         >
-          <main
-            id="outcomesDashboardApp"
-            class="outcomes-dashboard-root"
-            data-component="dashboard"
-            data-summary-endpoint="{% url 'va_analytics:po-summary-api' %}"
-            data-trend-endpoint="{% url 'va_analytics:po-trend-api' %}"
-            data-birth-outcomes-endpoint="{% url 'va_analytics:po-birth-outcomes-api' %}"
-            data-gestational-age-endpoint="{% url 'va_analytics:po-gestational-age-api' %}"
-            data-anc-visits-endpoint="{% url 'va_analytics:po-anc-visits-api' %}"
-            data-kpis-endpoint="{% url 'va_analytics:po-kpis-api' %}"
-            data-place-of-birth-endpoint="{% url 'va_analytics:po-place-of-birth-api' %}"
-            data-map-endpoint="{% url 'va_analytics:po-map-api' %}"
-          >
-            <section class="sectionContainer panelView" id="poPanelSection" data-component="panel">
-              {% include "va_analytics/partials/_po_summary_cards.html" %}
-              {% include "va_analytics/partials/_po_filters.html" %}
-            </section>
-
-            {% include "va_analytics/partials/_po_map.html" %}
-            {% include "va_analytics/partials/_po_birth_outcomes.html" %}
-            {% include "va_analytics/partials/_po_trend.html" %}
-            {% include "va_analytics/partials/_po_gestational_age.html" %}
-            {% include "va_analytics/partials/_po_anc_visits.html" %}
-            {% include "va_analytics/partials/_po_place_of_birth.html" %}
-            {% include "va_analytics/partials/_po_kpis.html" %}
-          </main>
+          {% include "va_analytics/partials/_pregnancy_outcomes_dashboard.html" %}
         </div>
         <div
           class="tab-pane dashboard-tab-panel fade {% if active_tab == 'deaths' %}show active{% endif %}"
@@ -447,6 +96,20 @@
           aria-labelledby="deaths-tab"
         >
           {% include "va_analytics/partials/_deaths_dashboard.html" %}
+        </div>
+        <div
+          class="tab-pane dashboard-tab-panel fade {% if active_tab == 'verbal_autopsies' %}show active{% endif %}"
+          id="verbal-autopsies-pane"
+          data-tab-panel="verbal_autopsies"
+          role="tabpanel"
+          aria-labelledby="verbal-autopsies-tab"
+        >
+          <main id="verbalAutopsiesDashboardApp" class="outcomes-dashboard-root" data-component="dashboard">
+            <section class="sectionContainer panelView" data-component="panel">
+              <h2>Verbal Autopsies</h2>
+              <p class="dashboard-note">Verbal autopsy dashboard components will appear here.</p>
+            </section>
+          </main>
         </div>
       </div>
     </div>

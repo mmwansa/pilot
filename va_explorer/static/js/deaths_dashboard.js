@@ -21,7 +21,6 @@
     end: document.getElementById("deathsFilterEndDatetime"),
     sex: document.getElementById("deathsFilterSex"),
     ageGroup: document.getElementById("deathsFilterAgeGroup"),
-    place: document.getElementById("deathsFilterPlace"),
     codedOnly: document.getElementById("deathsFilterCodedOnly"),
     mapView: document.getElementById("deathsMapViewSelect"),
     reset: document.getElementById("deathsFiltersReset"),
@@ -71,7 +70,6 @@
     end_datetime: filterElements.end?.value || "",
     sex: filterElements.sex?.value || "",
     age_group: filterElements.ageGroup?.value || "",
-    place_of_death: filterElements.place?.value || "",
     coded_only: filterElements.codedOnly?.checked ? "1" : "",
     map_view: filterElements.mapView?.value || "Province",
   });
@@ -83,7 +81,6 @@
     if (filters.end_datetime) params.set("end_datetime", filters.end_datetime);
     if (filters.sex) params.set("sex", filters.sex);
     if (filters.age_group) params.set("age_group", filters.age_group);
-    if (filters.place_of_death) params.set("place_of_death", filters.place_of_death);
     if (filters.coded_only) params.set("coded_only", filters.coded_only);
     if (filters.map_view) params.set("map_view", filters.map_view);
     return params;
@@ -106,6 +103,48 @@
     if (el) el.hidden = !isEmpty;
   };
 
+  const isValidDateValue = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || "");
+  const shouldApplyDateRangeChange = () => {
+    if (!filterElements.preset || filterElements.preset.value !== "custom") return true;
+    const start = filterElements.start?.value || "";
+    const end = filterElements.end?.value || "";
+    if (!isValidDateValue(start) || !isValidDateValue(end)) return false;
+    return start <= end;
+  };
+  const setupDateInputs = (inputs) => {
+    const dateInputs = (inputs || []).filter(Boolean);
+    if (!dateInputs.length) return;
+
+    const iconOnlyThresholdPx = 170;
+    const updateIconMode = () => {
+      dateInputs.forEach((input) => {
+        input.classList.toggle("is-icon-only", input.offsetWidth <= iconOnlyThresholdPx);
+      });
+    };
+
+    dateInputs.forEach((input) => {
+      input.addEventListener("pointerdown", () => {
+        if (typeof input.showPicker === "function") {
+          try {
+            input.showPicker();
+          } catch (_error) {
+            input.focus();
+          }
+          return;
+        }
+        input.focus();
+      });
+    });
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(updateIconMode);
+      dateInputs.forEach((input) => observer.observe(input));
+    } else {
+      window.addEventListener("resize", updateIconMode);
+    }
+    updateIconMode();
+  };
+
   const renderSummary = (payload) => {
     const setText = (id, value) => {
       const el = document.getElementById(id);
@@ -113,13 +152,10 @@
     };
 
     setText("deathsCardLastDataUpdate", payload.death_card_last_data_update || "N/A");
-    setText("deathsCardLastDeathDate", payload.death_card_last_death_date || "N/A");
     setText("deathsCardTotalEvents", payload.death_card_total_events ?? 0);
+    setText("deathsCardMeanAge", payload.death_card_mean_age ?? "N/A");
     setText("deathsCardUnder5Pct", `${payload.death_card_under_5_pct ?? 0}%`);
-    setText(
-      "deathsCardMedianDelayDays",
-      payload.death_card_median_delay_days != null ? payload.death_card_median_delay_days : "N/A"
-    );
+    setText("deathsCardMedianDelayDays", payload.death_card_median_delay_days ?? "N/A");
   };
 
   const renderSignals = (payload) => {
@@ -418,48 +454,6 @@
     setEmpty("deathsPlaceEmpty", total === 0);
   };
 
-  const renderTimeliness = (payload) => {
-    const canvas = document.getElementById("deathsTimelinessChart");
-    if (!canvas || typeof Chart === "undefined") return;
-
-    if (!timelinessChart) {
-      timelinessChart = new Chart(canvas.getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: [],
-          datasets: [{
-            label: "Deaths",
-            data: [],
-            backgroundColor: "#6c8ebf",
-            borderColor: "#4b6b9c",
-            borderWidth: 1,
-          }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { enabled: true } },
-          scales: {
-            x: { title: { display: true, text: "Delay category (days)" }, grid: { display: false } },
-            y: {
-              beginAtZero: true,
-              ticks: { precision: 0 },
-              title: { display: true, text: "Count of reports" },
-              grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
-            },
-          },
-        },
-      });
-    }
-
-    timelinessChart.data.labels = payload.labels || [];
-    timelinessChart.data.datasets[0].data = payload.data || [];
-    timelinessChart.update();
-
-    const total = (payload.data || []).reduce((acc, value) => acc + Number(value || 0), 0);
-    setEmpty("deathsTimelinessEmpty", total === 0);
-  };
-
   const renderTopCauses = (payload) => {
     topCausesPayload = payload;
     const canvas = document.getElementById("deathsTopCausesChart");
@@ -554,6 +548,48 @@
     setEmpty("deathsCauseTrendEmpty", !hasCoded || total === 0);
   };
 
+  const renderTimeliness = (payload) => {
+    const canvas = document.getElementById("deathsTimelinessChart");
+    if (!canvas || typeof Chart === "undefined") return;
+
+    if (!timelinessChart) {
+      timelinessChart = new Chart(canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: [],
+          datasets: [{
+            label: "Deaths",
+            data: [],
+            backgroundColor: "#4b84ce",
+            borderColor: "#2f6ec2",
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          scales: {
+            x: { grid: { display: false }, title: { display: true, text: "Delay (days)" } },
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 },
+              title: { display: true, text: "Count of deaths" },
+              grid: { display: true, color: "rgba(148,163,184,0.35)" },
+            },
+          },
+        },
+      });
+    }
+
+    timelinessChart.data.labels = payload.labels || [];
+    timelinessChart.data.datasets[0].data = payload.data || [];
+    timelinessChart.update();
+
+    const total = (payload.data || []).reduce((acc, value) => acc + Number(value || 0), 0);
+    setEmpty("deathsTimelinessEmpty", total === 0);
+  };
+
   const refreshAll = async () => {
     const filters = getFilters();
     const [
@@ -565,7 +601,7 @@
       topCausesPayloadResp,
       causeTrendPayloadResp,
       signalsPayload,
-      timelinessPayload,
+      timelinessPayloadResp,
     ] = await Promise.all([
       fetchJSON(endpoints.summary, filters),
       fetchJSON(endpoints.trend, filters),
@@ -586,7 +622,7 @@
     renderPlace(placePayloadResp);
     renderTopCauses(topCausesPayloadResp);
     renderCauseTrend(causeTrendPayloadResp);
-    renderTimeliness(timelinessPayload);
+    renderTimeliness(timelinessPayloadResp);
   };
 
   const bindEvents = () => {
@@ -597,13 +633,27 @@
       });
     }
 
+    if (filterElements.preset) {
+      filterElements.preset.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
+    if (filterElements.start) {
+      filterElements.start.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
+    if (filterElements.end) {
+      filterElements.end.addEventListener("change", () => {
+        if (!shouldApplyDateRangeChange()) return;
+        refreshAll().catch((err) => console.error(err));
+      });
+    }
     [
-      filterElements.preset,
-      filterElements.start,
-      filterElements.end,
       filterElements.sex,
       filterElements.ageGroup,
-      filterElements.place,
       filterElements.codedOnly,
       filterElements.mapView,
     ].forEach((el) => {
@@ -618,7 +668,6 @@
         if (filterElements.end) filterElements.end.value = "";
         if (filterElements.sex) filterElements.sex.value = "";
         if (filterElements.ageGroup) filterElements.ageGroup.value = "";
-        if (filterElements.place) filterElements.place.value = "";
         if (filterElements.codedOnly) filterElements.codedOnly.checked = false;
         if (filterElements.mapView) filterElements.mapView.value = "Province";
         if (filterElements.ageSexCount) filterElements.ageSexCount.checked = true;
@@ -660,6 +709,7 @@
   };
 
   const init = async () => {
+    setupDateInputs([filterElements.start, filterElements.end]);
     bindEvents();
     await refreshAll();
   };

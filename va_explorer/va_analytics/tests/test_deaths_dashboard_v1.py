@@ -105,6 +105,7 @@ class DeathsApiSchemaTests(TestCase):
                 "death_card_last_data_update",
                 "death_card_last_death_date",
                 "death_card_total_events",
+                "death_card_mean_age",
                 "death_card_under_5_pct",
                 "death_card_median_delay_days",
             },
