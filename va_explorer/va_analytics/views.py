@@ -995,7 +995,7 @@ class OutcomesDashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateVi
         context = super().get_context_data(**kwargs)
         request = self.request
         filter_state = get_pregnancy_outcomes_filter_state(request)
-        raw_tab = (request.GET.get("tab") or "deaths").strip().lower()
+        raw_tab = (request.GET.get("tab") or "pregnancies").strip().lower()
         tab_aliases = {
             "pregnancy_outcomes": "pregnancy_outcomes",
             "pregnancy-outcomes": "pregnancy_outcomes",
@@ -1007,7 +1007,7 @@ class OutcomesDashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateVi
             "deaths": "deaths",
             "death": "deaths",
         }
-        active_tab = tab_aliases.get(raw_tab, "pregnancy_outcomes")
+        active_tab = tab_aliases.get(raw_tab, "pregnancies")
 
         outcome_options = (
             PregnancyOutcome.objects.exclude(po_group__isnull=True)

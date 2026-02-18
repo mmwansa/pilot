@@ -1,14 +1,14 @@
 <section class="sectionContainer topCausesView" id="poBirthOutcomesSection" data-component="birth-outcomes">
   <h2>Birth Outcomes</h2>
-  <div>
+  <div class="chart-mode-toggle">
     <input id="poBirthModeCount" type="radio" value="count" name="po_birth_mode" checked>
-    <label for="poBirthModeCount" style="vertical-align: super; font-size: 12px">Count</label>
+    <label for="poBirthModeCount">Count</label>
     <input id="poBirthModePercentage" type="radio" value="percentage" name="po_birth_mode">
-    <label for="poBirthModePercentage" style="vertical-align: super; font-size: 12px">Percentage</label>
+    <label for="poBirthModePercentage">Percentage</label>
   </div>
   <div class="chartsContainer">
     <div class="topCausesContainer">
-      <div style="height: 260px;">
+      <div class="chart-canvas-wrap">
         <canvas id="poBirthOutcomesChart" data-component="birth-outcomes-chart"></canvas>
       </div>
     </div>

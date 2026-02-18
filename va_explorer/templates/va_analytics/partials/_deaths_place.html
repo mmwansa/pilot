@@ -1,12 +1,12 @@
 <h2>Place of Death Distribution</h2>
-<div>
+<div class="chart-mode-toggle">
   <input id="deathsPlaceModeCount" type="radio" value="count" name="deaths_place_mode" checked>
-  <label for="deathsPlaceModeCount" style="vertical-align: super; font-size: 12px">Count</label>
+  <label for="deathsPlaceModeCount">Count</label>
   <input id="deathsPlaceModePercentage" type="radio" value="percentage" name="deaths_place_mode">
-  <label for="deathsPlaceModePercentage" style="vertical-align: super; font-size: 12px">Percentage</label>
+  <label for="deathsPlaceModePercentage">Percentage</label>
 </div>
 <div class="chartsContainer">
-  <div style="height: 260px;">
+  <div class="chart-canvas-wrap">
     <canvas id="deathsPlaceChart" data-component="place-chart"></canvas>
   </div>
 </div>

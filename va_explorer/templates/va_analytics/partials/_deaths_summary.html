@@ -6,8 +6,8 @@
   <div class="highlight"><h3>Median Delay (days)</h3><p id="deathsCardMedianDelayDays">{% if death_card_median_delay_days is not None %}{{ death_card_median_delay_days }}{% else %}N/A{% endif %}</p></div>
 </div>
 <form id="deathsFiltersForm" class="controls" method="get" action="" data-component="filters">
-  <small style="font-style: italic; font-size: 0.65rem;">Filters update mortality trend and map.</small>
-  <div class="mainFiltersContainer" style="gap: 0.5rem; flex-wrap: wrap;">
+  <small class="dashboard-note">Filters update mortality trend and map.</small>
+  <div class="mainFiltersContainer">
     <label for="deathsFilterTimePreset">Date of Death:</label>
     <select id="deathsFilterTimePreset" class="select" name="time_preset">
       <option value="all_time">All time</option>

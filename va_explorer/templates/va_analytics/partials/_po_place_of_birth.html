@@ -1,13 +1,13 @@
 <section class="sectionContainer" id="poPlaceOfBirthSection" data-component="place-of-birth">
   <h2>Place of Birth</h2>
-  <div>
+  <div class="chart-mode-toggle">
     <input id="poPlaceBirthModeCount" type="radio" value="count" name="po_place_birth_mode" checked>
-    <label for="poPlaceBirthModeCount" style="vertical-align: super; font-size: 12px">Count</label>
+    <label for="poPlaceBirthModeCount">Count</label>
     <input id="poPlaceBirthModePercentage" type="radio" value="percentage" name="po_place_birth_mode">
-    <label for="poPlaceBirthModePercentage" style="vertical-align: super; font-size: 12px">Percentage</label>
+    <label for="poPlaceBirthModePercentage">Percentage</label>
   </div>
   <div class="chartsContainer">
-    <div style="height: 260px;">
+    <div class="chart-canvas-wrap">
       <canvas id="poPlaceOfBirthChart" data-component="place-of-birth-chart"></canvas>
     </div>
   </div>

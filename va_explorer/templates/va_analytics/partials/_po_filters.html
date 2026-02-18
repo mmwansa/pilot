@@ -1,5 +1,5 @@
 <form id="poFiltersForm" class="controls" data-component="filters" method="get" action="{% url 'va_analytics:outcomes-dashboard' %}">
-  <small style="font-style: italic; font-size: 0.65rem;">
+  <small class="dashboard-note">
     Note: this dashboard visualizes coded pregnancy outcomes and all charts sum to the coded total above.
   </small>
 
@@ -35,7 +35,7 @@
 
   <div class="formBtnsContainer">
     <button id="poFiltersReset" type="button" class="button resetBtn">Reset</button>
-    <button type="submit" class="button updateDataBtn" style="margin-left: 10px">Apply</button>
+    <button type="submit" class="button updateDataBtn">Apply</button>
   </div>
   <input type="hidden" id="poFilterMapView" name="map_view" value="{{ filter_map_view }}">
 </form>

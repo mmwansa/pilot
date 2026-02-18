@@ -1,5 +1,5 @@
 <form id="peFiltersForm" class="controls" data-component="filters" method="get" action="{% url 'va_analytics:pregnancy_dashboard' %}">
-  <small style="font-style: italic; font-size: 0.65rem;">
+  <small class="dashboard-note">
     Note: this dashboard visualizes pregnancy events and all charts sum to the filtered total above.
   </small>
 
@@ -25,7 +25,7 @@
 
   <div class="formBtnsContainer">
     <button id="peFiltersReset" type="button" class="button resetBtn">Reset</button>
-    <button type="submit" class="button updateDataBtn" style="margin-left: 10px">Apply</button>
+    <button type="submit" class="button updateDataBtn">Apply</button>
   </div>
   <input type="hidden" id="peFilterMapView" name="map_view" value="{{ filter_map_view }}">
 </form>

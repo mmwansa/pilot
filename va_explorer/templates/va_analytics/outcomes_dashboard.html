@@ -7,12 +7,45 @@
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}">
   <style>
+    .dashboard-tab-panel {
+      display: none;
+    }
+    .dashboard-tab-panel.is-active {
+      display: block;
+    }
+    .dashboard-shell[data-shell="outcomes"] {
+      --od-surface: #f3f4f6;
+      --od-card: #ffffff;
+      --od-border: #e2e8f0;
+      --od-border-strong: #dbe3ef;
+      --od-text: #111827;
+      --od-muted: #6b7280;
+      --od-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+      --od-shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.08);
+      --od-radius: 12px;
+      --od-gap: 10px;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      padding-left: 0;
+      padding-right: 0;
+      position: relative;
+      left: 0;
+    }
+    .dashboard-shell[data-shell="outcomes"].row {
+      margin-left: 0;
+      margin-right: 0;
+    }
+    .dashboard-shell[data-shell="outcomes"] > .col {
+      padding-left: 0;
+      padding-right: 0;
+    }
     #outcomesTabsContent {
       width: 100%;
       min-width: 0;
     }
     #outcomesTabs {
-      border-bottom: 1px solid #dbe3ef;
+      border-bottom: 1px solid var(--od-border-strong);
     }
     #outcomesTabs .nav-link {
       border: 1px solid transparent;
@@ -22,8 +55,8 @@
       margin-bottom: -1px;
     }
     #outcomesTabs .nav-link.active {
-      background: #ffffff;
-      border-color: #dbe3ef #dbe3ef #ffffff;
+      background: var(--od-card);
+      border-color: var(--od-border-strong) var(--od-border-strong) var(--od-card);
     }
     #pregnancies-pane,
     #pregnancy-outcomes-pane,
@@ -34,17 +67,135 @@
       padding: 16px;
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     }
-    #outcomesDashboardApp {
-      --po-gap: 10px;
-      background: #f3f4f6;
+    .outcomes-dashboard-root {
+      --po-gap: var(--od-gap);
+      background: var(--od-surface);
       padding: 6px;
       border-radius: 12px;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      overflow-x: hidden;
     }
-    #pregnancyDashboardApp {
-      --po-gap: 10px;
-      background: #f3f4f6;
-      padding: 6px;
-      border-radius: 12px;
+    .outcomes-dashboard-root .sectionContainer {
+      background: var(--od-card);
+      border: 1px solid var(--od-border);
+      border-radius: var(--od-radius);
+      box-shadow: var(--od-shadow);
+    }
+    .outcomes-dashboard-root .sectionContainer:hover {
+      box-shadow: var(--od-shadow-hover);
+    }
+    .outcomes-dashboard-root .highlight h3 {
+      background: #f8fafc;
+      border-bottom: 1px solid var(--od-border);
+      color: #1f2937;
+      font-weight: 600;
+    }
+    .outcomes-dashboard-root .highlight p {
+      background: var(--od-card);
+      color: #0f172a;
+    }
+    .outcomes-dashboard-root .controls {
+      background: var(--od-card);
+      border: 1px solid var(--od-border);
+      border-radius: var(--od-radius);
+      padding: 10px 12px;
+    }
+    .outcomes-dashboard-root .controls label {
+      line-height: 1.2;
+      margin-bottom: 0;
+    }
+    .outcomes-dashboard-root .controls :is(select, input[type="text"], input[type="date"], input[type="datetime-local"], button) {
+      height: 2.25rem;
+      min-height: 2.25rem;
+      border-radius: 8px;
+      line-height: 1.2;
+      font-size: 0.8rem;
+    }
+    .outcomes-dashboard-root .controls select {
+      padding: 0.35rem 0.65rem;
+    }
+    .outcomes-dashboard-root .controls input[type="text"],
+    .outcomes-dashboard-root .controls input[type="date"],
+    .outcomes-dashboard-root .controls input[type="datetime-local"] {
+      padding: 0.35rem 0.6rem;
+    }
+    .outcomes-dashboard-root .controls button {
+      padding: 0 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .outcomes-dashboard-root .controls input[type="checkbox"],
+    .outcomes-dashboard-root .controls input[type="radio"] {
+      width: 0.95rem;
+      height: 0.95rem;
+      margin-top: 0;
+    }
+    .outcomes-dashboard-root .mainFiltersContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .outcomes-dashboard-root .betweenDatesContainer,
+    .outcomes-dashboard-root .customDatesContainer,
+    .outcomes-dashboard-root .formBtnsContainer {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .outcomes-dashboard-root .chartsContainer {
+      background: var(--od-card);
+      border-radius: 10px;
+    }
+    .outcomes-dashboard-root .highlightsContainer {
+      gap: var(--od-gap);
+    }
+    .outcomes-dashboard-root .highlight {
+      border-radius: 10px;
+      border: 1px solid var(--od-border);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .outcomes-dashboard-root h2 {
+      color: var(--od-text);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .outcomes-dashboard-root .dashboard-note {
+      font-style: italic;
+      font-size: 0.65rem;
+      color: var(--od-muted);
+    }
+    .outcomes-dashboard-root .button.updateDataBtn {
+      margin-left: 10px;
+    }
+    .outcomes-dashboard-root .chart-mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.75rem;
+      color: #1f2937;
+    }
+    .outcomes-dashboard-root .chart-mode-toggle label {
+      margin: 0;
+      font-size: 0.75rem;
+      vertical-align: middle;
+      color: #374151;
+    }
+    .outcomes-dashboard-root .chart-canvas-wrap {
+      height: 260px;
+    }
+    .outcomes-dashboard-root .chart-canvas-wrap.compact {
+      height: 220px;
+    }
+    .outcomes-dashboard-root .section-title-spaced {
+      margin-top: 10px;
     }
     #poMapContainer {
       flex: 1;
@@ -98,9 +249,6 @@
       display: flex;
       flex-direction: column;
     }
-    #deathsDashboardApp {
-      --po-gap: 10px;
-    }
     #deathsMapContainer {
       flex: 1;
       margin-top: 1rem;
@@ -138,43 +286,23 @@
       margin-top: 0.5rem;
       font-size: 0.8rem;
       font-style: italic;
-      color: #6b7280;
+      color: var(--od-muted);
       text-align: left;
     }
-    #outcomesDashboardApp .sectionContainer,
-    #pregnancyDashboardApp .sectionContainer {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    #deathsFiltersForm .mainFiltersContainer {
+      justify-content: flex-start;
     }
-    #outcomesDashboardApp .sectionContainer:hover,
-    #pregnancyDashboardApp .sectionContainer:hover {
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    #deathsFiltersForm .betweenDatesContainer {
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
-    #outcomesDashboardApp .highlight h3,
-    #pregnancyDashboardApp .highlight h3 {
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-      color: #1f2937;
+    #deathsSignalsPanel .highlight h3 {
+      font-size: 0.82rem;
+    }
+    #deathsSignalsPanel .highlight p {
+      font-size: 0.9rem;
       font-weight: 600;
-    }
-    #outcomesDashboardApp .highlight p,
-    #pregnancyDashboardApp .highlight p {
-      background: #ffffff;
-      color: #0f172a;
-    }
-    #outcomesDashboardApp .controls,
-    #pregnancyDashboardApp .controls {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
-    #outcomesDashboardApp .chartsContainer,
-    #pregnancyDashboardApp .chartsContainer {
-      background: #ffffff;
-      border-radius: 10px;
     }
     #outcomesTabs .nav-link {
       font-weight: bold;
@@ -187,6 +315,17 @@
     #outcomesTabs .nav-link:focus,
     #outcomesTabs .nav-link.active {
       color: #000 !important;
+    }
+    @media (max-width: 992px) {
+      #pregnancies-pane,
+      #pregnancy-outcomes-pane,
+      #deaths-pane {
+        padding: 12px;
+      }
+      .outcomes-dashboard-root {
+        padding: 4px;
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
   </style>
 {% endblock %}
@@ -247,6 +386,7 @@
         >
           <main
             id="pregnancyDashboardApp"
+            class="outcomes-dashboard-root"
             data-component="dashboard"
             data-summary-endpoint="{% url 'va_analytics:pregnancy-summary-api' %}"
             data-trend-endpoint="{% url 'va_analytics:pregnancy-trend-api' %}"
@@ -274,6 +414,7 @@
         >
           <main
             id="outcomesDashboardApp"
+            class="outcomes-dashboard-root"
             data-component="dashboard"
             data-summary-endpoint="{% url 'va_analytics:po-summary-api' %}"
             data-trend-endpoint="{% url 'va_analytics:po-trend-api' %}"
