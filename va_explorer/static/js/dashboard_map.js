@@ -178,8 +178,36 @@ const dashboard = new Vue({
         window.removeEventListener('resize', this.resizeCharts);
     },
     methods: {
+        normalizeMapKey(value) {
+            return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+        },
         normalizeLevelName(value) {
             return String(value || "").trim().toLowerCase();
+        },
+        getFeatureCount(feature) {
+            const props = feature?.properties || {};
+            const areaNameKey = this.normalizeMapKey(props.area_name);
+            const areaIdRaw = props.area_id;
+            const areaIdKey = this.normalizeMapKey(areaIdRaw);
+            const candidates = [areaNameKey, areaIdKey];
+
+            const areaIdNum = Number(areaIdRaw);
+            // Province ids in GeoJSON are often 101..110 while VA data may store 1..10.
+            if (
+                Number.isFinite(areaIdNum) &&
+                this.currentLevel === 1 &&
+                areaIdNum >= 101 &&
+                areaIdNum <= 110
+            ) {
+                candidates.push(this.normalizeMapKey(String(areaIdNum - 100)));
+            }
+
+            for (const key of candidates) {
+                if (!key) continue;
+                const count = this.geographic_level_sums[key]?.count;
+                if (typeof count === "number") return count;
+            }
+            return 0;
         },
         isFeatureGeometryValid(feature) {
             if (!feature || !feature.geometry) return false;
@@ -541,32 +569,31 @@ const dashboard = new Vue({
             this.loading = false;
         },
         getAggregatesForLevel(jsonRes) {
-            // Based on current level, extract appropriate aggregates
             let aggregates = {};
-            
-            // The API returns geographic_province_sums and geographic_district_sums
-            // For drill-down, we need to map to current level
+
             if (this.currentLevel === 0) {
-                // Country level - sum all
-                const allCounts = [
-                    ...(jsonRes.geographic_province_sums || []),
-                    ...(jsonRes.geographic_district_sums || [])
-                ];
-                aggregates['Zambia Country'] = {
-                    count: d3.sum(allCounts.map(item => item.count || 0))
+                aggregates[this.normalizeMapKey("Zambia")] = {
+                    count: Number(jsonRes.map_total_coded_vas || 0)
                 };
-            } else if (this.currentLevel === 1) {
-                // Province level
-                (jsonRes.geographic_province_sums || []).forEach(item => {
-                    aggregates[`${item.province_name} Province`] = { count: item.count };
-                });
-            } else if (this.currentLevel >= 2) {
-                // District and below - use district sums
-                (jsonRes.geographic_district_sums || []).forEach(item => {
-                    aggregates[`${item.district_name} District`] = { count: item.count };
-                });
+                return aggregates;
             }
-            
+
+            const sourceByLevel = {
+                1: { rows: jsonRes.map_province_sums || [], key: "province_name" },
+                2: { rows: jsonRes.map_district_sums || [], key: "district_name" },
+                3: { rows: jsonRes.map_constituency_sums || [], key: "constituency_name" },
+                4: { rows: jsonRes.map_ward_sums || [], key: "ward_name" },
+                5: { rows: jsonRes.map_ea_sums || [], key: "ea_name" },
+            };
+
+            const source = sourceByLevel[this.currentLevel];
+            if (!source) return aggregates;
+
+            (source.rows || []).forEach((item) => {
+                const key = this.normalizeMapKey(item?.[source.key]);
+                if (!key) return;
+                aggregates[key] = { count: Number(item?.count || 0) };
+            });
             return aggregates;
         },
         async initializeBaseMap() {
@@ -1076,12 +1103,8 @@ const dashboard = new Vue({
         },
         getColor(feature) {
             // Color based on count data
-            const areaName = feature.properties.area_name;
-            const fullName = `${areaName} ${LEVEL_CONFIG[this.currentLevel].label}`;
-            
-            const result = this.geographic_level_sums[fullName];
-            if (result) {
-                const count = result.count;
+            const count = this.getFeatureCount(feature);
+            if (count > 0) {
                 for (let i = 0; i < this.geoScale.length; i++) {
                     if (count >= this.geoScale[i] && count < this.geoScale[i + 1]) {
                         return this.colorScale[i];
@@ -1119,9 +1142,7 @@ const dashboard = new Vue({
         generateTooltip(feature) {
             const areaName = feature.properties.area_name;
             const level = LEVEL_CONFIG[this.currentLevel].label;
-            const fullName = `${areaName} ${level}`;
-            
-            const count = this.geographic_level_sums[fullName]?.count || 0;
+            const count = this.getFeatureCount(feature);
             
             const drillHint = this.currentLevel < MAX_DRILL_LEVEL ? 
                 '<br><small style="font-style: italic;">(Double-click to drill down)</small>' : 
