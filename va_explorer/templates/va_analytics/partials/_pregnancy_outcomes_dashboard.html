@@ -46,6 +46,9 @@
         <select id="poMapViewSelect" class="select">
           <option value="Province" {% if filter_map_view == "Province" %}selected{% endif %}>Province</option>
           <option value="District" {% if filter_map_view == "District" %}selected{% endif %}>District</option>
+          <option value="Constituency" {% if filter_map_view == "Constituency" %}selected{% endif %}>Constituency</option>
+          <option value="Ward" {% if filter_map_view == "Ward" %}selected{% endif %}>Ward</option>
+          <option value="EA" {% if filter_map_view == "EA" %}selected{% endif %}>EA</option>
         </select>
 
         <div class="mainFiltersContainer">

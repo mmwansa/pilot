@@ -16,25 +16,6 @@
     ancVisits: null,
   };
 
-  const mapState = {
-    map: null,
-    layer: null,
-    geojson: null,
-    colors: [
-      "#e8f1fb",
-      "#d4e4f7",
-      "#bdd5f1",
-      "#a2c3ea",
-      "#84afe2",
-      "#679ad9",
-      "#4b84ce",
-      "#2f6ec2",
-      "#1f4f8f",
-    ],
-  };
-
-  const FIXED_BINS = [1, 39, 76, 113, 150, 187, 224, 261, 302];
-
   const getEl = (id) => document.getElementById(id);
 
   const filterElements = {
@@ -91,6 +72,20 @@
     if (!response.ok) throw new Error(`Request failed: ${requestUrl}`);
     return response.json();
   };
+
+  const mapController =
+    typeof window.createHierarchicalDashboardMap === "function"
+      ? window.createHierarchicalDashboardMap({
+          containerId: "peMapContainer",
+          legendId: "peMapLegend",
+          breadcrumbId: "peMapBreadcrumb",
+          emptyStateId: "peMapEmpty",
+          endpoint: endpoints.map,
+          buildParams,
+          styleVariant: "va",
+          noDataMessage: "No mapped pregnancy events in current filter range.",
+        })
+      : null;
 
   const setText = (id, value) => {
     const el = getEl(id);
@@ -288,115 +283,16 @@
     setEmptyState("peAncVisitsEmpty", points.length === 0);
   };
 
-  const normalizeGeoName = (value) =>
-    (value || "")
-      .toString()
-      .toLowerCase()
-      .replace(/province|district/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-  const buildLookup = (rows) => {
-    const map = new Map();
-    (rows || []).forEach((row) => {
-      const name = normalizeGeoName(row.name);
-      if (name) map.set(name, Number(row.count || 0));
-    });
-    return map;
-  };
-
-  const getColorForCount = (count) => {
-    if (!count || count <= 0) return "#c0c0c0";
-
-    for (let i = 0; i < FIXED_BINS.length - 1; i += 1) {
-      const low = FIXED_BINS[i];
-      const high = FIXED_BINS[i + 1] - 1;
-      if (count >= low && count <= high) {
-        return mapState.colors[Math.min(i, mapState.colors.length - 1)];
-      }
-    }
-
-    if (count >= FIXED_BINS[FIXED_BINS.length - 1]) {
-      return mapState.colors[mapState.colors.length - 1];
-    }
-
-    return mapState.colors[0];
-  };
-
-  const renderMapLegend = () => {
-    const legend = getEl("peMapLegend");
-    if (!legend) return;
-
-    let html = "<div><svg width='18' height='14'><rect fill='#c0c0c0' width='14' height='14'></rect></svg>0</div>";
-    for (let i = 0; i < FIXED_BINS.length - 1; i += 1) {
-      const low = FIXED_BINS[i];
-      const high = FIXED_BINS[i + 1] - 1;
-      html += `<div><svg width='18' height='14'><rect fill='${mapState.colors[i]}' width='14' height='14'></rect></svg>${low} - ${high}</div>`;
-    }
-    html += `<div><svg width='18' height='14'><rect fill='${mapState.colors[mapState.colors.length - 1]}' width='14' height='14'></rect></svg>${FIXED_BINS[FIXED_BINS.length - 1]}+</div>`;
-
-    legend.innerHTML = html;
-  };
-
-  const ensureMap = async () => {
-    if (mapState.map || typeof L === "undefined") return;
-    mapState.map = L.map("peMapContainer", { maxBounds: [[-6, 20], [-20, 34]] }).setView([-13, 27], 6);
-    mapState.map.attributionControl.setPrefix("");
-    mapState.map.keyboard.disable();
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 10,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(mapState.map);
-
-    const res = await fetch(`${window.location.origin}/static/data/zambia_geojson.json`);
-    mapState.geojson = await res.json();
-  };
-
-  const renderMap = async (payload) => {
-    await ensureMap();
-    if (!mapState.map || !mapState.geojson) return;
-
-    const mapView = payload.map_view === "District" ? "District" : "Province";
-    const lookup = buildLookup(payload.counts || []);
-    const geojson = JSON.parse(JSON.stringify(mapState.geojson));
-    geojson.features = geojson.features.filter((f) => {
-      const level = f?.properties?.area_level_label;
-      return level === "Country" || level === mapView;
-    });
-
-    if (mapState.layer) mapState.map.removeLayer(mapState.layer);
-
-    mapState.layer = L.geoJson(geojson, {
-      style: (feature) => {
-        const level = feature?.properties?.area_level_label;
-        if (level === "Country") {
-          return { weight: 2.5, opacity: 1, color: "grey", stroke: true, fillOpacity: 0 };
-        }
-        const areaName = normalizeGeoName(feature?.properties?.area_name);
-        const count = lookup.get(areaName) || 0;
-        const color = getColorForCount(count);
-        return { stroke: true, weight: 2, color, opacity: 1, fillColor: color, fillOpacity: 0.7 };
-      },
-      onEachFeature: (feature, layer) => {
-        const level = feature?.properties?.area_level_label;
-        if (level === "Country") return;
-        const areaNameRaw = feature?.properties?.area_name || "";
-        const areaName = normalizeGeoName(areaNameRaw);
-        const count = lookup.get(areaName) || 0;
-        layer.bindTooltip(`<div class="mapTooltip"><h4>${areaNameRaw} ${level}</h4><p>${count}</p></div>`);
-      },
-    }).addTo(mapState.map);
-
-    setEmptyState("peMapEmpty", (payload.counts || []).length === 0);
-    renderMapLegend();
-  };
-
   const refreshMapOnly = async () => {
     const filters = getFilters();
     syncFilterHiddenFields();
     syncUrl(filters);
+    if (mapController) {
+      await mapController.refresh(filters);
+      return;
+    }
     const mapData = await fetchJSON(endpoints.map, filters);
-    await renderMap(mapData);
+    setEmptyState("peMapEmpty", (mapData.counts || []).length === 0);
   };
 
   const refreshAll = async () => {
@@ -404,19 +300,18 @@
     syncFilterHiddenFields();
     syncUrl(filters);
 
-    const [summary, trend, gestAge, anc, map] = await Promise.all([
+    const [summary, trend, gestAge, anc] = await Promise.all([
       fetchJSON(endpoints.summary, filters),
       fetchJSON(endpoints.trend, filters),
       fetchJSON(endpoints.gestationalAge, filters),
       fetchJSON(endpoints.ancVisits, filters),
-      fetchJSON(endpoints.map, filters),
     ]);
 
     renderSummary(summary);
     renderTrend(trend);
     renderGestationalAge(gestAge);
     renderAncVisits(anc);
-    await renderMap(map);
+    await refreshMapOnly();
   };
 
   const bindEvents = () => {
@@ -471,7 +366,7 @@
     if (chartState.trend) chartState.trend.resize();
     if (chartState.gestationalAge) chartState.gestationalAge.resize();
     if (chartState.ancVisits) chartState.ancVisits.resize();
-    if (mapState.map) mapState.map.invalidateSize();
+    if (mapController) mapController.resize();
   };
 
   const pane = app.closest(".tab-pane");

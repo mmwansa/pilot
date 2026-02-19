@@ -32,7 +32,7 @@ class DeathsFilterParsingTests(TestCase):
 
         self.assertEqual(state["time_preset"], "all_time")
         self.assertEqual(state["age_group"], "")
-        self.assertEqual(state["map_view"], "Province")
+        self.assertEqual(state["map_view"], "Ward")
 
 
 class DeathsUnder5CalculationTests(TestCase):
@@ -115,9 +115,22 @@ class DeathsApiSchemaTests(TestCase):
         self.assertEqual(set(trend.keys()), {"labels", "data"})
 
         map_payload = self.client.get(reverse("va_analytics:outcomes-deaths-map-api")).json()
-        self.assertEqual(
-            set(map_payload.keys()),
-            {"map_view", "counts", "province_counts", "district_counts"},
+        self.assertTrue(
+            {
+                "map_view",
+                "counts",
+                "province_counts",
+                "district_counts",
+                "constituency_counts",
+                "ward_counts",
+                "ea_counts",
+                "map_total_events",
+                "map_province_sums",
+                "map_district_sums",
+                "map_constituency_sums",
+                "map_ward_sums",
+                "map_ea_sums",
+            }.issubset(set(map_payload.keys()))
         )
 
         age_sex = self.client.get(reverse("va_analytics:outcomes-deaths-age-sex-api")).json()

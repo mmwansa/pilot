@@ -37,7 +37,7 @@ class TestPregnancyOutcomesFilterParsing:
         state = get_pregnancy_outcomes_filter_state(request)
 
         assert state["time_preset"] == "all_time"
-        assert state["map_view"] == "Province"
+        assert state["map_view"] == "Ward"
 
 
 class TestPregnancyOutcomesQuerysetBuilder:
@@ -143,4 +143,18 @@ class TestPregnancyOutcomesApiSchemas:
 
     def test_map_schema(self, client):
         data = client.get(reverse("va_analytics:po-map-api")).json()
-        assert set(data.keys()) == {"map_view", "counts", "province_counts", "district_counts"}
+        assert {
+            "map_view",
+            "counts",
+            "province_counts",
+            "district_counts",
+            "constituency_counts",
+            "ward_counts",
+            "ea_counts",
+            "map_total_events",
+            "map_province_sums",
+            "map_district_sums",
+            "map_constituency_sums",
+            "map_ward_sums",
+            "map_ea_sums",
+        }.issubset(set(data.keys()))

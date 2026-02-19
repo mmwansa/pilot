@@ -451,6 +451,34 @@
   padding-top: 0;
   border-radius: 0 0 5px 5px;
 }
+.map-breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 10px;
+  font-size: 0.85rem;
+}
+.map-breadcrumb-label {
+  color: #475569;
+  font-weight: 600;
+}
+.map-breadcrumb-item {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.map-breadcrumb-item.is-active {
+  color: #111827;
+  text-decoration: none;
+  cursor: default;
+}
+.map-breadcrumb-sep {
+  color: #64748b;
+}
 #poMapSection h2,
 #peMapSection h2,
 #deathsMapSection h2 {

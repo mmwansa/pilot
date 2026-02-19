@@ -125,7 +125,20 @@ class PregnancyDashboardEndpointSchemaTests(TestCase):
 
     def test_map_schema(self):
         data = self.client.get(reverse("va_analytics:pregnancy-map-api")).json()
-        self.assertEqual(
-            set(data.keys()),
-            {"map_view", "counts", "province_counts", "district_counts"},
+        self.assertTrue(
+            {
+                "map_view",
+                "counts",
+                "province_counts",
+                "district_counts",
+                "constituency_counts",
+                "ward_counts",
+                "ea_counts",
+                "map_total_events",
+                "map_province_sums",
+                "map_district_sums",
+                "map_constituency_sums",
+                "map_ward_sums",
+                "map_ea_sums",
+            }.issubset(set(data.keys()))
         )

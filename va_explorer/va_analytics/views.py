@@ -40,8 +40,10 @@ def get_pregnancy_outcomes_filter_state(request):
         time_preset = "all_time"
 
     map_view = (request.GET.get("map_view") or "Province").strip().title()
-    if map_view not in {"Province", "District"}:
+    if map_view not in {"Province", "District", "Constituency", "Ward", "Ea", "EA"}:
         map_view = "Province"
+    if map_view == "Ea":
+        map_view = "EA"
 
     return {
         "pregnancy_outcome": (request.GET.get("pregnancy_outcome") or "").strip(),
@@ -49,6 +51,13 @@ def get_pregnancy_outcomes_filter_state(request):
         "start_datetime": _normalize_date_input(request.GET.get("start_datetime")),
         "end_datetime": _normalize_date_input(request.GET.get("end_datetime")),
         "map_view": map_view,
+        "geography_level": (request.GET.get("geography_level") or "").strip().lower(),
+        "geography_value": (
+            request.GET.get("geography_value")
+            or request.GET.get("geography")
+            or request.GET.get("location")
+            or ""
+        ).strip(),
     }
 
 
@@ -445,50 +454,77 @@ def _build_place_of_birth_distribution(filtered_qs):
     return labels, count_data, percentage_data
 
 
+def _build_geo_level_counts(filtered_qs, *, field_name, output_key):
+    rows = (
+        filtered_qs.exclude(**{f"{field_name}__isnull": True})
+        .exclude(**{field_name: ""})
+        .annotate(name=Trim(field_name))
+        .values("name")
+        .annotate(count=Count("pk"))
+        .order_by(Lower("name"))
+    )
+    counts = {}
+    for row in rows:
+        normalized = " ".join((row.get("name") or "").split())
+        normalized_lc = normalized.lower()
+        if not normalized or normalized_lc in {"nan", "none", "null", "na", "n/a"}:
+            continue
+        counts[normalized] = counts.get(normalized, 0) + (row.get("count") or 0)
+    return [
+        {output_key: name, "count": count}
+        for name, count in sorted(counts.items(), key=lambda item: item[0].lower())
+    ]
+
+
+def _build_map_hierarchy_counts(filtered_qs):
+    province_sums = _build_geo_level_counts(
+        filtered_qs, field_name="province", output_key="province_name"
+    )
+    district_sums = _build_geo_level_counts(
+        filtered_qs, field_name="district", output_key="district_name"
+    )
+    constituency_sums = _build_geo_level_counts(
+        filtered_qs, field_name="constituency", output_key="constituency_name"
+    )
+    ward_sums = _build_geo_level_counts(filtered_qs, field_name="ward", output_key="ward_name")
+    ea_sums = _build_geo_level_counts(filtered_qs, field_name="ea", output_key="ea_name")
+    return {
+        "map_total_events": filtered_qs.count(),
+        "map_province_sums": province_sums,
+        "map_district_sums": district_sums,
+        "map_constituency_sums": constituency_sums,
+        "map_ward_sums": ward_sums,
+        "map_ea_sums": ea_sums,
+    }
+
+
 def _build_map_counts(filtered_qs):
-    province_rows = (
-        filtered_qs.exclude(province__isnull=True)
-        .exclude(province="")
-        .annotate(name=Trim("province"))
-        .values("name")
-        .annotate(count=Count("pk"))
-        .order_by(Lower("name"))
-    )
-    district_rows = (
-        filtered_qs.exclude(district__isnull=True)
-        .exclude(district="")
-        .annotate(name=Trim("district"))
-        .values("name")
-        .annotate(count=Count("pk"))
-        .order_by(Lower("name"))
-    )
-
-    province_counts = {}
-    district_counts = {}
-
-    for row in province_rows:
-        normalized = " ".join((row.get("name") or "").split())
-        if normalized:
-            province_counts[normalized] = (
-                province_counts.get(normalized, 0) + (row.get("count") or 0)
-            )
-
-    for row in district_rows:
-        normalized = " ".join((row.get("name") or "").split())
-        if normalized:
-            district_counts[normalized] = (
-                district_counts.get(normalized, 0) + (row.get("count") or 0)
-            )
-
+    hierarchy = _build_map_hierarchy_counts(filtered_qs)
     province_data = [
-        {"name": name, "count": count}
-        for name, count in sorted(province_counts.items(), key=lambda item: item[0].lower())
+        {"name": row.get("province_name") or "", "count": row.get("count") or 0}
+        for row in hierarchy["map_province_sums"]
     ]
     district_data = [
-        {"name": name, "count": count}
-        for name, count in sorted(district_counts.items(), key=lambda item: item[0].lower())
+        {"name": row.get("district_name") or "", "count": row.get("count") or 0}
+        for row in hierarchy["map_district_sums"]
     ]
     return province_data, district_data
+
+
+def _apply_geography_filter(qs, filter_state):
+    geography_field_map = {
+        "province": "province",
+        "district": "district",
+        "constituency": "constituency",
+        "ward": "ward",
+        "ea": "ea",
+    }
+    geography_level = filter_state.get("geography_level")
+    geography_value = filter_state.get("geography_value")
+    geo_field = geography_field_map.get(geography_level)
+    if geo_field and geography_value:
+        return qs.filter(**{f"{geo_field}__iexact": geography_value})
+    return qs
 
 
 def build_pregnancy_outcomes_qs(request):
@@ -498,6 +534,7 @@ def build_pregnancy_outcomes_qs(request):
     pregnancy_outcome = filter_state["pregnancy_outcome"]
     if pregnancy_outcome:
         qs = qs.filter(po_group=pregnancy_outcome)
+    qs = _apply_geography_filter(qs, filter_state)
 
     time_preset = filter_state["time_preset"]
     start_datetime_raw = filter_state["start_datetime"]
@@ -545,6 +582,7 @@ def build_pregnancy_qs(request):
     # so there are no FK relations to eagerly load via select_related.
     qs = Pregnancy.objects.select_related().all()
     filter_state = get_pregnancy_outcomes_filter_state(request)
+    qs = _apply_geography_filter(qs, filter_state)
 
     time_preset = filter_state["time_preset"]
     start_datetime_raw = filter_state["start_datetime"]
@@ -626,8 +664,10 @@ def get_deaths_filter_state(request):
         age_group = ""
 
     map_view = (request.GET.get("map_view") or "Province").strip().title()
-    if map_view not in {"Province", "District"}:
+    if map_view not in {"Province", "District", "Constituency", "Ward", "Ea", "EA"}:
         map_view = "Province"
+    if map_view == "Ea":
+        map_view = "EA"
 
     return {
         "time_preset": time_preset,
@@ -675,18 +715,7 @@ def build_deaths_qs(request, *, apply_time_filter=True):
             .exclude(DE_15__iexact="not known")
         )
 
-    geography_level = filter_state["geography_level"]
-    geography_value = filter_state["geography_value"]
-    geography_field_map = {
-        "province": "province",
-        "district": "district",
-        "constituency": "constituency",
-        "ward": "ward",
-        "ea": "ea",
-    }
-    geo_field = geography_field_map.get(geography_level)
-    if geo_field and geography_value:
-        qs = qs.filter(**{f"{geo_field}__iexact": geography_value})
+    qs = _apply_geography_filter(qs, filter_state)
 
     if apply_time_filter:
         time_preset = filter_state["time_preset"]
@@ -1201,14 +1230,45 @@ class PregnancyOutcomesPlaceOfBirthAPIView(_PregnancyOutcomesBaseAPIView):
 class PregnancyOutcomesMapAPIView(_PregnancyOutcomesBaseAPIView):
     def get(self, request, format=None):
         filter_state = get_pregnancy_outcomes_filter_state(request)
-        province_counts, district_counts = _build_map_counts(self._qs(request))
-        counts = district_counts if filter_state["map_view"] == "District" else province_counts
+        hierarchy = _build_map_hierarchy_counts(self._qs(request))
+        province_counts = [
+            {"name": row.get("province_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_province_sums"]
+        ]
+        district_counts = [
+            {"name": row.get("district_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_district_sums"]
+        ]
+        constituency_counts = [
+            {"name": row.get("constituency_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_constituency_sums"]
+        ]
+        ward_counts = [
+            {"name": row.get("ward_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_ward_sums"]
+        ]
+        ea_counts = [
+            {"name": row.get("ea_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_ea_sums"]
+        ]
+        counts_by_view = {
+            "Province": province_counts,
+            "District": district_counts,
+            "Constituency": constituency_counts,
+            "Ward": ward_counts,
+            "EA": ea_counts,
+        }
+        counts = counts_by_view.get(filter_state["map_view"], province_counts)
         return Response(
             {
                 "map_view": filter_state["map_view"],
                 "counts": counts,
                 "province_counts": province_counts,
                 "district_counts": district_counts,
+                "constituency_counts": constituency_counts,
+                "ward_counts": ward_counts,
+                "ea_counts": ea_counts,
+                **hierarchy,
             }
         )
 
@@ -1281,14 +1341,45 @@ class PregnancyGestationalAgeAncAPIView(PregnancyOutcomesAncVisitsAPIView):
 class PregnancyMapAPIView(PregnancyOutcomesMapAPIView):
     def get(self, request, format=None):
         filter_state = get_pregnancy_outcomes_filter_state(request)
-        province_counts, district_counts = _build_map_counts(build_pregnancy_qs(request))
-        counts = district_counts if filter_state["map_view"] == "District" else province_counts
+        hierarchy = _build_map_hierarchy_counts(build_pregnancy_qs(request))
+        province_counts = [
+            {"name": row.get("province_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_province_sums"]
+        ]
+        district_counts = [
+            {"name": row.get("district_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_district_sums"]
+        ]
+        constituency_counts = [
+            {"name": row.get("constituency_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_constituency_sums"]
+        ]
+        ward_counts = [
+            {"name": row.get("ward_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_ward_sums"]
+        ]
+        ea_counts = [
+            {"name": row.get("ea_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_ea_sums"]
+        ]
+        counts_by_view = {
+            "Province": province_counts,
+            "District": district_counts,
+            "Constituency": constituency_counts,
+            "Ward": ward_counts,
+            "EA": ea_counts,
+        }
+        counts = counts_by_view.get(filter_state["map_view"], province_counts)
         return Response(
             {
                 "map_view": filter_state["map_view"],
                 "counts": counts,
                 "province_counts": province_counts,
                 "district_counts": district_counts,
+                "constituency_counts": constituency_counts,
+                "ward_counts": ward_counts,
+                "ea_counts": ea_counts,
+                **hierarchy,
             }
         )
 
@@ -1362,17 +1453,49 @@ class DeathsMapAPIView(APIView):
         if invalid_tab_response is not None:
             return invalid_tab_response
         map_view = (request.GET.get("map_view") or "Province").strip().title()
-        if map_view not in {"Province", "District"}:
+        if map_view not in {"Province", "District", "Constituency", "Ward", "Ea", "EA"}:
             map_view = "Province"
-
-        province_counts, district_counts = _build_map_counts(build_deaths_qs(request))
-        counts = district_counts if map_view == "District" else province_counts
+        if map_view == "Ea":
+            map_view = "EA"
+        hierarchy = _build_map_hierarchy_counts(build_deaths_qs(request))
+        province_counts = [
+            {"name": row.get("province_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_province_sums"]
+        ]
+        district_counts = [
+            {"name": row.get("district_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_district_sums"]
+        ]
+        constituency_counts = [
+            {"name": row.get("constituency_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_constituency_sums"]
+        ]
+        ward_counts = [
+            {"name": row.get("ward_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_ward_sums"]
+        ]
+        ea_counts = [
+            {"name": row.get("ea_name") or "", "count": row.get("count") or 0}
+            for row in hierarchy["map_ea_sums"]
+        ]
+        counts_by_view = {
+            "Province": province_counts,
+            "District": district_counts,
+            "Constituency": constituency_counts,
+            "Ward": ward_counts,
+            "EA": ea_counts,
+        }
+        counts = counts_by_view.get(map_view, province_counts)
         return Response(
             {
                 "map_view": map_view,
                 "counts": counts,
                 "province_counts": province_counts,
                 "district_counts": district_counts,
+                "constituency_counts": constituency_counts,
+                "ward_counts": ward_counts,
+                "ea_counts": ea_counts,
+                **hierarchy,
             }
         )
 

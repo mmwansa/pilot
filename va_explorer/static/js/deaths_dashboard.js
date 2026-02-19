@@ -28,13 +28,6 @@
     placePercentage: document.getElementById("deathsPlaceModePercentage"),
   };
 
-  const mapState = {
-    map: null,
-    layer: null,
-    geojson: null,
-    colors: ["#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#fee090", "#fdae61", "#f46d43", "#d73027"],
-  };
-
   let trendChart = null;
   let ageSexChart = null;
   let placeChart = null;
@@ -46,14 +39,6 @@
     filterElements.ageSexPercentage?.checked ? "percentage" : "count";
   const currentPlaceMode = () =>
     filterElements.placePercentage?.checked ? "percentage" : "count";
-
-  const normalizeGeoName = (value) =>
-    (value || "")
-      .toString()
-      .toLowerCase()
-      .replace(/province|district/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
 
   const getFilters = () => ({
     time_preset: filterElements.preset?.value || "all_time",
@@ -88,6 +73,20 @@
     if (!response.ok) throw new Error(`Request failed: ${requestUrl}`);
     return response.json();
   };
+
+  const mapController =
+    typeof window.createHierarchicalDashboardMap === "function"
+      ? window.createHierarchicalDashboardMap({
+          containerId: "deathsMapContainer",
+          legendId: "deathsMapLegend",
+          breadcrumbId: "deathsMapBreadcrumb",
+          emptyStateId: "deathsMapEmpty",
+          endpoint: endpoints.map,
+          buildParams,
+          styleVariant: "va",
+          noDataMessage: "No mapped deaths in current filter range.",
+        })
+      : null;
 
   const setEmpty = (id, isEmpty) => {
     const el = document.getElementById(id);
@@ -213,108 +212,13 @@
     setEmpty("deathsTrendEmpty", total === 0);
   };
 
-  const buildLookup = (rows) => {
-    const map = new Map();
-    (rows || []).forEach((row) => {
-      const name = normalizeGeoName(row.name);
-      if (name) map.set(name, Number(row.count || 0));
-    });
-    return map;
-  };
-
-  const computeBins = (values) => {
-    const nonZero = values.filter((v) => v > 0);
-    if (!nonZero.length) return [0];
-    const max = Math.max(...nonZero);
-    const steps = Math.min(mapState.colors.length, 6);
-    const bins = [1];
-    const width = Math.max(1, Math.ceil(max / steps));
-    for (let i = 1; i <= steps; i += 1) bins.push(i * width);
-    return bins;
-  };
-
-  const getColorForCount = (count, bins) => {
-    if (!count || count <= 0) return "#c0c0c0";
-    for (let i = 0; i < bins.length - 1; i += 1) {
-      if (count >= bins[i] && count <= bins[i + 1]) return mapState.colors[Math.min(i, mapState.colors.length - 1)];
-    }
-    return mapState.colors[Math.min(bins.length - 2, mapState.colors.length - 1)];
-  };
-
-  const renderMapLegend = (bins) => {
-    const legend = document.getElementById("deathsMapLegend");
-    if (!legend) return;
-
-    if (!bins || bins.length <= 1) {
-      legend.innerHTML = "<div>No mapped deaths in current filter range.</div>";
-      setEmpty("deathsMapEmpty", true);
+  const refreshMapOnly = async (filters) => {
+    if (mapController) {
+      await mapController.refresh(filters);
       return;
     }
-
-    let html = "<div><svg width='18' height='14'><rect fill='#c0c0c0' width='14' height='14'></rect></svg>0</div>";
-    for (let i = 0; i < bins.length - 1; i += 1) {
-      const label = i === bins.length - 2 ? `${bins[i]}+` : `${bins[i]} - ${bins[i + 1]}`;
-      html += `<div><svg width='18' height='14'><rect fill='${mapState.colors[i]}' width='14' height='14'></rect></svg>${label}</div>`;
-    }
-    legend.innerHTML = html;
-    setEmpty("deathsMapEmpty", false);
-  };
-
-  const ensureMap = async () => {
-    if (mapState.map || typeof L === "undefined") return;
-
-    mapState.map = L.map("deathsMapContainer", { maxBounds: [[-6, 20], [-20, 34]] }).setView([-13, 27], 6);
-    mapState.map.attributionControl.setPrefix("");
-    mapState.map.keyboard.disable();
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 10,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(mapState.map);
-
-    const res = await fetch(`${window.location.origin}/static/data/zambia_geojson.json`);
-    mapState.geojson = await res.json();
-  };
-
-  const renderMap = async (payload) => {
-    await ensureMap();
-    if (!mapState.map || !mapState.geojson) return;
-
-    const mapView = payload.map_view === "District" ? "District" : "Province";
-    const lookup = buildLookup(payload.counts || []);
-    const bins = computeBins(Array.from(lookup.values()));
-
-    const geojson = JSON.parse(JSON.stringify(mapState.geojson));
-    geojson.features = geojson.features.filter((f) => {
-      const level = f?.properties?.area_level_label;
-      return level === "Country" || level === mapView;
-    });
-
-    if (mapState.layer) mapState.map.removeLayer(mapState.layer);
-
-    mapState.layer = L.geoJson(geojson, {
-      style: (feature) => {
-        const level = feature?.properties?.area_level_label;
-        if (level === "Country") {
-          return { weight: 2.5, opacity: 1, color: "grey", stroke: true, fillOpacity: 0 };
-        }
-        const areaName = normalizeGeoName(feature?.properties?.area_name);
-        const count = lookup.get(areaName) || 0;
-        const color = getColorForCount(count, bins);
-        return { stroke: true, weight: 2, color, opacity: 1, fillColor: color, fillOpacity: 0.7 };
-      },
-      onEachFeature: (feature, layer) => {
-        const level = feature?.properties?.area_level_label;
-        if (level === "Country") return;
-        const areaNameRaw = feature?.properties?.area_name || "";
-        const areaName = normalizeGeoName(areaNameRaw);
-        const count = lookup.get(areaName) || 0;
-        layer.bindTooltip(`<div class=\"mapTooltip\"><h4>${areaNameRaw} ${level}</h4><p>${count}</p></div>`);
-      },
-    }).addTo(mapState.map);
-
-    renderMapLegend(bins);
-    mapState.map.invalidateSize();
+    const payload = await fetchJSON(endpoints.map, filters);
+    setEmpty("deathsMapEmpty", (payload.counts || []).length === 0);
   };
 
   const renderAgeSex = (payload) => {
@@ -486,7 +390,6 @@
     const [
       summaryPayload,
       trendPayload,
-      mapPayload,
       ageSexPayloadResp,
       placePayloadResp,
       signalsPayload,
@@ -494,7 +397,6 @@
     ] = await Promise.all([
       fetchJSON(endpoints.summary, filters),
       fetchJSON(endpoints.trend, filters),
-      fetchJSON(endpoints.map, filters),
       fetchJSON(endpoints.ageSex, filters),
       fetchJSON(endpoints.place, filters),
       fetchJSON(endpoints.signals, filters),
@@ -504,7 +406,7 @@
     renderSummary(summaryPayload);
     renderSignals(signalsPayload);
     renderTrend(trendPayload);
-    await renderMap(mapPayload);
+    await refreshMapOnly(filters);
     renderAgeSex(ageSexPayloadResp);
     renderPlace(placePayloadResp);
     renderTimeliness(timelinessPayloadResp);
@@ -589,9 +491,48 @@
     await refreshAll();
   };
 
+  const resizeVisuals = () => {
+    if (trendChart) trendChart.resize();
+    if (ageSexChart) ageSexChart.resize();
+    if (placeChart) placeChart.resize();
+    if (timelinessChart) timelinessChart.resize();
+    if (mapController) mapController.resize();
+  };
+
+  const pane = app.closest(".tab-pane");
+  if (pane && !pane.classList.contains("show")) {
+    let initializedFromTab = false;
+    const activateHandler = (event) => {
+      const targetSelector =
+        event?.target?.getAttribute("data-bs-target") ||
+        event?.target?.getAttribute("data-target");
+      if (targetSelector !== `#${pane.id}`) return;
+      if (!initializedFromTab) {
+        initializedFromTab = true;
+        init()
+          .then(() => setTimeout(resizeVisuals, 0))
+          .catch((err) => console.error(err));
+      } else {
+        setTimeout(resizeVisuals, 0);
+      }
+    };
+    if (window.jQuery) {
+      window.jQuery(document).on("shown.bs.tab", activateHandler);
+    } else {
+      document.addEventListener("shown.bs.tab", activateHandler);
+    }
+    return;
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => init().catch((err) => console.error(err)));
+    document.addEventListener("DOMContentLoaded", () => {
+      init()
+        .then(() => setTimeout(resizeVisuals, 0))
+        .catch((err) => console.error(err));
+    });
   } else {
-    init().catch((err) => console.error(err));
+    init()
+      .then(() => setTimeout(resizeVisuals, 0))
+      .catch((err) => console.error(err));
   }
 })();
