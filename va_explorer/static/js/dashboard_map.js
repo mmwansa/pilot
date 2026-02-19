@@ -12,6 +12,16 @@ const LEVEL_CONFIG = {
 }
 
 const MAX_DRILL_LEVEL = 5; // EA is the last drillable level
+const DRILL_HIERARCHY = ["Zambia", "Province", "District", "Constituency", "Ward", "EA"];
+const isDrillDebugEnabled = () => {
+    try {
+        if (typeof window === "undefined") return false;
+        if (window.__VA_MAP_DRILL_DEBUG__ === true) return true;
+        return window.localStorage?.getItem("va_map_drill_debug") === "1";
+    } catch (_err) {
+        return false;
+    }
+};
 
 const dashboard = new Vue({
     el: '#dashboardApp',
@@ -24,8 +34,11 @@ const dashboard = new Vue({
             map: null,
             geojsonCache: {}, // Cache loaded GeoJSON by level
             layer: null,
-            currentLevel: 1, // Start with provinces (1=Province)
-            drilldownPath: [], // Track hierarchy: [{level: 0, name: 'Zambia'}, {level: 1, name: 'Lusaka'}, ...]
+            drill: {
+                hierarchy: DRILL_HIERARCHY,
+                path: [{ level: "Zambia", id: "ZM", name: "Zambia", levelIndex: 0 }],
+                levelIndex: 0,
+            },
 
             // default values for all the charts
             COD_grouping: [],
@@ -75,12 +88,17 @@ const dashboard = new Vue({
             suppressWarning: false,
             placeOfDeathValue: "count",
             causeOfDeathValue: "count",
+            featureHitInTick: false,
             // Fallback for environments where native dblclick can be unreliable in tab panes.
             featureClickState: { id: null, at: 0 },
             drillInFlight: false,
         }
     },
     computed: {
+        currentLevel() {
+            // Map layer level: show children of the current drill node.
+            return Math.min(this.drill.levelIndex + 1, MAX_DRILL_LEVEL);
+        },
         highlightsSummaries() {
             return {
                 "Last Data Update": this.update_stats.last_update || "-",
@@ -99,11 +117,7 @@ const dashboard = new Vue({
             return "Country";
         },
         drilldownBreadcrumbs() {
-            // Return breadcrumb path including current location
-            return [
-                { level: LEVEL_CONFIG[0].label, name: 'Zambia', levelIndex: 0 },
-                ...this.drilldownPath
-            ];
+            return this.drill.path;
         },
         geoScale() {
             if (!this.geographic_level_sums || Object.keys(this.geographic_level_sums).length === 0) return;
@@ -138,8 +152,7 @@ const dashboard = new Vue({
         },
     },
     async created() {
-        // Initialize breadcrumb with provinces (start at provincial level)
-        this.drilldownPath = [];
+        this.syncDrillState();
         
         // Request data from API endpoint
         await this.getData();
@@ -158,6 +171,143 @@ const dashboard = new Vue({
         window.removeEventListener('resize', this.resizeCharts);
     },
     methods: {
+        normalizeLevelName(value) {
+            return String(value || "").trim().toLowerCase();
+        },
+        isFeatureGeometryValid(feature) {
+            if (!feature || !feature.geometry) return false;
+            const geometry = feature.geometry;
+            if (!geometry.type) return false;
+            const coords = geometry.coordinates;
+            return Array.isArray(coords) && coords.length > 0;
+        },
+        getFeatureLevelName(properties) {
+            if (!properties) return "";
+            const directLevel =
+                properties.level ??
+                properties.level_name ??
+                properties.admin_level_name ??
+                properties.geo_level;
+            if (directLevel) return String(directLevel);
+
+            const numericLevel = properties.admin_level ?? properties.level_index;
+            const parsed = Number(numericLevel);
+            if (Number.isInteger(parsed) && LEVEL_CONFIG[parsed]) {
+                return LEVEL_CONFIG[parsed].label;
+            }
+            return "";
+        },
+        getCurrentContextNode() {
+            return this.drill.path[this.drill.levelIndex] || null;
+        },
+        resolveFeatureFromMapEvent(e) {
+            if (!this.map || !this.layer || !e || !e.originalEvent) return null;
+            let hitFeature = null;
+            const point = this.map.mouseEventToLayerPoint(e.originalEvent);
+
+            this.layer.eachLayer((childLayer) => {
+                if (hitFeature || !childLayer?.feature) return;
+
+                // Strict geometry hit test only; avoid bounds-based false positives on background clicks.
+                const isHit = typeof childLayer._containsPoint === "function"
+                    ? childLayer._containsPoint(point)
+                    : false;
+
+                if (isHit) hitFeature = childLayer.feature;
+            });
+
+            return hitFeature;
+        },
+        debugDrillLog(decision, feature = null, reason = "") {
+            if (!isDrillDebugEnabled()) return;
+            const contextNode = this.getCurrentContextNode();
+            const featureProps = feature?.properties || {};
+            const featureLevel = this.getFeatureLevelName(featureProps);
+            const payload = {
+                levelIndex: this.drill.levelIndex,
+                currentLevel: this.currentLevel,
+                currentParentId: contextNode?.id ?? null,
+                featureId: featureProps.area_id ?? null,
+                featureLevel: featureLevel || null,
+                featureParentId: featureProps.parent_id ?? featureProps.parentId ?? featureProps.parentID ?? null,
+                decision,
+                reason: reason || null,
+            };
+            console.debug("[MapDrill]", payload);
+        },
+        isAtZambiaRoot() {
+            return (this.drill.path?.length || 0) <= 1;
+        },
+        async drillUpIfPossible(reason = "invalid_click") {
+            if (this.isAtZambiaRoot() || this.drillInFlight) {
+                this.debugDrillLog("noop", null, this.isAtZambiaRoot() ? "at_zambia_root" : "drill_in_flight");
+                return;
+            }
+            this.debugDrillLog("up", null, reason);
+            console.log(`[Drill Up] Triggered by ${reason}`);
+            await this.drillUpOneLevel();
+        },
+        isClickWithinCurrentContext(feature) {
+            if (!feature || !this.isFeatureGeometryValid(feature)) return false;
+            const properties = feature.properties;
+            if (!properties || !properties.area_id || !properties.area_name) return false;
+
+            const contextNode = this.getCurrentContextNode();
+            if (!contextNode || !contextNode.id) return false;
+
+            const expectedLevel = this.drill.hierarchy[this.currentLevel] || LEVEL_CONFIG[this.currentLevel]?.label;
+            const featureLevel = this.getFeatureLevelName(properties);
+            if (
+                featureLevel &&
+                expectedLevel &&
+                this.normalizeLevelName(featureLevel) !== this.normalizeLevelName(expectedLevel)
+            ) {
+                return false;
+            }
+
+            const parentIdRaw = properties.parent_id ?? properties.parentId ?? properties.parentID;
+            const parentId = parentIdRaw == null ? "" : String(parentIdRaw).trim();
+            const contextId = String(contextNode.id).trim();
+
+            // Top-level context: Zambia -> Province features are expected to be root features.
+            if (
+                this.normalizeLevelName(contextNode.level) === this.normalizeLevelName(this.drill.hierarchy[0]) &&
+                this.normalizeLevelName(expectedLevel) === this.normalizeLevelName(this.drill.hierarchy[1])
+            ) {
+                return parentId === "" || parentId === contextId;
+            }
+
+            if (parentId) {
+                return parentId === contextId;
+            }
+
+            // Deterministic fallback linking keys if parent_id is unavailable.
+            const fallbackKeysByLevel = {
+                Province: ["country_id", "country_code"],
+                District: ["province_id", "province_code"],
+                Constituency: ["district_id", "district_code"],
+                Ward: ["constituency_id", "constituency_code"],
+                EA: ["ward_id", "ward_code"],
+            };
+            const keys = fallbackKeysByLevel[expectedLevel] || [];
+            for (const key of keys) {
+                const linkedValue = properties[key];
+                if (linkedValue != null && String(linkedValue).trim() === contextId) return true;
+            }
+
+            return false;
+        },
+        syncDrillState() {
+            if (!Array.isArray(this.drill.path) || this.drill.path.length === 0) {
+                this.drill.path = [{ level: this.drill.hierarchy[0], id: "ZM", name: "Zambia", levelIndex: 0 }];
+            }
+            this.drill.path = (this.drill.path || []).map((node, idx) => ({
+                ...node,
+                level: this.drill.hierarchy[idx] || node.level,
+                levelIndex: idx,
+            }));
+            this.drill.levelIndex = this.drill.path.length - 1;
+        },
         // Function to reproject from EPSG:3857 (Web Mercator) to EPSG:4326 (WGS84)
         reproject3857to4326(geojson) {
             // Check CRS - if it's already WGS84/CRS84, don't reproject
@@ -311,8 +461,8 @@ const dashboard = new Vue({
             // Construct parent region filter based on current drill-down path
             // Use the deepest breadcrumb when available (e.g., Province, District, Constituency...)
             let parentRegion = null;
-            if (this.drilldownPath.length >= 1) {
-                const lastDrill = this.drilldownPath[this.drilldownPath.length - 1];
+            if (this.drill.path.length > 1) {
+                const lastDrill = this.drill.path[this.drill.path.length - 1];
                 parentRegion = `${lastDrill.name} ${lastDrill.level}`;
             }
 
@@ -429,6 +579,38 @@ const dashboard = new Vue({
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(this.map);
 
+            // Map-level click runs after feature hit-testing and applies the same invalid-click rule.
+            this.map.on("click", (e) => {
+                this.featureHitInTick = false;
+                setTimeout(async () => {
+                    if (this.featureHitInTick) return;
+
+                    const target = e?.originalEvent?.target;
+                    if (target?.closest?.(".leaflet-control")) return;
+
+                    const hitFeature = this.resolveFeatureFromMapEvent(e);
+                    if (!hitFeature) {
+                        this.debugDrillLog("up", null, "background_or_unresolved_feature_click");
+                        await this.drillUpIfPossible("background_or_unresolved_feature_click");
+                        return;
+                    }
+
+                    if (!this.isFeatureGeometryValid(hitFeature)) {
+                        this.debugDrillLog("up", hitFeature, "map_hit_invalid_feature_geodata");
+                        await this.drillUpIfPossible("map_hit_invalid_feature_geodata");
+                        return;
+                    }
+
+                    if (!this.isClickWithinCurrentContext(hitFeature)) {
+                        this.debugDrillLog("up", hitFeature, "map_hit_outside_current_context");
+                        await this.drillUpIfPossible("map_hit_outside_current_context");
+                        return;
+                    }
+
+                    this.debugDrillLog("noop", hitFeature, "map_hit_valid_feature_feature_handler_expected");
+                }, 0);
+            });
+
             // Add explicit zoom control at top-left (prevent CSS/layout moving it)
             // Enable zoom controls with higher max zoom for EA level features
             try {
@@ -478,7 +660,7 @@ const dashboard = new Vue({
             let filteredGeojson = JSON.parse(JSON.stringify(geojson));
             
             // Log drilldown path for debugging
-            console.log(`[Level ${this.currentLevel}] Drilldown path:`, this.drilldownPath.map(p => ({
+            console.log(`[Level ${this.currentLevel}] Drilldown path:`, this.drill.path.map(p => ({
                 level: p.level,
                 name: p.name,
                 levelIndex: p.levelIndex,
@@ -487,12 +669,12 @@ const dashboard = new Vue({
             
             filteredGeojson.features = filteredGeojson.features.filter(feature => {
                 // For provincial level with no drill-down, show all provinces (parent_id null)
-                if (this.drilldownPath.length === 0) {
+                if (this.drill.path.length === 1) {
                     return feature.properties.parent_id == null;
                 }
                 
                 // For all levels, filter by parent_id of the most recent drill-down
-                const parent = this.drilldownPath[this.drilldownPath.length - 1];
+                const parent = this.drill.path[this.drill.path.length - 1];
                 const matches = feature.properties.parent_id === parent.id;
                 
                 // Log first few features for debugging
@@ -532,8 +714,8 @@ const dashboard = new Vue({
             }
             
             // If no features found, log more details
-            if (filteredGeojson.features.length === 0 && this.drilldownPath.length > 0) {
-                const parent = this.drilldownPath[this.drilldownPath.length - 1];
+            if (filteredGeojson.features.length === 0 && this.drill.path.length > 1) {
+                const parent = this.drill.path[this.drill.path.length - 1];
                 console.warn(`[Level ${this.currentLevel}] No features found! Looking for parent_id=${parent.id} (${parent.name} ${parent.level}), but available parent_ids in data:`, 
                     [...new Set(geojson.features.slice(0, 10).map(f => f.properties.parent_id))]);
             }
@@ -556,11 +738,7 @@ const dashboard = new Vue({
                     
                     // Handle double intent via rapid consecutive clicks as a robust fallback.
                     layer.on("click", async (e) => {
-                        await vm.handleRegionClick(e);
-                    });
-
-                    // Double-click: drill down
-                    layer.on("dblclick", async (e) => {
+                        vm.featureHitInTick = true;
                         if (e && e.originalEvent) {
                             e.originalEvent.preventDefault();
                             e.originalEvent.stopPropagation();
@@ -568,7 +746,51 @@ const dashboard = new Vue({
                         if (typeof L !== "undefined" && L.DomEvent) {
                             L.DomEvent.stop(e);
                         }
-                        await vm.drillIntoRegion(e.target.feature);
+
+                        const clickedFeature = e?.target?.feature;
+                        // Case B: invalid feature/geodata -> drill up
+                        if (!clickedFeature || !vm.isFeatureGeometryValid(clickedFeature)) {
+                            vm.debugDrillLog("up", clickedFeature, "invalid_feature_geodata");
+                            await vm.drillUpIfPossible("invalid_feature_geodata");
+                            return;
+                        }
+                        // Case C: feature exists but is outside current context -> drill up
+                        if (!vm.isClickWithinCurrentContext(clickedFeature)) {
+                            vm.debugDrillLog("up", clickedFeature, "outside_current_context");
+                            await vm.drillUpIfPossible("outside_current_context");
+                            return;
+                        }
+                        // Case A: valid drill target -> proceed
+                        vm.debugDrillLog("down", clickedFeature, "valid_click");
+                        await vm.handleRegionClick(e);
+                    });
+
+                    // Double-click: drill down
+                    layer.on("dblclick", async (e) => {
+                        vm.featureHitInTick = true;
+                        const clickedFeature = e?.target?.feature;
+                        // Case B: invalid feature/geodata -> drill up
+                        if (!clickedFeature || !vm.isFeatureGeometryValid(clickedFeature)) {
+                            vm.debugDrillLog("up", clickedFeature, "invalid_feature_geodata_dblclick");
+                            await vm.drillUpIfPossible("invalid_feature_geodata_dblclick");
+                            return;
+                        }
+                        // Case C: feature exists but is outside current context -> drill up
+                        if (!vm.isClickWithinCurrentContext(clickedFeature)) {
+                            vm.debugDrillLog("up", clickedFeature, "outside_current_context_dblclick");
+                            await vm.drillUpIfPossible("outside_current_context_dblclick");
+                            return;
+                        }
+                        if (e && e.originalEvent) {
+                            e.originalEvent.preventDefault();
+                            e.originalEvent.stopPropagation();
+                        }
+                        if (typeof L !== "undefined" && L.DomEvent) {
+                            L.DomEvent.stop(e);
+                        }
+                        // Case A: valid drill target -> proceed
+                        vm.debugDrillLog("down", clickedFeature, "valid_dblclick");
+                        await vm.drillIntoRegion(clickedFeature);
                     });
                 }
             }).addTo(this.map);
@@ -671,7 +893,10 @@ const dashboard = new Vue({
             const isRapidRepeat = this.featureClickState.id === featureId && (now - this.featureClickState.at) <= 380;
 
             this.featureClickState = { id: featureId, at: now };
-            if (!isRapidRepeat) return;
+            if (!isRapidRepeat) {
+                this.debugDrillLog("noop", feature, "single_click_waiting_for_second_click");
+                return;
+            }
 
             if (e && e.originalEvent) {
                 e.originalEvent.preventDefault();
@@ -687,7 +912,13 @@ const dashboard = new Vue({
             // Handle double-click drill-down
             if (this.drillInFlight) return;
             if (this.currentLevel >= MAX_DRILL_LEVEL) {
+                this.debugDrillLog("noop", feature, "max_drill_level_reached");
                 console.log("Already at deepest drill level (Ward)");
+                return;
+            }
+            if (!this.isClickWithinCurrentContext(feature)) {
+                this.debugDrillLog("noop", feature, "outside_current_context_guard");
+                console.warn("[Drill Down] Ignored click outside current drill context");
                 return;
             }
             this.drillInFlight = true;
@@ -714,72 +945,107 @@ const dashboard = new Vue({
                             console.warn(`[Drill Down] Found feature with same name but different area_id: ${byName.properties.area_id}. Using this instead.`);
                             // Use the correct area_id from the cache
                             const correctedAreaId = byName.properties.area_id;
-                            this.drilldownPath.push({
+                            this.drill.path.push({
                                 level: regionLevel,
                                 name: regionName,
-                                levelIndex: this.currentLevel,
                                 id: correctedAreaId
                             });
+                            this.syncDrillState();
                             console.log(`[Drill Down] Using corrected area_id=${correctedAreaId} instead of ${regionAreaId}`);
                         } else {
                             // Fallback: use the clicked feature's area_id
-                            this.drilldownPath.push({
+                            this.drill.path.push({
                                 level: regionLevel,
                                 name: regionName,
-                                levelIndex: this.currentLevel,
                                 id: regionAreaId
                             });
+                            this.syncDrillState();
                         }
                     } else {
                         // Feature matches, use it
-                        this.drilldownPath.push({
+                        this.drill.path.push({
                             level: regionLevel,
                             name: regionName,
-                            levelIndex: this.currentLevel,
                             id: regionAreaId
                         });
+                        this.syncDrillState();
                     }
                 } else {
                     // No cache, use clicked feature
-                    this.drilldownPath.push({
+                    this.drill.path.push({
                         level: regionLevel,
                         name: regionName,
-                        levelIndex: this.currentLevel,
                         id: regionAreaId
                     });
+                    this.syncDrillState();
                 }
 
-                console.log(`[Drill Down] Moving from level ${this.currentLevel} to level ${this.currentLevel + 1}`);
+                console.log(`[Drill Down] Moving from level ${this.currentLevel} to level ${Math.min(this.currentLevel + 1, MAX_DRILL_LEVEL)}`);
 
-                // Move to next level
-                this.currentLevel += 1;
+                // Load and display map + dependent dashboard components for the new drill state.
+                await this.refreshDashboardForDrillChange("drill_down");
+            } finally {
+                this.drillInFlight = false;
+            }
+        },
+        async drillUpOneLevel() {
+            if (this.drill.levelIndex === 0 || this.drillInFlight) return;
+            this.drillInFlight = true;
+            try {
+                // Reset transient interaction state before rendering the next context.
+                this.featureClickState = { id: null, at: 0 };
+                if (this.map && typeof this.map.closeTooltip === "function") {
+                    this.map.closeTooltip();
+                }
+                if (this.layer) {
+                    try {
+                        this.layer.eachLayer((childLayer) => {
+                            if (typeof childLayer.closeTooltip === "function") childLayer.closeTooltip();
+                            if (typeof childLayer.setStyle === "function") {
+                                childLayer.setStyle({
+                                    stroke: true,
+                                    weight: 3,
+                                    color: "black",
+                                    opacity: 1,
+                                    fillOpacity: 0.6,
+                                });
+                            }
+                        });
+                    } catch (_err) {
+                        // Layer cleanup is best-effort; re-render below is authoritative.
+                    }
+                    this.map.removeLayer(this.layer);
+                    this.layer = null;
+                }
 
-                // Load and display map for next level
-                await this.updateDataAndMap();
+                this.drill.path.pop();
+                this.syncDrillState();
+
+                const parentId = this.drill.path[this.drill.levelIndex]?.id;
+                console.log(`[Drill Up] New context levelIndex=${this.drill.levelIndex}, parent_id=${parentId}`);
+
+                // Force legend/data to recompute for the new level during update.
+                this.geographic_level_sums = {};
+                await this.refreshDashboardForDrillChange("drill_up");
             } finally {
                 this.drillInFlight = false;
             }
         },
         async drillBack() {
-            // Go back one level
-            if (this.currentLevel > 0) {
-                this.drilldownPath.pop();
-                this.currentLevel -= 1;
-                await this.updateDataAndMap();
-            }
+            // Backward-compatible alias.
+            await this.drillUpOneLevel();
         },
         async drillbackToLevel(breadcrumbIndex) {
             // Jump back to specific breadcrumb level
             // breadcrumbIndex 0 = Country (Zambia), breadcrumbIndex 1 = Province, breadcrumbIndex 2 = District, etc.
-            // drilldownBreadcrumbs structure: [Country, ...drilldownPath]
-            // drilldownPath structure: [Province, District, Constituency, ...]
+            // drill.path structure: [Zambia, Province, District, Constituency, ...]
             
             console.log(`[Breadcrumb] Clicked on breadcrumb index ${breadcrumbIndex}`);
             
             if (breadcrumbIndex === 0) {
                 // Clicked on Country (Zambia) - show all provinces (level 1)
-                this.currentLevel = 1;
-                this.drilldownPath = [];
+                this.drill.path = [{ level: this.drill.hierarchy[0], id: "ZM", name: "Zambia", levelIndex: 0 }];
+                this.syncDrillState();
                 console.log(`[Breadcrumb] Navigating to level 1 (Provinces), cleared drilldown path`);
             } else {
                 // Get the breadcrumb that was clicked
@@ -792,28 +1058,14 @@ const dashboard = new Vue({
                 }
                 
                 // The clicked breadcrumb's levelIndex tells us what level to show
-                const targetLevel = clickedBreadcrumb.levelIndex;
+                // Keep path up to and including the clicked breadcrumb.
+                this.drill.path = this.drill.path.slice(0, breadcrumbIndex + 1);
+                this.syncDrillState();
                 
-                // When clicking on a breadcrumb, we want to show the NEXT level's features
-                // Click Province -> show Districts (level 2) of that province
-                // Click District -> show Constituencies (level 3) of that district
-                // So we need to keep breadcrumbs up to the clicked one, and show level targetLevel + 1
-                
-                // Keep breadcrumbs up to and including the clicked one
-                // breadcrumbIndex 1 = Province -> keep drilldownPath[0] (the province)
-                // breadcrumbIndex 2 = District -> keep drilldownPath[0,1] (province and district)
-                // Since breadcrumbIndex 0 is Country, breadcrumbIndex - 1 gives us the drilldownPath slice end
-                this.drilldownPath = this.drilldownPath.slice(0, breadcrumbIndex);
-                
-                // Set currentLevel to show the children of the clicked breadcrumb
-                // If clicked Province (level 1), show Districts (level 2)
-                // If clicked District (level 2), show Constituencies (level 3)
-                this.currentLevel = targetLevel + 1;
-                
-                console.log(`[Breadcrumb] Clicked on ${clickedBreadcrumb.name} (level ${targetLevel}), navigating to level ${this.currentLevel} (${LEVEL_CONFIG[this.currentLevel].label}), drilldownPath:`, this.drilldownPath.map(p => p.name));
+                console.log(`[Breadcrumb] Clicked on ${clickedBreadcrumb.name}, navigating to level ${this.currentLevel} (${LEVEL_CONFIG[this.currentLevel].label}), drilldownPath:`, this.drill.path.map(p => p.name));
             }
             
-            await this.updateDataAndMap();
+            await this.refreshDashboardForDrillChange("breadcrumb_drill");
         },
         getColor(feature) {
             // Color based on count data
@@ -895,6 +1147,15 @@ const dashboard = new Vue({
             await this.getData();
             await this.addGeoJSONToMap();
         },
+        async refreshDashboardForDrillChange(reason = "drill_change") {
+            await this.updateDataAndMap();
+            await this.$nextTick();
+            this.resizeCharts();
+            if (this.map && typeof this.map.invalidateSize === "function") {
+                this.map.invalidateSize();
+            }
+            console.log(`[Refresh] Completed component refresh for ${reason}`);
+        },
         async resetAllDataToActive() {
             // Reset all filters and drill-down to country level
             this.startDate = "";
@@ -905,8 +1166,8 @@ const dashboard = new Vue({
             this.sexSelected = "";
             
             // Reset drill-down to provincial level
-            this.currentLevel = 1;
-            this.drilldownPath = [];
+            this.drill.path = [{ level: this.drill.hierarchy[0], id: "ZM", name: "Zambia", levelIndex: 0 }];
+            this.syncDrillState();
             
             // Clear GeoJSON cache to force reload with fresh data
             this.geojsonCache = {};
