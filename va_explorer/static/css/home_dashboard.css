@@ -237,3 +237,114 @@
     grid-template-columns: 1fr;
   }
 }
+
+.home-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.home-panel-table {
+  padding: 10px 12px;
+}
+
+#tab-3.home-va-tab h2,
+#tab-4.home-trends-tab h2 {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+#tab-3.home-va-tab .home-page-statistics,
+#tab-4.home-trends-tab .home-page-statistics {
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+}
+
+#tab-3.home-va-tab .home-page-statistics thead th,
+#tab-4.home-trends-tab .home-page-statistics thead th {
+  background: #f8fafc;
+  color: #334155;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+#tab-3.home-va-tab .home-page-statistics tbody td,
+#tab-3.home-va-tab .home-page-statistics tbody th,
+#tab-4.home-trends-tab .home-page-statistics tbody td,
+#tab-4.home-trends-tab .home-page-statistics tbody th {
+  border-bottom: 1px solid #eef2f7;
+  color: #0f172a;
+  vertical-align: middle;
+}
+
+#tab-3.home-va-tab .home-page-statistics tr:last-child td,
+#tab-3.home-va-tab .home-page-statistics tr:last-child th,
+#tab-4.home-trends-tab .home-page-statistics tr:last-child td,
+#tab-4.home-trends-tab .home-page-statistics tr:last-child th {
+  border-bottom: none;
+}
+
+#tab-3.home-va-tab .va-stats-table-modern canvas {
+  height: 110px !important;
+  max-height: 110px;
+}
+
+#tab-3.home-va-tab .va-list-table-modern thead th {
+  background: #f8fafc;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+#tab-3.home-va-tab .va-list-table-modern tbody td {
+  color: #0f172a;
+  border-bottom: 1px solid #eef2f7;
+}
+
+#tab-3.home-va-tab .va-list-table-modern tbody tr:last-child td {
+  border-bottom: none;
+}
+
+#tab-3.home-va-tab #additional-issues-msg,
+#tab-3.home-va-tab #additional-indeterminate-cods-msg {
+  margin-top: 8px;
+  color: #475569;
+}
+
+#tab-4.home-trends-tab .trend-metric-card {
+  padding: 12px 14px;
+  height: 100%;
+}
+
+#tab-4.home-trends-tab .trend-metric-card h5 {
+  margin-bottom: 10px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+#tab-4.home-trends-tab .trend-metric-table {
+  font-size: 0.9rem;
+}
+
+#tab-4.home-trends-tab .trend-chart-wrap {
+  height: 180px;
+  min-height: 160px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+#tab-4.home-trends-tab .trend-chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}

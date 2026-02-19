@@ -106,6 +106,23 @@ const setVACharts = (graphData) => {
   setVAChart(graphData.uncoded.x, graphData.uncoded.y, notYetCodedCanvas);
 }
 
+const buildNovVADataset = (values) => ({
+  label: "Verbal Autopsies",
+  data: values || [],
+  yAxisID: "yVA",
+  borderColor: "#7c3aed",
+  backgroundColor: "#7c3aed",
+  borderWidth: 3,
+  pointBackgroundColor: "#7c3aed",
+  pointBorderColor: "#ffffff",
+  pointBorderWidth: 1,
+  tension: 0.25,
+  pointRadius: 4,
+  pointHoverRadius: 5,
+  hidden: false,
+  fill: false,
+});
+
 const initNationalOperationalEventsChart = () => {
   const canvas = document.getElementById("novEventsChart");
   if (!canvas || typeof Chart === "undefined") return;
@@ -126,6 +143,7 @@ const initNationalOperationalEventsChart = () => {
   const pregnancyValues = parseJsonScript("nov-pregnancy-values");
   const pregnancyOutcomeValues = parseJsonScript("nov-pregnancy-outcome-values");
   const deathValues = parseJsonScript("nov-death-values");
+  const vaValues = parseJsonScript("nov-va-values");
 
   if (novEventsChartInstance) {
     novEventsChartInstance.destroy();
@@ -163,6 +181,7 @@ const initNationalOperationalEventsChart = () => {
           pointRadius: 2,
           fill: false,
         },
+        buildNovVADataset(vaValues),
       ],
     },
     options: {
@@ -182,9 +201,17 @@ const initNationalOperationalEventsChart = () => {
           grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
         },
         y: {
+          position: "left",
           beginAtZero: true,
           title: { display: true, text: "Event count" },
           grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
+          ticks: { precision: 0 },
+        },
+        yVA: {
+          position: "right",
+          beginAtZero: true,
+          title: { display: true, text: "VA count" },
+          grid: { drawOnChartArea: false },
           ticks: { precision: 0 },
         },
       },
@@ -193,7 +220,13 @@ const initNationalOperationalEventsChart = () => {
   syncNovChartHeightToKpiCards();
 }
 
-const updateNationalOperationalEventsChart = (labels, pregnancyValues, pregnancyOutcomeValues, deathValues) => {
+const updateNationalOperationalEventsChart = (
+  labels,
+  pregnancyValues,
+  pregnancyOutcomeValues,
+  deathValues,
+  vaValues
+) => {
   const canvas = document.getElementById("novEventsChart");
   if (!canvas || typeof Chart === "undefined") return;
 
@@ -202,10 +235,16 @@ const updateNationalOperationalEventsChart = (labels, pregnancyValues, pregnancy
   }
   if (!novEventsChartInstance) return;
 
+  if (!novEventsChartInstance.data.datasets[3]) {
+    novEventsChartInstance.data.datasets.push(buildNovVADataset([]));
+  }
+
   novEventsChartInstance.data.labels = labels || [];
   novEventsChartInstance.data.datasets[0].data = pregnancyValues || [];
   novEventsChartInstance.data.datasets[1].data = pregnancyOutcomeValues || [];
   novEventsChartInstance.data.datasets[2].data = deathValues || [];
+  novEventsChartInstance.data.datasets[3].data = vaValues || [];
+  novEventsChartInstance.data.datasets[3].hidden = false;
   novEventsChartInstance.update();
 }
 
@@ -406,7 +445,8 @@ const requestNationalOperationalFilterData = () => {
         jsonResponse.chart_labels || [],
         jsonResponse.pregnancy_values || [],
         jsonResponse.pregnancy_outcome_values || [],
-        jsonResponse.death_values || []
+        jsonResponse.death_values || [],
+        jsonResponse.va_values || jsonResponse.verbal_autopsy_values || []
       );
       updateNationalOperationalKpis(jsonResponse.kpis || {});
     },

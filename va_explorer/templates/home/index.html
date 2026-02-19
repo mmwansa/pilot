@@ -123,6 +123,7 @@
                     {{ pregnancy_values|json_script:"nov-pregnancy-values" }}
                     {{ pregnancy_outcome_values|json_script:"nov-pregnancy-outcome-values" }}
                     {{ death_values|json_script:"nov-death-values" }}
+                    {{ va_values|json_script:"nov-va-values" }}
               </section>
               <aside id="novKpiCardsContainer" class="kpi-cards-container" data-component="kpi-cards">
                     <div class="nov-kpi-cards">
@@ -207,7 +208,7 @@
           </div>
         </section>
       </div>
-      <div class="tab-pane dashboard-tab-panel fade {% if home_active_tab == 'va_statistics' %}show active{% endif %}" id="tab-3" data-tab-panel="va_statistics" role="tabpanel" aria-labelledby="tab-3-tab">
+      <div class="tab-pane dashboard-tab-panel fade home-va-tab {% if home_active_tab == 'va_statistics' %}show active{% endif %}" id="tab-3" data-tab-panel="va_statistics" role="tabpanel" aria-labelledby="tab-3-tab">
         {% include 'partials/_va_update_stats.html' %}
         {% if not user.is_fieldworker %}
           {% if last_update or last_interview %}
@@ -219,7 +220,8 @@
           <h2 class="mb-4">Your VA Trends</h2>
         {% endif %}
 
-        <table class="table home-page-statistics" data-component="va-statistics-table">
+        <div class="home-panel home-panel-table mb-4">
+        <table class="table home-page-statistics va-stats-table-modern mb-0" data-component="va-statistics-table">
           <thead>
             <tr>
               <th scope="col">VAs</th>
@@ -257,6 +259,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
 
         {% if perms.va_data_management.change_verbalautopsy %}
         <div class="row mt-4">
@@ -276,7 +279,8 @@
         <div class="row mt-4">
           <div class="col">
             <h2 class="mb-4">VAs With Coding Issues</h2>
-            <table class="table table-sm hidden" id="coding-issues" data-component="coding-issues">
+            <div class="home-panel home-panel-table">
+            <table class="table table-sm hidden va-list-table-modern mb-0" id="coding-issues" data-component="coding-issues">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -294,6 +298,7 @@
                 <tr id="coding-issues-root"></tr>
               </tbody>
             </table>
+            </div>
             <p id="additional-issues-msg" class="hidden">There are <a href="/va_data_management/?only_errors=True" id="additional-issues">
             <span id="additional-issues-count"></span> additional issues</a> not listed here</p>
           </div>
@@ -309,7 +314,8 @@
         <div class="row mt-4">
           <div class="col">
             <h2 class="mb-4">VAs With Indeterminate Cause of Death</h2>
-            <table class="table table-sm hidden" id="indeterminate-cod" data-component="indeterminate-cod">
+            <div class="home-panel home-panel-table">
+            <table class="table table-sm hidden va-list-table-modern mb-0" id="indeterminate-cod" data-component="indeterminate-cod">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -328,6 +334,7 @@
                 <tr id="indeterminate-cod-root"></tr>
               </tbody>
             </table>
+            </div>
             <p id="additional-indeterminate-cods-msg" class="hidden">There are <a href="/va_data_management/?cause=Indeterminate" id="additional-cods">
               <span id="additional-indeterminate-cods-count"></span> additional VAs with Indeterminate Cause of Death</a> not listed here</p>
           </div>
@@ -341,12 +348,13 @@
           </div>
         </div>
       </div>      
-      <div class="tab-pane dashboard-tab-panel fade {% if home_active_tab == 'trends' %}show active{% endif %}" id="tab-4" data-tab-panel="trends" role="tabpanel" aria-labelledby="tab-4-tab">
+      <div class="tab-pane dashboard-tab-panel fade home-trends-tab {% if home_active_tab == 'trends' %}show active{% endif %}" id="tab-4" data-tab-panel="trends" role="tabpanel" aria-labelledby="tab-4-tab">
         <h2 class="mb-4">Collection Trends</h2>
         <div class="row">
           <div class="col-md-6 mb-4">
+            <section class="home-panel trend-metric-card">
             <h5>Households</h5>
-            <table class="table table-sm home-page-statistics">
+            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
               <thead>
                 <tr>
                   <th>Metric</th>
@@ -366,12 +374,14 @@
                 </tr>
               </tbody>
             </table>
-            <canvas id="householdsChart" data-component="households-trend-chart"></canvas>
+            <div class="trend-chart-wrap"><canvas id="householdsChart" data-component="households-trend-chart"></canvas></div>
+            </section>
           </div>
 
           <div class="col-md-6 mb-4">
+            <section class="home-panel trend-metric-card">
             <h5>Pregnancies</h5>
-            <table class="table table-sm home-page-statistics">
+            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
               <thead>
                 <tr>
                   <th>Metric</th>
@@ -391,12 +401,14 @@
                 </tr>
               </tbody>
             </table>
-            <canvas id="pregnanciesChart" data-component="pregnancies-trend-chart"></canvas>
+            <div class="trend-chart-wrap"><canvas id="pregnanciesChart" data-component="pregnancies-trend-chart"></canvas></div>
+            </section>
           </div>
 
           <div class="col-md-6 mb-4">
+            <section class="home-panel trend-metric-card">
             <h5>Pregnancy Outcomes</h5>
-            <table class="table table-sm home-page-statistics">
+            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
               <thead>
                 <tr>
                   <th>Metric</th>
@@ -416,12 +428,14 @@
                 </tr>
               </tbody>
             </table>
-            <canvas id="pregnancyOutcomesChart" data-component="pregnancy-outcomes-trend-chart"></canvas>
+            <div class="trend-chart-wrap"><canvas id="pregnancyOutcomesChart" data-component="pregnancy-outcomes-trend-chart"></canvas></div>
+            </section>
           </div>
 
           <div class="col-md-6 mb-4">
+            <section class="home-panel trend-metric-card">
             <h5>Deaths</h5>
-            <table class="table table-sm home-page-statistics">
+            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
               <thead>
                 <tr>
                   <th>Metric</th>
@@ -441,7 +455,8 @@
                 </tr>
               </tbody>
             </table>
-            <canvas id="deathsChart" data-component="deaths-trend-chart"></canvas>
+            <div class="trend-chart-wrap"><canvas id="deathsChart" data-component="deaths-trend-chart"></canvas></div>
+            </section>
           </div>
         </div>
       </div>
@@ -455,7 +470,7 @@
   <script src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
   <script src="{% static 'js/regional_operations.js' %}"></script>
   <script src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
-  <script src="{% static 'js/home.js' %}"></script>
+  <script src="{% static 'js/home.js' %}?v=20260219"></script>
 
   <script>
     // Count up animation for dashboard numbers

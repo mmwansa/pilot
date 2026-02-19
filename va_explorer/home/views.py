@@ -134,16 +134,19 @@ def _windowed_counts(timestamps, start_dt, end_dt):
     }
 
 
-def _build_chart_series(pregnancy_ts, outcome_ts, death_ts, start_dt, end_dt):
+def _build_chart_series(pregnancy_ts, outcome_ts, death_ts, va_ts, start_dt, end_dt):
     series = {
         "pregnancy": _filter_timestamps(pregnancy_ts, start_dt, end_dt),
         "pregnancy_outcome": _filter_timestamps(outcome_ts, start_dt, end_dt),
         "death": _filter_timestamps(death_ts, start_dt, end_dt),
+        "va": _filter_timestamps(va_ts, start_dt, end_dt),
     }
 
-    all_values = series["pregnancy"] + series["pregnancy_outcome"] + series["death"]
+    all_values = (
+        series["pregnancy"] + series["pregnancy_outcome"] + series["death"] + series["va"]
+    )
     if not all_values:
-        return {"labels": [], "pregnancy": [], "pregnancy_outcome": [], "death": []}
+        return {"labels": [], "pregnancy": [], "pregnancy_outcome": [], "death": [], "va": []}
 
     chart_start = start_dt or min(all_values)
     chart_end = end_dt or max(all_values)
@@ -167,6 +170,7 @@ def _build_chart_series(pregnancy_ts, outcome_ts, death_ts, start_dt, end_dt):
         "pregnancy": [keyed["pregnancy"].get(label, 0) for label in labels],
         "pregnancy_outcome": [keyed["pregnancy_outcome"].get(label, 0) for label in labels],
         "death": [keyed["death"].get(label, 0) for label in labels],
+        "va": [keyed["va"].get(label, 0) for label in labels],
     }
 
 
@@ -300,6 +304,7 @@ def _get_national_operational_view_data(start_dt=None, end_dt=None, use_legacy_m
         list(pregnancies_by_key.values()),
         list(pregnancy_outcomes_by_key.values()),
         list(deaths_by_key.values()),
+        list(vas_by_key.values()),
         start_dt,
         end_dt,
     )
@@ -359,6 +364,7 @@ def _get_national_operational_view_data(start_dt=None, end_dt=None, use_legacy_m
         "pregnancy_values": chart_data["pregnancy"],
         "pregnancy_outcome_values": chart_data["pregnancy_outcome"],
         "death_values": chart_data["death"],
+        "va_values": chart_data["va"],
         "kpis": kpis,
     }
 
@@ -389,6 +395,7 @@ class Index(CustomAuthMixin, TemplateView):
         context["pregnancy_values"] = nov_data["pregnancy_values"]
         context["pregnancy_outcome_values"] = nov_data["pregnancy_outcome_values"]
         context["death_values"] = nov_data["death_values"]
+        context["va_values"] = nov_data["va_values"]
 
         context["today_eas"] = nov_data["kpis"]["eas"]["today"]
         context["week_eas"] = nov_data["kpis"]["eas"]["week"]
