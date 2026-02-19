@@ -1,20 +1,22 @@
 {% extends "base.html" %}
 {% load static i18n %}
 {% block title %}Pregnancy Dashboard{% endblock %}
+{% block heading %}Pregnancy Dashboard{% endblock %}
 
 {% block css %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/outcomes_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'css/pregnancy_dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}">
 {% endblock %}
 
 {% block content %}
-  <div class="row mt-4 pregnancy-dashboard-shell">
+  <div class="row mt-4 pregnancy-dashboard-shell dashboard-shell" data-shell="outcomes">
     <div class="col">
-      <h4 class="mb-4">Pregnancy Dashboard</h4>
       <main
         id="pregnancyDashboardApp"
+        class="outcomes-dashboard-root"
         data-summary-endpoint="{% url 'va_analytics:pregnancy-summary-api' %}"
         data-trend-endpoint="{% url 'va_analytics:pregnancy-trend-api' %}"
         data-gestational-age-endpoint="{% url 'va_analytics:pregnancy-ga-detection-api' %}"

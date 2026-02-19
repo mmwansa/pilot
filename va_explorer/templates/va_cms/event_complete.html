@@ -3,25 +3,24 @@
 {% load crispy_forms_tags %}
 
 {% block title %}Link VA Interview{% endblock %}
+{% block heading %}Link VA Interview{% endblock %}
 
 {% block content %}
-  <div class="row mt-4">
-    <h2>Link VA Interview</h2>
-  </div>
-  <div class="row">
-    <div class="col-md-6">
+  <section class="ou-card ou-mb-3">
+    <div class="ou-card-header">
+      <h2 class="ou-card-title">Link VA Interview</h2>
+    </div>
+    <div class="ou-card-body">
       <form method="post" id="user-create-form" action="">
         {% csrf_token %}
         {{ form|crispy }}
-        <div class="control-group">
-          <div class="controls">
-            <button type="submit" class="btn btn-primary">Complete</button>
-            <a href="{% url 'cms-event-completed-list' %}" class="btn btn-link">Cancel</a>
-          </div>
+        <div class="ou-form-actions">
+          <button type="submit" class="btn btn-primary">Complete</button>
+          <a href="{% url 'cms-event-completed-list' %}" class="btn btn-link">Cancel</a>
         </div>
       </form>
     </div>
-  </div>
+  </section>
 {% endblock %}
 
 <!-- Needs to be outside content block so JS in base template loads first -->

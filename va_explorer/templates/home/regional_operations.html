@@ -14,7 +14,7 @@
 {% endblock %}
 
 {% block content %}
-<section class="regional-ops-layout">
+<section class="regional-ops-layout ou-mb-3">
   {% comment %} <div class="regional-ops-panel left-panel">
     <!-- Contextual summary panel -->
     <div class="left-panel-header">
@@ -70,12 +70,12 @@
       data-csa-url="{% url 'home:regional_operations_csa_component' %}"
       data-mso-url="{% url 'home:regional_operations_mso_component' %}"
     >
-      <div class="right-panel-section filters-section">
-        <div class="filters-bar" id="regionalFiltersComponent">
+      <div class="right-panel-section filters-section ou-card">
+        <div class="filters-bar ou-filter-bar" id="regionalFiltersComponent">
           {% include "home/components/_regional_operations_filters.html" %}
         </div>
       </div>
-      <div class="right-panel-section csa-section">
+      <div class="right-panel-section csa-section ou-card">
         <div
           id="regionalCsaComponent"
           data-csa-sort="{{ csa_sort }}"
@@ -85,7 +85,7 @@
           {% include "home/components/_regional_operations_csa_table.html" %}
         </div>
       </div>
-      <div class="right-panel-section mso-section">
+      <div class="right-panel-section mso-section ou-card">
         <div
           id="regionalMsoComponent"
           data-mso-sort="{{ mso_sort }}"

@@ -1,0 +1,27 @@
+<section class="ou-card {% if class_name %}{{ class_name }}{% endif %}">
+  {% if title or subtitle or actions_template or header_template %}
+    <div class="ou-card-header {% if header_class %}{{ header_class }}{% endif %}">
+      <div class="ou-card-header-main">
+        {% if title %}
+          <h2 class="ou-card-title">{{ title }}</h2>
+        {% endif %}
+        {% if subtitle %}
+          <p class="ou-card-subtitle">{{ subtitle }}</p>
+        {% endif %}
+        {% if header_template %}
+          {% include header_template %}
+        {% endif %}
+      </div>
+      {% if actions_template %}
+        <div class="ou-card-actions">
+          {% include actions_template %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+  <div class="ou-card-body {% if body_class %}{{ body_class }}{% endif %}">
+    {% if body_template %}
+      {% include body_template %}
+    {% endif %}
+  </div>
+</section>

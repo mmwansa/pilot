@@ -1,0 +1,4 @@
+{% include "partials/_generic_table.html" with table_data=supervision_stats %}
+{% if not supervision_stats %}
+  {% include "partials/empty_state.html" with message="No supervision data available for the selected filters." %}
+{% endif %}

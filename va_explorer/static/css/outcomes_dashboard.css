@@ -402,6 +402,9 @@
 .outcomes-dashboard-root .chart-canvas-wrap.compact {
   height: 220px;
 }
+.outcomes-dashboard-root .chart-canvas-wrap-short {
+  height: 190px;
+}
 #deathsTimelinessSection .chart-canvas-wrap.compact {
   height: 260px;
   margin-bottom: 0;

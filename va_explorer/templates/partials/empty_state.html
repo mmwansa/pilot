@@ -1,0 +1,7 @@
+<p
+  {% if id %}id="{{ id }}"{% endif %}
+  class="ou-empty-state{% if class_name %} {{ class_name }}{% endif %}"
+  {% if hidden %}hidden{% endif %}
+>
+  {{ message }}
+</p>

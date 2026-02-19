@@ -24,6 +24,8 @@
     <link href="{% static 'css/form.css' %}" rel="stylesheet">
     <link href="{% static 'css/fab.css' %}" rel="stylesheet">
     <link href="{% static 'css/project.css' %}" rel="stylesheet">
+    <link href="{% static 'css/outcomes_ui.css' %}" rel="stylesheet">
+    <link href="{% static 'css/vacms_design_system.css' %}" rel="stylesheet">
     <link href="{% static 'css/dashboard_cards.css' %}" rel="stylesheet">
      {% comment %} <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
      {% endcomment %}
@@ -49,18 +51,30 @@
     
     <!-- Main Content Wrapper -->
     <div class="main-content-wrapper main-content" id="mainContentWrapper">
-    <div class="{% block container-type %}container{% endblock %}" style="padding-top: 60px; padding-left:10px">
+    <div class="{% block container-type %}container{% endblock %} app-page-container">
       {% include "partials/_messages.html" %}
 
       <div class="row page-heading-row">
         <div class="col-12">
-          <h2>
-            {% block heading %} {% endblock heading %}
-          </h2>
+          <div class="vacms-page-header">
+            <div class="vacms-page-header-main">
+              <h2 class="vacms-page-title">
+                {% block heading %} {% endblock heading %}
+              </h2>
+              <div class="vacms-page-breadcrumbs">
+                {% block breadcrumbs %}{% endblock breadcrumbs %}
+              </div>
+            </div>
+            <div class="vacms-page-actions">
+              {% block page_actions %}{% endblock page_actions %}
+            </div>
+          </div>
         </div>
       </div>
 
-      {% block content %} {% endblock content %}
+      <div class="vacms-page-content">
+        {% block content %} {% endblock content %}
+      </div>
 
         <!-- Footer -->
         <!-- filepath: c:\projects\znphi-stuff\srs-vacms-pilot\va_explorer\templates\base.html -->

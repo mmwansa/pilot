@@ -1,14 +1,14 @@
 <section class="sectionContainer topCausesView" id="peBirthOutcomesSection">
   <h2>Birth Outcomes</h2>
-  <div>
+  <div class="chart-mode-toggle">
     <input id="peBirthModeCount" type="radio" value="count" name="po_birth_mode" checked>
-    <label for="peBirthModeCount" style="vertical-align: super; font-size: 12px">Count</label>
+    <label for="peBirthModeCount">Count</label>
     <input id="peBirthModePercentage" type="radio" value="percentage" name="po_birth_mode">
-    <label for="peBirthModePercentage" style="vertical-align: super; font-size: 12px">Percentage</label>
+    <label for="peBirthModePercentage">Percentage</label>
   </div>
   <div class="chartsContainer">
     <div class="topCausesContainer">
-      <div style="height: 260px;">
+      <div class="chart-canvas-wrap">
         <canvas id="peBirthOutcomesChart"></canvas>
       </div>
     </div>

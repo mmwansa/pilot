@@ -1,0 +1,4 @@
+{% include "partials/_household_table.html" with household_list=object_list %}
+{% if not object_list %}
+  {% include "partials/empty_state.html" with message="No household records found for the selected filters." %}
+{% endif %}

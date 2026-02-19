@@ -1,0 +1,444 @@
+/*
+ * Shared Outcomes UI foundation
+ * Reusable across dashboards, forms, tables, and admin-like pages.
+ * Mobile-first and intentionally presentation-only.
+ */
+
+:root {
+  --ou-surface: #f3f4f6;
+  --ou-card: #ffffff;
+  --ou-border: #e2e8f0;
+  --ou-border-strong: #dbe3ef;
+  --ou-text: #111827;
+  --ou-muted: #6b7280;
+  --ou-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  --ou-shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.08);
+  --ou-radius: 12px;
+  --ou-radius-sm: 8px;
+  --ou-gap-1: 0.5rem;
+  --ou-gap-2: 0.75rem;
+  --ou-gap-3: 1rem;
+}
+
+.dashboard-shell {
+  --ou-dashboard-surface: #f3f4f6;
+}
+
+.dashboard-shell .dashboard-tab-panel {
+  background: var(--ou-dashboard-surface);
+  border: 1px solid var(--ou-border);
+  border-radius: 14px;
+  box-shadow: var(--ou-shadow);
+}
+
+.ou-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ou-gap-2);
+  margin-bottom: var(--ou-gap-3);
+}
+
+.ou-page-title {
+  margin: 0;
+  color: var(--ou-text);
+  font-size: clamp(1.05rem, 1.2vw + 0.55rem, 1.5rem);
+  font-weight: 600;
+}
+
+.ou-page-subtitle {
+  margin: 0.25rem 0 0 0;
+  color: var(--ou-muted);
+  font-size: 0.86rem;
+}
+
+.ou-section-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ou-text);
+}
+
+.ou-text-muted {
+  color: var(--ou-muted) !important;
+}
+
+.ou-kpi-value {
+  font-size: clamp(1rem, 1.2vw + 0.4rem, 1.35rem);
+  font-weight: 700;
+  color: var(--ou-text);
+}
+
+.ou-kpi-label {
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ou-card {
+  background: var(--ou-card);
+  border: 1px solid var(--ou-border);
+  border-radius: var(--ou-radius);
+  box-shadow: var(--ou-shadow);
+  overflow: hidden;
+}
+
+.ou-card:hover {
+  box-shadow: var(--ou-shadow-hover);
+}
+
+.ou-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ou-gap-2);
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--ou-border);
+}
+
+.ou-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ou-text);
+}
+
+.ou-card-subtitle {
+  margin: 0.2rem 0 0 0;
+  color: var(--ou-muted);
+  font-size: 0.8rem;
+}
+
+.ou-card-body {
+  padding: 0.9rem 1rem;
+}
+
+.ou-form-card {
+  background: var(--ou-card);
+  border: 1px solid var(--ou-border);
+  border-radius: var(--ou-radius);
+  box-shadow: var(--ou-shadow);
+  padding: 0.9rem 1rem;
+}
+
+.ou-filter-bar {
+  background: var(--ou-card);
+  border: 1px solid var(--ou-border);
+  border-radius: var(--ou-radius);
+  padding: 0.75rem;
+}
+
+.ou-filter-note {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--ou-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.ou-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ou-gap-1);
+}
+
+.ou-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ou-gap-1);
+  margin-left: auto;
+}
+
+.ou-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ou-gap-1);
+}
+
+.chart-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ou-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--ou-gap-2);
+}
+
+.ou-chart-container {
+  background: var(--ou-card);
+  border: 1px solid var(--ou-border);
+  border-radius: var(--ou-radius-sm);
+  padding: 0.55rem;
+  min-height: 220px;
+}
+
+.ou-table-wrap {
+  width: 100%;
+}
+
+.ou-table-wrap .table {
+  margin-bottom: 0;
+  background: var(--ou-card);
+}
+
+.ou-table-wrap .table thead th {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--ou-border);
+  color: #1f2937;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ou-table-wrap .table td,
+.ou-table-wrap .table th {
+  vertical-align: middle;
+}
+
+.ou-hide-mobile {
+  display: table-cell;
+}
+
+.ou-hide-xs {
+  display: table-cell;
+}
+
+.ou-empty-state {
+  margin: 0.65rem 0 0 0;
+  color: var(--ou-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.ou-validation-errors {
+  margin-bottom: 0.6rem;
+}
+
+.ou-validation-errors .text-danger {
+  font-size: 0.82rem;
+}
+
+/* Crispy/Django forms inside app content */
+.app-page-container .form-group label,
+.app-page-container .control-label {
+  color: #374151;
+  font-weight: 500;
+}
+
+.app-page-container input[type="text"],
+.app-page-container input[type="email"],
+.app-page-container input[type="number"],
+.app-page-container input[type="date"],
+.app-page-container input[type="datetime-local"],
+.app-page-container input[type="password"],
+.app-page-container select,
+.app-page-container textarea {
+  border: 1px solid var(--ou-border-strong);
+  border-radius: var(--ou-radius-sm);
+  min-height: 2.25rem;
+  font-size: 0.9rem;
+}
+
+.app-page-container .invalid-feedback,
+.app-page-container .text-danger {
+  font-size: 0.82rem;
+}
+
+.app-page-container .help-block,
+.app-page-container .helptext {
+  color: var(--ou-muted);
+  font-size: 0.78rem;
+}
+
+.app-page-container .btn-link {
+  color: #4b5563;
+}
+
+/* Apply Outcomes form-card treatment to legacy entry/edit forms */
+.vacms-page-content .row > .col-md-6 > form,
+.vacms-page-content .row > .col-lg-6 > form,
+.vacms-page-content form.form-horizontal,
+.vacms-page-content form.password_change,
+.vacms-page-content form.password_set {
+  background: var(--ou-card);
+  border: 1px solid var(--ou-border);
+  border-radius: var(--ou-radius);
+  box-shadow: var(--ou-shadow);
+  padding: 0.95rem 1rem;
+}
+
+.vacms-page-content .control-group .controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ou-badge,
+.ou-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.ou-badge-soft {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.ou-btn-primary,
+.ou-btn-secondary,
+.ou-btn-outline {
+  border-radius: var(--ou-radius-sm);
+}
+
+.ou-btn-primary {
+  background-color: #009140;
+  border-color: #009140;
+  color: #fff;
+}
+
+.ou-btn-primary:hover,
+.ou-btn-primary:focus {
+  background-color: #e67816;
+  border-color: #e67816;
+  color: #fff;
+}
+
+.ou-btn-secondary {
+  background-color: #6b7280;
+  border-color: #6b7280;
+  color: #fff;
+}
+
+.ou-btn-outline {
+  background: #fff;
+  border: 1px solid var(--ou-border-strong);
+  color: #1f2937;
+}
+
+/* Spacing utilities (minimal) */
+.ou-mb-2 {
+  margin-bottom: 0.5rem !important;
+}
+
+.ou-mb-3 {
+  margin-bottom: 1rem !important;
+}
+
+.ou-mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+.ou-pagination-nav {
+  margin: 0 auto;
+}
+
+@media (max-width: 991.98px) {
+  .ou-kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ou-card {
+    width: 100%;
+  }
+
+  .dashboard-shell .row > [class*="col-lg-"],
+  .dashboard-shell .row > [class*="col-xl-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .ou-card-body,
+  .ou-card-header {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .ou-filter-row {
+    align-items: stretch;
+  }
+
+  .ou-filter-row > * {
+    width: 100%;
+  }
+
+  .ou-filter-row :is(input, select, textarea, .form-control, .custom-select, .select2-container) {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .ou-filter-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .ou-form-actions {
+    width: 100%;
+  }
+
+  .ou-filter-actions .btn,
+  .ou-form-actions .btn {
+    width: 100%;
+  }
+
+  .vacms-page-content .row > .col-md-6 > form,
+  .vacms-page-content .row > .col-lg-6 > form,
+  .vacms-page-content form.form-horizontal,
+  .vacms-page-content form.password_change,
+  .vacms-page-content form.password_set {
+    padding: 0.75rem;
+  }
+
+  .ou-table-wrap .table th,
+  .ou-table-wrap .table td {
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .ou-hide-mobile,
+  .ou-hide-xs {
+    display: none !important;
+  }
+
+  .chart-mode-toggle {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 479.98px) {
+  .ou-card-body,
+  .ou-card-header {
+    padding: 0.65rem 0.7rem;
+  }
+
+  .ou-page-title {
+    font-size: 1rem;
+  }
+
+  .ou-page-subtitle,
+  .ou-empty-state {
+    font-size: 0.78rem;
+  }
+}

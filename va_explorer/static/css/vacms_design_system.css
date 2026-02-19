@@ -1,0 +1,237 @@
+/*
+ * VACMS Design System
+ * Standardized from Outcomes dashboard visual language for system-wide use.
+ * Scope: presentation only (no data/business/map/chart logic changes).
+ */
+
+:root {
+  --vacms-surface: #f3f4f6;
+  --vacms-card: #ffffff;
+  --vacms-border: #e2e8f0;
+  --vacms-border-strong: #dbe3ef;
+  --vacms-text: #111827;
+  --vacms-muted: #6b7280;
+  --vacms-brand: #009140;
+  --vacms-brand-accent: #e67816;
+  --vacms-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  --vacms-shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.08);
+  --vacms-radius: 12px;
+  --vacms-radius-sm: 8px;
+  --vacms-gap: 10px;
+}
+
+body {
+  color: var(--vacms-text);
+  background: var(--vacms-surface);
+}
+
+.main-content-wrapper {
+  background: var(--vacms-surface);
+}
+
+.app-page-container h1,
+.app-page-container h2,
+.app-page-container h3,
+.app-page-container h4,
+.app-page-container h5,
+.app-page-container h6 {
+  color: var(--vacms-text);
+  font-weight: 600;
+}
+
+.page-heading-row {
+  margin-bottom: 0.9rem;
+}
+
+.page-heading-row h2 {
+  margin-bottom: 0;
+  font-size: clamp(1.1rem, 1.4vw + 0.55rem, 1.65rem);
+}
+
+/* Generic card treatment aligned to Outcomes style */
+.app-page-container .card,
+.app-page-container .sectionContainer,
+.app-page-container .chartsContainer,
+.app-page-container .panel,
+.app-page-container .content-panel,
+.app-page-container .dashboard-panel {
+  background: var(--vacms-card);
+  border: 1px solid var(--vacms-border);
+  border-radius: var(--vacms-radius);
+  box-shadow: var(--vacms-shadow);
+}
+
+.app-page-container .card:hover,
+.app-page-container .sectionContainer:hover {
+  box-shadow: var(--vacms-shadow-hover);
+}
+
+.app-page-container .card-header {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--vacms-border);
+  font-weight: 600;
+}
+
+.app-page-container .card-body {
+  padding: 0.95rem 1rem;
+}
+
+/* Form + filter controls */
+.app-page-container .form-control,
+.app-page-container .custom-select,
+.app-page-container .select2-container--default .select2-selection--single,
+.app-page-container .select2-container--default .select2-selection--multiple {
+  border: 1px solid var(--vacms-border-strong);
+  border-radius: var(--vacms-radius-sm);
+  min-height: 2.25rem;
+  font-size: 0.9rem;
+}
+
+.app-page-container .form-control:focus,
+.app-page-container .custom-select:focus,
+.app-page-container .select2-container--default.select2-container--focus .select2-selection--single,
+.app-page-container .select2-container--default.select2-container--focus .select2-selection--multiple {
+  border-color: var(--vacms-brand);
+  box-shadow: 0 0 0 0.2rem rgba(0, 145, 64, 0.12);
+}
+
+.app-page-container .form-group,
+.app-page-container .form-row,
+.app-page-container .controls,
+.app-page-container .filtersRow {
+  gap: var(--vacms-gap);
+}
+
+.app-page-container label,
+.app-page-container .col-form-label {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-success {
+  background-color: var(--vacms-brand) !important;
+  border-color: var(--vacms-brand) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-success:hover,
+.btn-success:focus {
+  background-color: var(--vacms-brand-accent) !important;
+  border-color: var(--vacms-brand-accent) !important;
+}
+
+.btn-secondary,
+.btn-outline-secondary {
+  border-radius: var(--vacms-radius-sm);
+}
+
+.app-page-container .btn {
+  border-radius: var(--vacms-radius-sm);
+  min-height: 2.2rem;
+}
+
+/* Tables */
+.app-page-container .table {
+  background: var(--vacms-card);
+  border-radius: var(--vacms-radius-sm);
+  overflow: hidden;
+}
+
+.app-page-container .table thead th {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--vacms-border);
+  font-weight: 600;
+}
+
+.app-page-container .table td,
+.app-page-container .table th {
+  vertical-align: middle;
+}
+
+.app-page-container .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(248, 250, 252, 0.7);
+}
+
+/* Badges and helper text */
+.app-page-container .badge {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.app-page-container .text-muted,
+.app-page-container small.text-muted {
+  color: var(--vacms-muted) !important;
+}
+
+/* Tabs */
+.app-page-container .nav-tabs {
+  border-bottom: 1px solid var(--vacms-border-strong);
+}
+
+.app-page-container .nav-tabs .nav-link {
+  border: 1px solid transparent;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  color: #1f2937 !important;
+}
+
+.app-page-container .nav-tabs .nav-link.active {
+  background: var(--vacms-card);
+  border-color: var(--vacms-border-strong) var(--vacms-border-strong) var(--vacms-card);
+  font-weight: 600;
+}
+
+/* Mobile + small-screen behavior */
+@media (max-width: 991.98px) {
+  .app-page-container .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .app-page-container [class*="col-"] {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .app-page-container .card-body {
+    padding: 0.8rem;
+  }
+
+  .app-page-container .btn-group,
+  .app-page-container .btn-toolbar,
+  .app-page-container .filtersRow,
+  .app-page-container .controls {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .app-page-container {
+    padding-bottom: 0.4rem;
+  }
+
+  .app-page-container .card,
+  .app-page-container .sectionContainer,
+  .app-page-container .chartsContainer {
+    border-radius: 10px;
+  }
+
+  .app-page-container .table th,
+  .app-page-container .table td {
+    font-size: 0.82rem;
+  }
+
+  .app-page-container .btn,
+  .app-page-container .form-control,
+  .app-page-container .custom-select {
+    min-height: 2.3rem;
+    font-size: 0.88rem;
+  }
+
+  .app-page-container .nav-tabs .nav-link {
+    padding: 0.45rem 0.65rem;
+  }
+}
