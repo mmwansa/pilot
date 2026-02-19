@@ -5,7 +5,7 @@
 
 {% block css %}
   {{ block.super }}
-  <link href="{% static 'css/home_dashboard.css' %}" rel="stylesheet">
+  <link href="{% static 'css/home_dashboard.css' %}?v=20260219b" rel="stylesheet">
   <link href="{% static 'css/regional_operations.css' %}" rel="stylesheet">
   <link href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}" rel="stylesheet">
 {% endblock %}
@@ -89,78 +89,14 @@
               </div>
             </div>
             <div class="national-operational-grid">
-              <section id="novEventsChartContainer" class="events-chart-container" data-component="events-chart-container">
-                    <div class="nov-kpi-cards nov-kpi-cards-inline mb-3">
-                      <article class="nov-kpi-card">
-                        <h6>Number of Clusters Visited</h6>
-                        <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong id="nov-kpi-today-eas">{{ today_eas }}</strong></div>
-                          <div><span>This week</span><strong id="nov-kpi-week-eas">{{ week_eas }}</strong></div>
-                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-eas">{{ total_eas }}</strong></div>
-                        </div>
-                      </article>
-                      <article class="nov-kpi-card">
-                        <h6>Number of households</h6>
-                        <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong id="nov-kpi-today-households">{{ today_households }}</strong></div>
-                          <div><span>This week</span><strong id="nov-kpi-week-households">{{ week_households }}</strong></div>
-                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-households">{{ total_households }}</strong></div>
-                        </div>
-                      </article>
-                      <article class="nov-kpi-card">
-                        <h6>Number of people counted</h6>
-                        <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong id="nov-kpi-today-people">{{ today_people }}</strong></div>
-                          <div><span>This week</span><strong id="nov-kpi-week-people">{{ week_people }}</strong></div>
-                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-people">{{ total_people }}</strong></div>
-                        </div>
-                      </article>
-                    </div>
-                    <div class="events-chart-canvas-wrap">
-                      <canvas id="novEventsChart" data-component="events-trend-chart"></canvas>
-                    </div>
-                    {{ chart_labels|json_script:"nov-chart-labels" }}
-                    {{ pregnancy_values|json_script:"nov-pregnancy-values" }}
-                    {{ pregnancy_outcome_values|json_script:"nov-pregnancy-outcome-values" }}
-                    {{ death_values|json_script:"nov-death-values" }}
-                    {{ va_values|json_script:"nov-va-values" }}
-              </section>
-              <aside id="novKpiCardsContainer" class="kpi-cards-container" data-component="kpi-cards">
-                    <div class="nov-kpi-cards">
-                      <article class="nov-kpi-card">
-                        <h6>Pregnancies</h6>
-                        <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong id="nov-kpi-today-pregnancies">{{ today_pregnancies }}</strong></div>
-                          <div><span>This week</span><strong id="nov-kpi-week-pregnancies">{{ week_pregnancies }}</strong></div>
-                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-pregnancies">{{ total_pregnancies }}</strong></div>
-                        </div>
-                      </article>
-                      <article class="nov-kpi-card">
-                        <h6>Pregnancy Outcomes</h6>
-                        <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong id="nov-kpi-today-preg-outcomes">{{ today_preg_outcomes }}</strong></div>
-                          <div><span>This week</span><strong id="nov-kpi-week-preg-outcomes">{{ week_preg_outcomes }}</strong></div>
-                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-preg-outcomes">{{ total_preg_outcomes }}</strong></div>
-                        </div>
-                      </article>
-                      <article class="nov-kpi-card">
-                        <h6>Deaths</h6>
-                        <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong id="nov-kpi-today-deaths">{{ today_deaths }}</strong></div>
-                          <div><span>This week</span><strong id="nov-kpi-week-deaths">{{ week_deaths }}</strong></div>
-                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-deaths">{{ total_deaths }}</strong></div>
-                        </div>
-                      </article>
-                      <article class="nov-kpi-card">
-                        <h6>Verbal Autopsies</h6>
-                        <div class="nov-kpi-metrics">
-                          <div><span>Today</span><strong id="nov-kpi-today-vas">{{ today_vas }}</strong></div>
-                          <div><span>This week</span><strong id="nov-kpi-week-vas">{{ week_vas }}</strong></div>
-                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-vas">{{ total_vas }}</strong></div>
-                        </div>
-                      </article>
-                    </div>
-              </aside>
+              <div id="novEventsComponentSlot" data-component-slot data-component="events-chart-container" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_events_component' %}" data-cache-key="home:overview:events">
+                <div class="home-panel home-panel-placeholder">Loading overview trend...</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-component" data-target="#novEventsComponentSlot">Refresh Trend</button>
+              <div id="novKpisComponentSlot" data-component-slot data-component="kpi-cards" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_kpis_component' %}" data-cache-key="home:overview:kpis">
+                <div class="home-panel home-panel-placeholder">Loading overview KPIs...</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-component" data-target="#novKpisComponentSlot">Refresh KPIs</button>
             </div>
           </div>
         </div>
@@ -178,30 +114,32 @@
               data-mso-url="{% url 'home:regional_operations_mso_component' %}"
             >
               <div class="right-panel-section filters-section">
-                <div class="filters-bar" id="regionalFiltersComponent" data-component="filters">
-                  {% include "home/components/_regional_operations_filters.html" %}
+                <div class="filters-bar" id="regionalFiltersComponent" data-component-slot data-component="filters" data-scope="operations" data-endpoint="{% url 'home:regional_operations_filters_component' %}" data-cache-key="home:operations:filters">
+                  <div class="home-panel home-panel-placeholder">Loading filters...</div>
                 </div>
               </div>
               <div class="right-panel-section csa-section">
                 <div
                   id="regionalCsaComponent"
+                  data-component-slot
                   data-component="csa-table"
-                  data-csa-sort="{{ csa_sort }}"
-                  data-csa-dir="{{ csa_dir }}"
-                  data-csa-page="{{ csa_page }}"
+                  data-scope="operations"
+                  data-endpoint="{% url 'home:regional_operations_csa_component' %}"
+                  data-cache="off"
                 >
-                  {% include "home/components/_regional_operations_csa_table.html" %}
+                  <div class="home-panel home-panel-placeholder">Loading CSA table...</div>
                 </div>
               </div>
               <div class="right-panel-section mso-section">
                 <div
                   id="regionalMsoComponent"
+                  data-component-slot
                   data-component="mso-table"
-                  data-mso-sort="{{ mso_sort }}"
-                  data-mso-dir="{{ mso_dir }}"
-                  data-mso-page="{{ mso_page }}"
+                  data-scope="operations"
+                  data-endpoint="{% url 'home:regional_operations_mso_component' %}"
+                  data-cache="off"
                 >
-                  {% include "home/components/_regional_operations_mso_table.html" %}
+                  <div class="home-panel home-panel-placeholder">Loading MSO table...</div>
                 </div>
               </div>
             </div>
@@ -209,255 +147,19 @@
         </section>
       </div>
       <div class="tab-pane dashboard-tab-panel fade home-va-tab {% if home_active_tab == 'va_statistics' %}show active{% endif %}" id="tab-3" data-tab-panel="va_statistics" role="tabpanel" aria-labelledby="tab-3-tab">
-        {% include 'partials/_va_update_stats.html' %}
-        {% if not user.is_fieldworker %}
-          {% if last_update or last_interview %}
-            <h2 class="mb-4">VA Collection Overview for {{ locations }}</h2>
-          {% else %}
-            <h2 class="mb-4">No VAs found for {{ locations }}</h2>
-          {% endif %}
-        {% else %}
-          <h2 class="mb-4">Your VA Trends</h2>
-        {% endif %}
-
-        <div class="home-panel home-panel-table mb-4">
-        <table class="table home-page-statistics va-stats-table-modern mb-0" data-component="va-statistics-table">
-          <thead>
-            <tr>
-              <th scope="col">VAs</th>
-              <th scope="col">24 hours</th>
-              <th scope="col">1 week</th>
-              <th scope="col">1 month</th>
-              <th scope="col">Overall</th>
-              <th scope="col">Interview Trends</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Interviewed</th>
-              <td id="interviewed-past-24-hours"></td>
-              <td id="interviewed-past-week"></td>
-              <td id="interviewed-past-month"></td>
-              <td id="interviewed-overall"></td>
-              <td><canvas id="interviewedChart" data-component="interviewed-trend-chart"></canvas></td>
-            </tr>
-            <tr>
-              <th scope="row">Coded</th>
-              <td id="coded-past-24-hours"></td>
-              <td id="coded-past-week"></td>
-              <td id="coded-past-month"></td>
-              <td id="coded-overall"></td>
-              <td><canvas id="codedChart" data-component="coded-trend-chart"></canvas></td>
-            </tr>
-            <tr>
-              <th scope="row">Not Yet Coded</th>
-              <td id="uncoded-past-24-hours"></td>
-              <td id="uncoded-past-week"></td>
-              <td id="uncoded-past-month"></td>
-              <td id="uncoded-overall"></td>
-              <td><canvas id="notYetCodedChart" data-component="uncoded-trend-chart"></canvas></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="d-flex justify-content-end mb-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-component" data-target="#homeVAStatisticsComponentSlot">Refresh VA Statistics</button>
         </div>
-
-        {% if perms.va_data_management.change_verbalautopsy %}
-        <div class="row mt-4">
-          <div class="col">
-            <h2 class="mb-4">Verbal Autopsy Actions</h2>
-              <form method="post" action="{% url 'data_management:run_coding_algorithms' %}">
-                {% csrf_token %}
-                <button class="btn btn-primary" type="submit">
-                  <i class="fas fa-file-prescription"></i>
-                  &nbsp;Run Coding Algorithms
-                </button>
-              </form>
-          </div>
-        </div>
-        {% endif %}
-
-        <div class="row mt-4">
-          <div class="col">
-            <h2 class="mb-4">VAs With Coding Issues</h2>
-            <div class="home-panel home-panel-table">
-            <table class="table table-sm hidden va-list-table-modern mb-0" id="coding-issues" data-component="coding-issues">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Interviewed</th>
-                  {% if not user.is_fieldworker %}<th>Interviewer</th>{% endif %}
-                  <th>Facility</th>
-                  <th>Deceased</th>
-                  <th>Deathdate</th>
-                  <th>Cause</th>
-                  <th>Warnings</th>
-                  <th>Errors</th><th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr id="coding-issues-root"></tr>
-              </tbody>
-            </table>
-            </div>
-            <p id="additional-issues-msg" class="hidden">There are <a href="/va_data_management/?only_errors=True" id="additional-issues">
-            <span id="additional-issues-count"></span> additional issues</a> not listed here</p>
-          </div>
-        </div>
-        <div class="row mt-4">
-          <div class="col">
-            <div id="no-coding-issues" class="hidden">
-              <strong>No coding issues found!</strong>
-              <p>Head over to the <a href="/va_analytics/dashboard">dashboard</a> to analyze VAs</p>
-            </div>
-          </div>
-        </div>
-        <div class="row mt-4">
-          <div class="col">
-            <h2 class="mb-4">VAs With Indeterminate Cause of Death</h2>
-            <div class="home-panel home-panel-table">
-            <table class="table table-sm hidden va-list-table-modern mb-0" id="indeterminate-cod" data-component="indeterminate-cod">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Interviewed</th>
-                  {% if not user.is_fieldworker %}<th>Interviewer</th>{% endif %}
-                  <th>Facility</th>
-                  <th>Deceased</th>
-                  <th>Deathdate</th>
-                  <th>Cause</th>
-                  <th>Warnings</th>
-                  <th>Errors</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr id="indeterminate-cod-root"></tr>
-              </tbody>
-            </table>
-            </div>
-            <p id="additional-indeterminate-cods-msg" class="hidden">There are <a href="/va_data_management/?cause=Indeterminate" id="additional-cods">
-              <span id="additional-indeterminate-cods-count"></span> additional VAs with Indeterminate Cause of Death</a> not listed here</p>
-          </div>
-        </div>
-        <div class="row mt-4">
-          <div class="col">
-            <div id="no-indeterminate-cod" class="hidden">
-              <strong>No VAs with Indeterminate Cause of Death found!</strong>
-              <p>Head over to the <a href="/va_analytics/dashboard">dashboard</a> to analyze VAs</p>
-            </div>
-          </div>
+        <div id="homeVAStatisticsComponentSlot" data-component-slot data-component="va-statistics" data-scope="va_statistics,trends-data" data-endpoint="{% url 'home:home_va_statistics_component' %}" data-cache-key="home:va_statistics">
+          <div class="home-panel home-panel-placeholder">Loading VA statistics...</div>
         </div>
       </div>      
       <div class="tab-pane dashboard-tab-panel fade home-trends-tab {% if home_active_tab == 'trends' %}show active{% endif %}" id="tab-4" data-tab-panel="trends" role="tabpanel" aria-labelledby="tab-4-tab">
-        <h2 class="mb-4">Collection Trends</h2>
-        <div class="row">
-          <div class="col-md-6 mb-4">
-            <section class="home-panel trend-metric-card">
-            <h5>Households</h5>
-            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th>24 hours</th>
-                  <th>1 week</th>
-                  <th>1 month</th>
-                  <th>Overall</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Recorded</td>
-                  <td id="households-past-24-hours">0</td>
-                  <td id="households-past-week">0</td>
-                  <td id="households-past-month">0</td>
-                  <td id="households-past-overall">0</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="trend-chart-wrap"><canvas id="householdsChart" data-component="households-trend-chart"></canvas></div>
-            </section>
-          </div>
-
-          <div class="col-md-6 mb-4">
-            <section class="home-panel trend-metric-card">
-            <h5>Pregnancies</h5>
-            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th>24 hours</th>
-                  <th>1 week</th>
-                  <th>1 month</th>
-                  <th>Overall</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Recorded</td>
-                  <td id="pregnancies-past-24-hours">0</td>
-                  <td id="pregnancies-past-week">0</td>
-                  <td id="pregnancies-past-month">0</td>
-                  <td id="pregnancies-past-overall">0</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="trend-chart-wrap"><canvas id="pregnanciesChart" data-component="pregnancies-trend-chart"></canvas></div>
-            </section>
-          </div>
-
-          <div class="col-md-6 mb-4">
-            <section class="home-panel trend-metric-card">
-            <h5>Pregnancy Outcomes</h5>
-            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th>24 hours</th>
-                  <th>1 week</th>
-                  <th>1 month</th>
-                  <th>Overall</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Recorded</td>
-                  <td id="pregnancy-outcomes-past-24-hours">0</td>
-                  <td id="pregnancy-outcomes-past-week">0</td>
-                  <td id="pregnancy-outcomes-past-month">0</td>
-                  <td id="pregnancy-outcomes-past-overall">0</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="trend-chart-wrap"><canvas id="pregnancyOutcomesChart" data-component="pregnancy-outcomes-trend-chart"></canvas></div>
-            </section>
-          </div>
-
-          <div class="col-md-6 mb-4">
-            <section class="home-panel trend-metric-card">
-            <h5>Deaths</h5>
-            <table class="table table-sm home-page-statistics trend-metric-table mb-3">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th>24 hours</th>
-                  <th>1 week</th>
-                  <th>1 month</th>
-                  <th>Overall</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Recorded</td>
-                  <td id="deaths-past-24-hours">0</td>
-                  <td id="deaths-past-week">0</td>
-                  <td id="deaths-past-month">0</td>
-                  <td id="deaths-past-overall">0</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="trend-chart-wrap"><canvas id="deathsChart" data-component="deaths-trend-chart"></canvas></div>
-            </section>
-          </div>
+        <div class="d-flex justify-content-end mb-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-component" data-target="#homeTrendsComponentSlot">Refresh Trends</button>
+        </div>
+        <div id="homeTrendsComponentSlot" data-component-slot data-component="trends" data-scope="trends,trends-data" data-endpoint="{% url 'home:home_trends_component' %}" data-cache-key="home:trends">
+          <div class="home-panel home-panel-placeholder">Loading trends...</div>
         </div>
       </div>
     </div>
@@ -467,10 +169,11 @@
 {% endblock %}
 
 {% block page_scripts %}
+  <script src="{% static 'js/dashboard_loader.js' %}"></script>
   <script src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
   <script src="{% static 'js/regional_operations.js' %}"></script>
   <script src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
-  <script src="{% static 'js/home.js' %}?v=20260219"></script>
+  <script src="{% static 'js/home.js' %}?v=20260219d"></script>
 
   <script>
     // Count up animation for dashboard numbers

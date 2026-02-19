@@ -2,6 +2,20 @@
   const app = document.getElementById("outcomesDashboardApp");
   if (!app) return;
 
+  const perfNow = () => (
+    window.performance && typeof window.performance.now === "function"
+      ? window.performance.now()
+      : Date.now()
+  );
+  const perfLog = (name, startMs, meta) => {
+    const durationMs = perfNow() - startMs;
+    if (meta) {
+      console.log(`[perf][outcomes] ${name} ${durationMs.toFixed(2)}ms`, meta);
+    } else {
+      console.log(`[perf][outcomes] ${name} ${durationMs.toFixed(2)}ms`);
+    }
+  };
+
   const endpoints = {
     summary: app.dataset.summaryEndpoint,
     trend: app.dataset.trendEndpoint,
@@ -152,16 +166,20 @@
   };
 
   const renderSummary = (data) => {
+    const started = perfNow();
     setText("poCardLastDataUpdate", data.card_last_data_update || "N/A");
     setText("poCardLastEventDate", data.card_last_event_date || "N/A");
     setText("poCardNumberOfEvents", data.card_number_of_events ?? 0);
     setText("poCardMultipleBirthPct", `${data.card_multiple_birth_pct ?? 0}%`);
     setEmptyState("poSummaryEmpty", (data.card_number_of_events ?? 0) === 0);
+    perfLog("render.summary", started);
   };
 
   const renderKpis = (data) => {
+    const started = perfNow();
     setText("poCardMeanAge", data.mean_age ?? 0);
     setText("poCardHivPct", `${data.hiv_positive_pct ?? 0}%`);
+    perfLog("render.kpis", started);
   };
 
   const ensureLineChart = () => {
@@ -193,6 +211,7 @@
   };
 
   const renderTrend = (data) => {
+    const started = perfNow();
     const chart = ensureLineChart();
     if (!chart) return;
     chart.data.labels = data.labels || [];
@@ -200,12 +219,14 @@
     chart.update();
     const sum = (data.data || []).reduce((acc, value) => acc + Number(value || 0), 0);
     setEmptyState("poTrendEmpty", sum === 0);
+    perfLog("render.trend_chart", started, { points: (data.data || []).length });
   };
 
   const currentBirthMode = () => (filterElements.birthPct?.checked ? "percentage" : "count");
   const currentPlaceMode = () => (filterElements.placePct?.checked ? "percentage" : "count");
 
   const renderBirthOutcomes = (payload) => {
+    const started = perfNow();
     chartState.birthOutcomesPayload = payload;
     const chart = ensureBarChart("birthOutcomes", "poBirthOutcomesChart", {
       type: "pie",
@@ -224,9 +245,11 @@
     chart.update();
     const sum = (payload.count_data || []).reduce((acc, value) => acc + Number(value || 0), 0);
     setEmptyState("poBirthOutcomesEmpty", sum === 0);
+    perfLog("render.birth_outcomes_chart", started);
   };
 
   const renderGestationalAge = (payload) => {
+    const started = perfNow();
     const chart = ensureBarChart("gestationalAge", "poGestationalAgeChart", {
       type: "bar",
       data: { labels: [], datasets: [{ label: "Outcomes", data: [], backgroundColor: ["#9ecae1", "#6baed6", "#3182bd", "#08519c"], borderColor: ["#9ecae1", "#6baed6", "#3182bd", "#08519c"], borderWidth: 1 }] },
@@ -246,9 +269,11 @@
     chart.update();
     const sum = (payload.data || []).reduce((acc, value) => acc + Number(value || 0), 0);
     setEmptyState("poGestationalAgeEmpty", sum === 0);
+    perfLog("render.gestational_age_chart", started);
   };
 
   const renderAncVisits = (payload) => {
+    const started = perfNow();
     const chart = ensureBarChart("ancVisits", "poAncVisitsChart", {
       type: "bar",
       data: { labels: [], datasets: [{ label: "Outcomes", data: [], backgroundColor: "#4CAF50", borderColor: "#2E7D32", borderWidth: 1 }] },
@@ -268,9 +293,11 @@
     chart.update();
     const sum = (payload.data || []).reduce((acc, value) => acc + Number(value || 0), 0);
     setEmptyState("poAncVisitsEmpty", sum === 0);
+    perfLog("render.anc_visits_chart", started);
   };
 
   const renderPlaceOfBirth = (payload) => {
+    const started = perfNow();
     chartState.placeOfBirthPayload = payload;
     const chart = ensureBarChart("placeOfBirth", "poPlaceOfBirthChart", {
       type: "bar",
@@ -294,21 +321,26 @@
     chart.update();
     const sum = (payload.count_data || []).reduce((acc, value) => acc + Number(value || 0), 0);
     setEmptyState("poPlaceOfBirthEmpty", sum === 0);
+    perfLog("render.place_of_birth_chart", started);
   };
 
   const refreshMapOnly = async () => {
+    const started = perfNow();
     const filters = getFilters();
     syncFilterHiddenFields();
     syncUrl(filters);
     if (mapController) {
       await mapController.refresh(filters);
+      perfLog("fetch.map_only", started, { mapView: filters.map_view });
       return;
     }
     const mapData = await fetchJSON(endpoints.map, filters);
     setEmptyState("poMapEmpty", (mapData.counts || []).length === 0);
+    perfLog("fetch.map_only", started, { mapView: filters.map_view });
   };
 
   const refreshAll = async () => {
+    const started = perfNow();
     const filters = getFilters();
     syncFilterHiddenFields();
     syncUrl(filters);
@@ -331,6 +363,7 @@
     renderKpis(kpis);
     renderPlaceOfBirth(place);
     await refreshMapOnly();
+    perfLog("fetch.refresh_all", started);
   };
 
   const bindEvents = () => {
@@ -396,9 +429,16 @@
   };
 
   const init = async () => {
+    const started = perfNow();
+    document.querySelectorAll(".dashboard-shell[data-shell='outcomes'] [data-tab]").forEach((tabLink) => {
+      tabLink.addEventListener("click", () => {
+        console.log("[perf][outcomes] ui.tab_click", { tab: tabLink.dataset.tab });
+      });
+    });
     setupDateInputs([filterElements.start, filterElements.end]);
     bindEvents();
     await refreshAll();
+    perfLog("initial.page_bootstrap", started);
   };
 
   const resizeVisuals = () => {

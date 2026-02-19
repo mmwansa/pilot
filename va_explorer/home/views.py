@@ -1,11 +1,15 @@
 from collections import Counter, defaultdict
 from datetime import date, datetime, time, timedelta
 import difflib
+import hashlib
+import json
 import logging
 import re
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.cache import cache
 from django.db.models import Count, OuterRef, Q, Subquery
 from django.db.models.functions import Substr
 from django.http import JsonResponse
@@ -14,9 +18,11 @@ from django.utils.dateparse import parse_date as django_parse_date
 from django.utils.dateparse import parse_datetime as django_parse_datetime
 from django.views.generic import TemplateView, View
 
+from va_explorer.home.cache_utils import get_home_dashboard_fastpath_version
 from va_explorer.home.dashboard_metrics import get_homepage_metrics
 from va_explorer.home.model_trends import get_model_trends_data
 from va_explorer.home.va_trends import get_trends_data
+from va_explorer.utils.profiling import timed_block
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.models import (
     CSADailyTracker,
@@ -216,49 +222,221 @@ def _parse_filter_range(request):
     return preset, start_dt, end_dt, has_custom_range
 
 
-def _get_national_operational_view_data(start_dt=None, end_dt=None, use_legacy_metrics=False):
+def _parse_location_filter(request):
+    level = (request.GET.get("location_level") or "national").strip().lower()
+    value = (request.GET.get("location_value") or "").strip()
+    allowed_levels = {"national", "province", "district", "constituency", "ward", "ea"}
+    if level not in allowed_levels:
+        level = "national"
+    if level == "national":
+        return level, ""
+    return level, value
+
+
+def _model_has_field(model, field_name):
+    try:
+        model._meta.get_field(field_name)
+        return True
+    except Exception:
+        return False
+
+
+def _apply_text_geography_filter(queryset, model, level, value):
+    if not value or level == "national":
+        return queryset
+    if not _model_has_field(model, level):
+        return queryset
+    return queryset.filter(**{f"{level}__iexact": value})
+
+
+def _scope_fingerprint(user):
+    parts = [
+        f"user:{user.pk}",
+        f"super:{int(bool(user.is_superuser))}",
+        f"staff:{int(bool(user.is_staff))}",
+        f"fieldworker:{int(bool(user.is_fieldworker()))}",
+        f"pii:{int(bool(getattr(user, 'can_view_pii', False)))}",
+    ]
+    location_ids = list(
+        user.location_restrictions.order_by("pk").values_list("pk", flat=True)
+    )
+    parts.append("loc:" + ",".join(str(value) for value in location_ids))
+    group_ids = list(user.groups.order_by("pk").values_list("pk", flat=True))
+    parts.append("grp:" + ",".join(str(value) for value in group_ids))
+    return "|".join(parts)
+
+
+def _fastpath_cache_key(namespace, request, extra=None):
+    preset = (request.GET.get("preset") or "all").strip().lower()
+    raw_start = (request.GET.get("start") or "").strip()
+    raw_end = (request.GET.get("end") or "").strip()
+    if preset not in {"all", "30", "7", "24"}:
+        preset = "all"
+    start_token = raw_start
+    end_token = raw_end
+    if raw_start or raw_end:
+        _preset, start_dt, end_dt, _has_custom = _parse_filter_range(request)
+        start_token = start_dt.date().isoformat() if start_dt else ""
+        end_token = end_dt.date().isoformat() if end_dt else ""
+
+    location_level, location_value = _parse_location_filter(request)
+    payload = {
+        "version": get_home_dashboard_fastpath_version(),
+        "scope": _scope_fingerprint(request.user),
+        "preset": preset,
+        "start": start_token,
+        "end": end_token,
+        "location_level": location_level,
+        "location_value": location_value,
+        "extra": extra or {},
+    }
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return f"home_fastpath:{namespace}:{digest}"
+
+
+def _shallow_downsample(labels, series_map, max_points):
+    try:
+        max_points_int = int(max_points)
+    except (TypeError, ValueError):
+        max_points_int = 0
+
+    if max_points_int <= 0 or len(labels) <= max_points_int:
+        return labels, series_map
+
+    step = max(1, len(labels) // max_points_int)
+    sampled_idx = list(range(0, len(labels), step))
+    if sampled_idx[-1] != len(labels) - 1:
+        sampled_idx.append(len(labels) - 1)
+
+    sampled_labels = [labels[idx] for idx in sampled_idx]
+    sampled_series = {
+        key: [values[idx] for idx in sampled_idx if idx < len(values)]
+        for key, values in series_map.items()
+    }
+    return sampled_labels, sampled_series
+
+
+def _paginate_list(items, page, page_size):
+    total = len(items)
+    try:
+        page = int(page or 1)
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = int(page_size or 10)
+    except (TypeError, ValueError):
+        page_size = 10
+    page = max(page, 1)
+    page_size = max(min(page_size, 100), 1)
+    start = (page - 1) * page_size
+    end = start + page_size
+    return {
+        "results": items[start:end],
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": (total + page_size - 1) // page_size,
+        },
+    }
+
+
+def _latest_household_timestamps(queryset):
+    households_by_key = {}
+    eas_by_key = {}
+    rows = (
+        queryset.exclude(key__isnull=True)
+        .exclude(key="")
+        .values("key", "ea", "submissiondate", "start", "today")
+    )
+    for row in rows.iterator():
+        timestamp = (
+            _parse_submission_timestamp(row.get("submissiondate"))
+            or _parse_submission_timestamp(row.get("start"))
+            or _parse_submission_timestamp(row.get("today"))
+        )
+        if timestamp is None:
+            continue
+        key_value = row.get("key")
+        if key_value:
+            existing_key_ts = households_by_key.get(key_value)
+            if existing_key_ts is None or timestamp > existing_key_ts:
+                households_by_key[key_value] = timestamp
+        ea_value = row.get("ea")
+        if ea_value:
+            existing_ea_ts = eas_by_key.get(ea_value)
+            if existing_ea_ts is None or timestamp > existing_ea_ts:
+                eas_by_key[ea_value] = timestamp
+    return households_by_key, eas_by_key
+
+
+def _get_national_operational_view_data(
+    start_dt=None,
+    end_dt=None,
+    use_legacy_metrics=False,
+    request=None,
+    location_level="national",
+    location_value="",
+):
     if end_dt is None:
         end_dt = timezone.localtime(timezone.now())
 
-    households_by_key = _latest_timestamps_by_identifier(
-        Household.objects.all(),
-        "key",
-        ("submissiondate", "start", "today"),
+    households_qs = _apply_text_geography_filter(
+        Household.objects.all(), Household, location_level, location_value
     )
-    eas_by_key = _latest_timestamps_by_identifier(
-        Household.objects.all(),
-        "ea",
-        ("submissiondate", "start", "today"),
+    pregnancies_qs = _apply_text_geography_filter(
+        Pregnancy.objects.all(), Pregnancy, location_level, location_value
     )
-    pregnancies_by_key = _latest_timestamps_by_identifier(
-        Pregnancy.objects.all(),
-        "key",
-        ("submissiondate", "start", "today"),
+    pregnancy_outcomes_qs = _apply_text_geography_filter(
+        PregnancyOutcome.objects.all(), PregnancyOutcome, location_level, location_value
     )
-    pregnancy_outcomes_by_key = _latest_timestamps_by_identifier(
-        PregnancyOutcome.objects.all(),
-        "key",
-        ("submissiondate", "start", "today"),
+    deaths_qs = _apply_text_geography_filter(
+        Death.objects.all(), Death, location_level, location_value
     )
-    deaths_by_key = _latest_timestamps_by_identifier(
-        Death.objects.all(),
-        "key",
-        ("submissiondate", "start", "today"),
-    )
-    vas_by_key = _latest_timestamps_by_identifier(
-        VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False),
-        "instanceid",
-        ("submissiondate", "Id10012", "created"),
-    )
+    va_qs = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
+    if location_value and location_level != "national":
+        # Inference: VA location references a location node name, so direct
+        # name matching is used when text geography fields are unavailable.
+        va_qs = va_qs.filter(location__name__iexact=location_value)
 
-    households_totals = _windowed_counts(list(households_by_key.values()), start_dt, end_dt)
-    eas_totals = _windowed_counts(list(eas_by_key.values()), start_dt, end_dt)
-    pregnancies_totals = _windowed_counts(list(pregnancies_by_key.values()), start_dt, end_dt)
-    pregnancy_outcomes_totals = _windowed_counts(
-        list(pregnancy_outcomes_by_key.values()), start_dt, end_dt
-    )
-    deaths_totals = _windowed_counts(list(deaths_by_key.values()), start_dt, end_dt)
-    vas_totals = _windowed_counts(list(vas_by_key.values()), start_dt, end_dt)
+    with timed_block("home.nov.latest_timestamps.households", request=request):
+        households_by_key, eas_by_key = _latest_household_timestamps(households_qs)
+    with timed_block("home.nov.latest_timestamps.pregnancies", request=request):
+        pregnancies_by_key = _latest_timestamps_by_identifier(
+            pregnancies_qs,
+            "key",
+            ("submissiondate", "start", "today"),
+        )
+    with timed_block("home.nov.latest_timestamps.pregnancy_outcomes", request=request):
+        pregnancy_outcomes_by_key = _latest_timestamps_by_identifier(
+            pregnancy_outcomes_qs,
+            "key",
+            ("submissiondate", "start", "today"),
+        )
+    with timed_block("home.nov.latest_timestamps.deaths", request=request):
+        deaths_by_key = _latest_timestamps_by_identifier(
+            deaths_qs,
+            "key",
+            ("submissiondate", "start", "today"),
+        )
+    with timed_block("home.nov.latest_timestamps.vas", request=request):
+        vas_by_key = _latest_timestamps_by_identifier(
+            va_qs,
+            "instanceid",
+            ("submissiondate", "Id10012", "created"),
+        )
+
+    with timed_block("home.nov.windowed_counts", request=request):
+        households_totals = _windowed_counts(list(households_by_key.values()), start_dt, end_dt)
+        eas_totals = _windowed_counts(list(eas_by_key.values()), start_dt, end_dt)
+        pregnancies_totals = _windowed_counts(list(pregnancies_by_key.values()), start_dt, end_dt)
+        pregnancy_outcomes_totals = _windowed_counts(
+            list(pregnancy_outcomes_by_key.values()), start_dt, end_dt
+        )
+        deaths_totals = _windowed_counts(list(deaths_by_key.values()), start_dt, end_dt)
+        vas_totals = _windowed_counts(list(vas_by_key.values()), start_dt, end_dt)
 
     household_keys_total = {
         key
@@ -284,30 +462,32 @@ def _get_national_operational_view_data(start_dt=None, end_dt=None, use_legacy_m
         )
     }
 
-    people_total = (
-        HouseholdMember.objects.filter(household__key__in=list(household_keys_total)).count()
-        if household_keys_total
-        else 0
-    )
-    people_today = (
-        HouseholdMember.objects.filter(household__key__in=list(household_keys_today)).count()
-        if household_keys_today
-        else 0
-    )
-    people_week = (
-        HouseholdMember.objects.filter(household__key__in=list(household_keys_week)).count()
-        if household_keys_week
-        else 0
-    )
+    with timed_block("home.nov.people_aggregate", request=request):
+        people_total = (
+            HouseholdMember.objects.filter(household__key__in=list(household_keys_total)).count()
+            if household_keys_total
+            else 0
+        )
+        people_today = (
+            HouseholdMember.objects.filter(household__key__in=list(household_keys_today)).count()
+            if household_keys_today
+            else 0
+        )
+        people_week = (
+            HouseholdMember.objects.filter(household__key__in=list(household_keys_week)).count()
+            if household_keys_week
+            else 0
+        )
 
-    chart_data = _build_chart_series(
-        list(pregnancies_by_key.values()),
-        list(pregnancy_outcomes_by_key.values()),
-        list(deaths_by_key.values()),
-        list(vas_by_key.values()),
-        start_dt,
-        end_dt,
-    )
+    with timed_block("home.nov.chart_series", request=request):
+        chart_data = _build_chart_series(
+            list(pregnancies_by_key.values()),
+            list(pregnancy_outcomes_by_key.values()),
+            list(deaths_by_key.values()),
+            list(vas_by_key.values()),
+            start_dt,
+            end_dt,
+        )
 
     kpis = {
         "eas": eas_totals,
@@ -320,7 +500,8 @@ def _get_national_operational_view_data(start_dt=None, end_dt=None, use_legacy_m
     }
 
     if use_legacy_metrics and start_dt is None:
-        metrics = get_homepage_metrics()
+        with timed_block("home.nov.legacy_metrics", request=request):
+            metrics = get_homepage_metrics()
         kpis = {
             "eas": {
                 "today": metrics.get("today_eas", 0),
@@ -369,61 +550,73 @@ def _get_national_operational_view_data(start_dt=None, end_dt=None, use_legacy_m
     }
 
 
-class Index(CustomAuthMixin, TemplateView):
-    template_name = "home/index.html"
-
-    def get_context_data(self, **kwargs):
-        # TODO: interviewers should only see their own data
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-
-        context.update(get_va_summary_stats(user.verbal_autopsies()))
-        context.update(get_homepage_metrics())
-
-        context["locations"] = "All Regions"
-        if user.location_restrictions.count() > 0:
-            context["locations"] = ", ".join(
-                [location.name for location in user.location_restrictions.all()]
-            )
-
-        regional_context_provider = RegionalOperationsComponentContextMixin()
-        regional_context_provider.request = self.request
-        context.update(regional_context_provider.get_regional_operations_context())
-
-        nov_data = _get_national_operational_view_data(use_legacy_metrics=True)
-        context["chart_labels"] = nov_data["chart_labels"]
-        context["pregnancy_values"] = nov_data["pregnancy_values"]
-        context["pregnancy_outcome_values"] = nov_data["pregnancy_outcome_values"]
-        context["death_values"] = nov_data["death_values"]
-        context["va_values"] = nov_data["va_values"]
-
-        context["today_eas"] = nov_data["kpis"]["eas"]["today"]
-        context["week_eas"] = nov_data["kpis"]["eas"]["week"]
-        context["total_eas"] = nov_data["kpis"]["eas"]["total"]
-        context["today_households"] = nov_data["kpis"]["households"]["today"]
-        context["week_households"] = nov_data["kpis"]["households"]["week"]
-        context["total_households"] = nov_data["kpis"]["households"]["total"]
-        context["today_people"] = nov_data["kpis"]["people"]["today"]
-        context["week_people"] = nov_data["kpis"]["people"]["week"]
-        context["total_people"] = nov_data["kpis"]["people"]["total"]
-        context["today_pregnancies"] = nov_data["kpis"]["pregnancies"]["today"]
-        context["week_pregnancies"] = nov_data["kpis"]["pregnancies"]["week"]
-        context["total_pregnancies"] = nov_data["kpis"]["pregnancies"]["total"]
-        context["today_preg_outcomes"] = nov_data["kpis"]["preg_outcomes"]["today"]
-        context["week_preg_outcomes"] = nov_data["kpis"]["preg_outcomes"]["week"]
-        context["total_preg_outcomes"] = nov_data["kpis"]["preg_outcomes"]["total"]
-        context["today_deaths"] = nov_data["kpis"]["deaths"]["today"]
-        context["week_deaths"] = nov_data["kpis"]["deaths"]["week"]
-        context["total_deaths"] = nov_data["kpis"]["deaths"]["total"]
-        context["today_vas"] = nov_data["kpis"]["vas"]["today"]
-        context["week_vas"] = nov_data["kpis"]["vas"]["week"]
-        context["total_vas"] = nov_data["kpis"]["vas"]["total"]
-
-        return context
+HOME_FASTPATH_CACHE_TTL_SECONDS = 10 * 60
+HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS = 5 * 60
 
 
-class Trends(CustomAuthMixin, View):
-    def get(self, request, *args, **kwargs):
+def _get_cached_nov_payload(request):
+    preset, start_dt, end_dt, has_custom_range = _parse_filter_range(request)
+    location_level, location_value = _parse_location_filter(request)
+    extra = {
+        "component": "nov_bundle",
+        "location_level": location_level,
+        "location_value": location_value,
+    }
+    cache_key = _fastpath_cache_key("nov_bundle", request, extra=extra)
+    cached_payload = cache.get(cache_key)
+    if cached_payload is not None:
+        return cached_payload
+
+    payload = _get_national_operational_view_data(
+        start_dt=start_dt,
+        end_dt=end_dt,
+        use_legacy_metrics=(preset == "all" and not has_custom_range),
+        request=request,
+        location_level=location_level,
+        location_value=location_value,
+    )
+    cache.set(cache_key, payload, timeout=HOME_FASTPATH_CACHE_TTL_SECONDS)
+    return payload
+
+
+def _get_cached_home_kpis(request):
+    extra = {"component": "kpis"}
+    cache_key = _fastpath_cache_key("home_dashboard_kpis", request, extra=extra)
+    cached_payload = cache.get(cache_key)
+    if cached_payload is not None:
+        return cached_payload
+
+    payload = _get_cached_nov_payload(request).get("kpis", {})
+    cache.set(cache_key, payload, timeout=HOME_FASTPATH_CACHE_TTL_SECONDS)
+    return payload
+
+
+def _get_cached_home_chart_bundle(request):
+    extra = {"component": "overview_chart"}
+    cache_key = _fastpath_cache_key("home_dashboard_chart_bundle", request, extra=extra)
+    cached_payload = cache.get(cache_key)
+    if cached_payload is not None:
+        return cached_payload
+
+    nov_payload = _get_cached_nov_payload(request)
+    chart_payload = {
+        "labels": nov_payload.get("chart_labels", []),
+        "pregnancy": nov_payload.get("pregnancy_values", []),
+        "pregnancy_outcome": nov_payload.get("pregnancy_outcome_values", []),
+        "death": nov_payload.get("death_values", []),
+        "va": nov_payload.get("va_values", []),
+    }
+    cache.set(cache_key, chart_payload, timeout=HOME_FASTPATH_CACHE_TTL_SECONDS)
+    return chart_payload
+
+
+def _get_cached_trends_bundle(request):
+    cache_key = _fastpath_cache_key("home_trends_bundle", request, extra={"component": "trends"})
+    cached_payload = cache.get(cache_key)
+    if cached_payload is not None:
+        return cached_payload
+
+    with timed_block("home.trends.va_trends_data", request=request):
         (
             va_table,
             graphs,
@@ -432,20 +625,34 @@ class Trends(CustomAuthMixin, View):
             additional_issues,
             additional_indeterminate_cods,
         ) = get_trends_data(request.user)
+    with timed_block("home.trends.model_trends_data", request=request):
         model_trends = get_model_trends_data()
 
-        return JsonResponse(
-            {
-                "vaTable": va_table,
-                "graphs": graphs,
-                "issueList": issue_list,
-                "indeterminateCodList": indeterminate_cod_list,
-                "additionalIssues": additional_issues,
-                "additionalIndeterminateCods": additional_indeterminate_cods,
-                "isFieldWorker": request.user.is_fieldworker(),
-                "modelTrends": model_trends,
-            }
-        )
+    payload = {
+        "vaTable": va_table,
+        "graphs": graphs,
+        "issueList": issue_list,
+        "indeterminateCodList": indeterminate_cod_list,
+        "additionalIssues": additional_issues,
+        "additionalIndeterminateCods": additional_indeterminate_cods,
+        "isFieldWorker": request.user.is_fieldworker(),
+        "modelTrends": model_trends,
+    }
+    cache.set(cache_key, payload, timeout=HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS)
+    return payload
+
+
+class Index(CustomAuthMixin, TemplateView):
+    template_name = "home/index.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+class Trends(CustomAuthMixin, View):
+    def get(self, request, *args, **kwargs):
+        return JsonResponse(_get_cached_trends_bundle(request))
 
 
 trends_endpoint_view = Trends.as_view()
@@ -453,16 +660,251 @@ trends_endpoint_view = Trends.as_view()
 
 class NationalOperationalFilterData(CustomAuthMixin, View):
     def get(self, request, *args, **kwargs):
-        preset, start_dt, end_dt, has_custom_range = _parse_filter_range(request)
-        payload = _get_national_operational_view_data(
-            start_dt=start_dt,
-            end_dt=end_dt,
-            use_legacy_metrics=(preset == "all" and not has_custom_range),
-        )
+        with timed_block("home.nov.filter_payload", request=request):
+            payload = _get_cached_nov_payload(request)
         return JsonResponse(payload)
 
 
 national_operational_filter_data_view = NationalOperationalFilterData.as_view()
+
+
+class HomeDashboardKpisAPIView(CustomAuthMixin, PermissionRequiredMixin, View):
+    permission_required = "va_analytics.view_dashboard"
+
+    def get(self, request, *args, **kwargs):
+        payload = _get_cached_home_kpis(request)
+        return JsonResponse({"kpis": payload})
+
+
+home_dashboard_kpis_api_view = HomeDashboardKpisAPIView.as_view()
+
+
+class HomeDashboardTabChartAPIView(CustomAuthMixin, PermissionRequiredMixin, View):
+    permission_required = "va_analytics.view_dashboard"
+
+    def get(self, request, tab, chart, *args, **kwargs):
+        tab_key = (tab or "").strip().lower()
+        chart_key = (chart or "").strip().lower()
+        max_points = request.GET.get("max_points")
+        response_cache_key = _fastpath_cache_key(
+            "home_dashboard_tab_chart_response",
+            request,
+            extra={"tab": tab_key, "chart": chart_key, "max_points": max_points or ""},
+        )
+        cached_response = cache.get(response_cache_key)
+        if cached_response is not None:
+            return JsonResponse(cached_response)
+
+        if tab_key == "overview" and chart_key == "events":
+            chart_payload = _get_cached_home_chart_bundle(request)
+            labels, series = _shallow_downsample(
+                chart_payload.get("labels", []),
+                {
+                    "pregnancy": chart_payload.get("pregnancy", []),
+                    "pregnancy_outcome": chart_payload.get("pregnancy_outcome", []),
+                    "death": chart_payload.get("death", []),
+                    "va": chart_payload.get("va", []),
+                },
+                max_points,
+            )
+            payload = {"labels": labels, **series}
+            cache.set(
+                response_cache_key,
+                payload,
+                timeout=HOME_FASTPATH_CACHE_TTL_SECONDS,
+            )
+            return JsonResponse(payload)
+
+        trends_payload = _get_cached_trends_bundle(request)
+        if tab_key == "trends":
+            metric_map = {
+                "households": "households",
+                "pregnancies": "pregnancies",
+                "pregnancy_outcomes": "pregnancy_outcomes",
+                "deaths": "deaths",
+            }
+            metric = metric_map.get(chart_key)
+            if not metric:
+                return JsonResponse({"detail": "Unsupported trends chart."}, status=400)
+            graphs = (
+                trends_payload.get("modelTrends", {})
+                .get(metric, {})
+                .get("graphs", {})
+                .get("recorded", {})
+            )
+            labels, series = _shallow_downsample(
+                graphs.get("x", []),
+                {"y": graphs.get("y", [])},
+                max_points,
+            )
+            payload = {"x": labels, "y": series.get("y", [])}
+            cache.set(
+                response_cache_key,
+                payload,
+                timeout=HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS,
+            )
+            return JsonResponse(payload)
+
+        if tab_key == "va_statistics":
+            graph_map = {
+                "interviewed": "collected",
+                "coded": "coded",
+                "uncoded": "uncoded",
+            }
+            graph_key = graph_map.get(chart_key)
+            if not graph_key:
+                return JsonResponse({"detail": "Unsupported va_statistics chart."}, status=400)
+            graph = trends_payload.get("graphs", {}).get(graph_key, {})
+            labels, series = _shallow_downsample(
+                graph.get("x", []),
+                {"y": graph.get("y", [])},
+                max_points,
+            )
+            payload = {"x": labels, "y": series.get("y", [])}
+            cache.set(
+                response_cache_key,
+                payload,
+                timeout=HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS,
+            )
+            return JsonResponse(payload)
+
+        return JsonResponse({"detail": "Unsupported tab/chart combination."}, status=400)
+
+
+home_dashboard_tab_chart_api_view = HomeDashboardTabChartAPIView.as_view()
+
+
+class HomeDashboardTabTableAPIView(CustomAuthMixin, PermissionRequiredMixin, View):
+    permission_required = "va_analytics.view_dashboard"
+
+    def get(self, request, tab, table, *args, **kwargs):
+        tab_key = (tab or "").strip().lower()
+        table_key = (table or "").strip().lower()
+        page = request.GET.get("page", "1")
+        page_size = request.GET.get("page_size", "10")
+        response_cache_key = _fastpath_cache_key(
+            "home_dashboard_tab_table_response",
+            request,
+            extra={
+                "tab": tab_key,
+                "table": table_key,
+                "page": str(page),
+                "page_size": str(page_size),
+            },
+        )
+        cached_response = cache.get(response_cache_key)
+        if cached_response is not None:
+            return JsonResponse(cached_response)
+
+        if tab_key == "overview" and table_key == "kpis":
+            payload = {"kpis": _get_cached_home_kpis(request)}
+            cache.set(
+                response_cache_key,
+                payload,
+                timeout=HOME_FASTPATH_CACHE_TTL_SECONDS,
+            )
+            return JsonResponse(payload)
+
+        trends_payload = _get_cached_trends_bundle(request)
+
+        if tab_key == "trends":
+            metric_map = {
+                "households": "households",
+                "pregnancies": "pregnancies",
+                "pregnancy_outcomes": "pregnancy_outcomes",
+                "deaths": "deaths",
+            }
+            metric = metric_map.get(table_key)
+            if not metric:
+                return JsonResponse({"detail": "Unsupported trends table."}, status=400)
+            table_payload = (
+                trends_payload.get("modelTrends", {})
+                .get(metric, {})
+                .get("table", {})
+            )
+            payload = {"table": table_payload}
+            cache.set(
+                response_cache_key,
+                payload,
+                timeout=HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS,
+            )
+            return JsonResponse(payload)
+
+        if tab_key == "va_statistics":
+            if table_key == "summary":
+                payload = {"vaTable": trends_payload.get("vaTable", {})}
+                cache.set(
+                    response_cache_key,
+                    payload,
+                    timeout=HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS,
+                )
+                return JsonResponse(payload)
+            if table_key == "issues":
+                rows = trends_payload.get("issueList", [])
+                paged = _paginate_list(rows, page=page, page_size=page_size)
+                paged["additional"] = trends_payload.get("additionalIssues", 0)
+                cache.set(
+                    response_cache_key,
+                    paged,
+                    timeout=HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS,
+                )
+                return JsonResponse(paged)
+            if table_key == "indeterminate":
+                rows = trends_payload.get("indeterminateCodList", [])
+                paged = _paginate_list(rows, page=page, page_size=page_size)
+                paged["additional"] = trends_payload.get("additionalIndeterminateCods", 0)
+                cache.set(
+                    response_cache_key,
+                    paged,
+                    timeout=HOME_FASTPATH_TABLE_CACHE_TTL_SECONDS,
+                )
+                return JsonResponse(paged)
+            return JsonResponse({"detail": "Unsupported va_statistics table."}, status=400)
+
+        return JsonResponse({"detail": "Unsupported tab/table combination."}, status=400)
+
+
+home_dashboard_tab_table_api_view = HomeDashboardTabTableAPIView.as_view()
+
+
+class HomeOverviewEventsComponent(CustomAuthMixin, TemplateView):
+    template_name = "home/components/_home_overview_events_component.html"
+
+
+home_overview_events_component_view = HomeOverviewEventsComponent.as_view()
+
+
+class HomeOverviewKpisComponent(CustomAuthMixin, TemplateView):
+    template_name = "home/components/_home_overview_kpis_component.html"
+
+
+home_overview_kpis_component_view = HomeOverviewKpisComponent.as_view()
+
+
+class HomeTrendsComponent(CustomAuthMixin, TemplateView):
+    template_name = "home/components/_home_trends_component.html"
+
+
+home_trends_component_view = HomeTrendsComponent.as_view()
+
+
+class HomeVaStatisticsComponent(CustomAuthMixin, TemplateView):
+    template_name = "home/components/_home_va_statistics_component.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        with timed_block("home.va_statistics.summary_stats", request=self.request):
+            context.update(get_va_summary_stats(user.verbal_autopsies()))
+        context["locations"] = "All Regions"
+        if user.location_restrictions.count() > 0:
+            context["locations"] = ", ".join(
+                [location.name for location in user.location_restrictions.all()]
+            )
+        return context
+
+
+home_va_statistics_component_view = HomeVaStatisticsComponent.as_view()
 
 
 class About(CustomAuthMixin, TemplateView):

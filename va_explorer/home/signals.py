@@ -1,5 +1,6 @@
 from django.db.models.signals import post_delete, post_save
 
+from va_explorer.home.cache_utils import bump_home_dashboard_fastpath_version
 from va_explorer.home.dashboard_metrics import invalidate_homepage_metrics_cache
 from va_explorer.va_data_management.models import (
     Death,
@@ -13,6 +14,7 @@ from va_explorer.va_data_management.models import (
 
 def _invalidate_cache(**kwargs):
     invalidate_homepage_metrics_cache()
+    bump_home_dashboard_fastpath_version()
 
 
 def _connect_signals(model):

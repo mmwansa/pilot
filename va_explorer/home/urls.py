@@ -39,4 +39,24 @@ urlpatterns = [
         national_operational_filter_data_view,
         name="national_operational_filter_data",
     ),
+    path(
+        "components/overview/events/",
+        views.home_overview_events_component_view,
+        name="home_overview_events_component",
+    ),
+    path(
+        "components/overview/kpis/",
+        views.home_overview_kpis_component_view,
+        name="home_overview_kpis_component",
+    ),
+    path(
+        "components/trends/",
+        views.home_trends_component_view,
+        name="home_trends_component",
+    ),
+    path(
+        "components/va-statistics/",
+        views.home_va_statistics_component_view,
+        name="home_va_statistics_component",
+    ),
 ]

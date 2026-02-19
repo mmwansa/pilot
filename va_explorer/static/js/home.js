@@ -10,8 +10,58 @@ let novEventsChartInstance = null;
 let novFiltersBound = false;
 let novFilterRequestId = 0;
 let novChartHeightSynced = false;
+let novFilterXhr = null;
+let overviewInitialized = false;
+let vaStatsInitialized = false;
+let trendsInitialized = false;
+let homeDataPromise = null;
+let homeDataCache = null;
+let firstRenderMeasured = false;
+const tabWarmCache = new Set();
+
+const perfNow = () => (
+  window.performance && typeof window.performance.now === "function"
+    ? window.performance.now()
+    : Date.now()
+);
+const perfLog = (name, startMs, meta) => {
+  const durationMs = perfNow() - startMs;
+  if (meta) {
+    console.log(`[perf][home] ${name} ${durationMs.toFixed(2)}ms`, meta);
+  } else {
+    console.log(`[perf][home] ${name} ${durationMs.toFixed(2)}ms`);
+  }
+};
+
+const getDashboardLoader = () => window.DashboardLoader || null;
+
+const loadSlotOnce = async (slotId) => {
+  const slot = document.getElementById(slotId);
+  const loader = getDashboardLoader();
+  if (!slot || !loader || typeof loader.loadComponentOnce !== "function") return;
+  await loader.loadComponentOnce(slot);
+}
+
+const refreshSlot = async (slotId) => {
+  const slot = document.getElementById(slotId);
+  const loader = getDashboardLoader();
+  if (!slot || !loader || typeof loader.refreshComponent !== "function") return;
+  await loader.refreshComponent(slot);
+}
+
+const invalidateScope = (scopeKey) => {
+  const loader = getDashboardLoader();
+  if (!loader || typeof loader.invalidateComponentsByScope !== "function") return;
+  loader.invalidateComponentsByScope(scopeKey);
+}
+
+const clearHomeTrendsCache = () => {
+  homeDataCache = null;
+  homeDataPromise = null;
+}
 
 const setVATrendsTableData = (vaTableData) => {
+  const started = perfNow();
   document.getElementById('interviewed-past-24-hours').innerHTML = vaTableData.collected["24"];
   document.getElementById('interviewed-past-week').innerHTML = vaTableData.collected["1 week"];
   document.getElementById('interviewed-past-month').innerHTML =  vaTableData.collected["1 month"];
@@ -26,6 +76,7 @@ const setVATrendsTableData = (vaTableData) => {
   document.getElementById('uncoded-past-week').innerHTML = vaTableData.uncoded["1 week"];
   document.getElementById('uncoded-past-month').innerHTML =  vaTableData.uncoded["1 month"];
   document.getElementById('uncoded-overall').innerHTML = vaTableData.uncoded["Overall"];
+  perfLog("render.va_statistics.table", started);
 }
 
 const setVARow = (root, row, isFieldWorker) => {
@@ -64,11 +115,15 @@ const setVARow = (root, row, isFieldWorker) => {
 
 const setCodingIssuesTableData = (codingIssuesData, isFieldWorker) => {
   const root = document.getElementById('coding-issues-root');
+  if (!root) return;
+  root.parentElement.querySelectorAll("tr:not(#coding-issues-root)").forEach((row) => row.remove());
   codingIssuesData.forEach(row => setVARow(root, row, isFieldWorker));
 }
 
 const setIndeterminateCODTableData = (codingIssuesData, isFieldWorker) => {
   const root = document.getElementById('indeterminate-cod-root');
+  if (!root) return;
+  root.parentElement.querySelectorAll("tr:not(#indeterminate-cod-root)").forEach((row) => row.remove());
   codingIssuesData.forEach(row => setVARow(root, row, isFieldWorker));
 }
 
@@ -227,6 +282,7 @@ const updateNationalOperationalEventsChart = (
   deathValues,
   vaValues
 ) => {
+  const started = perfNow();
   const canvas = document.getElementById("novEventsChart");
   if (!canvas || typeof Chart === "undefined") return;
 
@@ -246,6 +302,7 @@ const updateNationalOperationalEventsChart = (
   novEventsChartInstance.data.datasets[3].data = vaValues || [];
   novEventsChartInstance.data.datasets[3].hidden = false;
   novEventsChartInstance.update();
+  perfLog("render.overview.chart", started, { labels: (labels || []).length });
 }
 
 const syncNovChartHeightToKpiCards = () => {
@@ -280,6 +337,7 @@ const setElementTextById = (id, value) => {
 }
 
 const updateNationalOperationalKpis = (kpis) => {
+  const started = perfNow();
   if (!kpis) return;
   const eas = kpis.eas || {};
   const households = kpis.households || {};
@@ -317,6 +375,7 @@ const updateNationalOperationalKpis = (kpis) => {
   setElementTextById("nov-kpi-week-vas", vas.week);
   setElementTextById("nov-kpi-total-vas", vas.total);
   syncNovChartHeightToKpiCards();
+  perfLog("render.overview.kpis", started);
 }
 
 const toggleNovLoadingState = (isLoading) => {
@@ -417,7 +476,12 @@ const updateNovLocationValueOptions = () => {
   });
 }
 
-const requestNationalOperationalFilterData = () => {
+const requestNationalOperationalFilterData = (options = {}) => {
+  const started = perfNow();
+  const shouldInvalidate = Boolean(options.invalidateScope);
+  if (shouldInvalidate) {
+    invalidateScope("overview-data");
+  }
   const root = document.getElementById("national-operational-view");
   if (!root) return;
   const endpoint = root.dataset.filterUrl;
@@ -427,8 +491,11 @@ const requestNationalOperationalFilterData = () => {
   const endInput = document.getElementById("novEndDatetime");
   const requestId = ++novFilterRequestId;
 
+  if (novFilterXhr && typeof novFilterXhr.abort === "function") {
+    novFilterXhr.abort();
+  }
   toggleNovLoadingState(true);
-  $.ajax({
+  novFilterXhr = $.ajax({
     url: endpoint,
     type: "GET",
     dataType: "json",
@@ -449,9 +516,11 @@ const requestNationalOperationalFilterData = () => {
         jsonResponse.va_values || jsonResponse.verbal_autopsy_values || []
       );
       updateNationalOperationalKpis(jsonResponse.kpis || {});
+      perfLog("fetch.overview.filter_data", started, { requestId });
     },
     complete: () => {
       if (requestId === novFilterRequestId) {
+        novFilterXhr = null;
         toggleNovLoadingState(false);
       }
     },
@@ -471,7 +540,7 @@ const initNationalOperationalFilters = () => {
       if (!radio.checked) return;
       const preset = selectedNovPreset();
       applyPresetToDatetimeInputs(preset);
-      requestNationalOperationalFilterData();
+      requestNationalOperationalFilterData({ invalidateScope: true });
     });
   });
 
@@ -485,13 +554,13 @@ const initNationalOperationalFilters = () => {
   if (locationLevel) {
     locationLevel.addEventListener("change", () => {
       updateNovLocationValueOptions();
-      requestNationalOperationalFilterData();
+      requestNationalOperationalFilterData({ invalidateScope: true });
     });
   }
 
   if (locationValue) {
     locationValue.addEventListener("change", () => {
-      requestNationalOperationalFilterData();
+      requestNationalOperationalFilterData({ invalidateScope: true });
     });
   }
 
@@ -499,7 +568,7 @@ const initNationalOperationalFilters = () => {
     if (!input) return;
     input.addEventListener("change", () => {
       clearPresetSelection();
-      requestNationalOperationalFilterData();
+      requestNationalOperationalFilterData({ invalidateScope: true });
     });
   });
 }
@@ -556,63 +625,272 @@ const setModelTrendVisualizations = (modelTrends) => {
   setSingleMetricTrendChart("deathsChart", deaths.graphs);
 }
 
-const loadAllData = () => {
-  const endpoint = "/trends";
-  $.ajax({
-    url: endpoint,
-    type: "GET",
-    dataType: "json",
-    success: (jsonResponse) => {
-      // Set VA Table data
-      setVATrendsTableData(jsonResponse.vaTable);
-      // Set VA Charts
-      setVACharts(jsonResponse.graphs);
-      // Set household/pregnancy/pregnancy outcome/death trends
-      setModelTrendVisualizations(jsonResponse.modelTrends);
-      // Set Coding Issues Table data
-      if(jsonResponse.issueList.length > 0) {
-        setCodingIssuesTableData(jsonResponse.issueList, jsonResponse.isFieldWorker);
-        $('#coding-issues').removeClass('hidden');
+const applyVAStatisticsPayload = (jsonResponse) => {
+  const started = perfNow();
+  if (!jsonResponse) return;
 
-        if(jsonResponse.additionalIssues > 0) {
-          document.getElementById('additional-issues-count').innerHTML =
-              jsonResponse.additionalIssues;
-          $('#additional-issues-msg').removeClass('hidden');
-        }
-      }
-      else {
-        $('#no-coding-issues').removeClass('hidden');
-      }
-      // Set Indeterminate COD data
-      if(jsonResponse.indeterminateCodList.length > 0) {
-        setIndeterminateCODTableData(jsonResponse.indeterminateCodList, jsonResponse.isFieldWorker);
-        $('#indeterminate-cod').removeClass('hidden');
+  setVATrendsTableData(jsonResponse.vaTable || {});
+  setVACharts(jsonResponse.graphs || {});
 
-        if(jsonResponse.additionalIndeterminateCods > 0){
-          document.getElementById('additional-indeterminate-cods-count').innerHTML =
-              jsonResponse.additionalIndeterminateCods;
-          $('#additional-indeterminate-cods-msg').removeClass('hidden');
-        }
-      }
-      else {
-        $('#no-indeterminate-cod').removeClass('hidden');
-      }
-    },
-    error: () => console.log("Failed to fetch chart data from " + endpoint + "!")
-  });
+  if ((jsonResponse.issueList || []).length > 0) {
+    setCodingIssuesTableData(jsonResponse.issueList, jsonResponse.isFieldWorker);
+    $('#coding-issues').removeClass('hidden');
+    $('#no-coding-issues').addClass('hidden');
+
+    if (jsonResponse.additionalIssues > 0) {
+      document.getElementById('additional-issues-count').innerHTML = jsonResponse.additionalIssues;
+      $('#additional-issues-msg').removeClass('hidden');
+    } else {
+      $('#additional-issues-msg').addClass('hidden');
+    }
+  } else {
+    $('#coding-issues').addClass('hidden');
+    $('#additional-issues-msg').addClass('hidden');
+    $('#no-coding-issues').removeClass('hidden');
+  }
+
+  if ((jsonResponse.indeterminateCodList || []).length > 0) {
+    setIndeterminateCODTableData(jsonResponse.indeterminateCodList, jsonResponse.isFieldWorker);
+    $('#indeterminate-cod').removeClass('hidden');
+    $('#no-indeterminate-cod').addClass('hidden');
+
+    if (jsonResponse.additionalIndeterminateCods > 0) {
+      document.getElementById('additional-indeterminate-cods-count').innerHTML =
+        jsonResponse.additionalIndeterminateCods;
+      $('#additional-indeterminate-cods-msg').removeClass('hidden');
+    } else {
+      $('#additional-indeterminate-cods-msg').addClass('hidden');
+    }
+  } else {
+    $('#indeterminate-cod').addClass('hidden');
+    $('#additional-indeterminate-cods-msg').addClass('hidden');
+    $('#no-indeterminate-cod').removeClass('hidden');
+  }
+  perfLog("render.va_statistics.components", started);
 }
 
-loadAllData();
-initNationalOperationalEventsChart();
-initNationalOperationalFilters();
-initNovChartHeightSync();
+const applyTrendsPayload = (jsonResponse) => {
+  const started = perfNow();
+  if (!jsonResponse) return;
+  setModelTrendVisualizations(jsonResponse.modelTrends || {});
+  perfLog("render.trends.components", started);
+}
+
+const fetchHomeTrendsPayload = () => {
+  if (homeDataCache) return Promise.resolve(homeDataCache);
+  if (homeDataPromise) return homeDataPromise;
+
+  homeDataPromise = new Promise((resolve, reject) => {
+    $.ajax({
+      url: "/trends/",
+      type: "GET",
+      dataType: "json",
+      success: (jsonResponse) => {
+        homeDataCache = jsonResponse;
+        resolve(jsonResponse);
+      },
+      error: () => {
+        homeDataPromise = null;
+        reject(new Error("Failed to fetch chart data from /trends/"));
+      },
+    });
+  });
+  return homeDataPromise;
+}
+
+const resizeChartsForTab = (tab) => {
+  const mapByTab = {
+    overview: ["novEventsChart"],
+    trends: ["householdsChart", "pregnanciesChart", "pregnancyOutcomesChart", "deathsChart"],
+    va_statistics: ["interviewedChart", "codedChart", "notYetCodedChart"],
+  };
+  (mapByTab[tab] || []).forEach((id) => {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const chart = chartInstances.get(canvas);
+    if (chart) chart.resize();
+  });
+  if (tab === "overview" && novEventsChartInstance) novEventsChartInstance.resize();
+}
+
+const initOverviewTab = async () => {
+  await Promise.all([
+    loadSlotOnce("novEventsComponentSlot"),
+    loadSlotOnce("novKpisComponentSlot"),
+  ]);
+
+  if (overviewInitialized) {
+    syncNovChartHeightToKpiCards();
+    resizeChartsForTab("overview");
+    return;
+  }
+  overviewInitialized = true;
+  initNationalOperationalEventsChart();
+  initNationalOperationalFilters();
+  initNovChartHeightSync();
+  requestNationalOperationalFilterData();
+}
+
+const initVAStatisticsTab = async () => {
+  await loadSlotOnce("homeVAStatisticsComponentSlot");
+
+  if (vaStatsInitialized) {
+    resizeChartsForTab("va_statistics");
+    return;
+  }
+  vaStatsInitialized = true;
+  try {
+    const payload = await fetchHomeTrendsPayload();
+    applyVAStatisticsPayload(payload);
+    resizeChartsForTab("va_statistics");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+const initTrendsTab = async () => {
+  await loadSlotOnce("homeTrendsComponentSlot");
+
+  if (trendsInitialized) {
+    resizeChartsForTab("trends");
+    return;
+  }
+  trendsInitialized = true;
+  try {
+    const payload = await fetchHomeTrendsPayload();
+    applyTrendsPayload(payload);
+    resizeChartsForTab("trends");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+const initOperationsTab = async () => {
+  await Promise.all([
+    loadSlotOnce("regionalFiltersComponent"),
+    loadSlotOnce("regionalCsaComponent"),
+    loadSlotOnce("regionalMsoComponent"),
+  ]);
+}
+
+const initHomeTab = async (tab) => {
+  const started = perfNow();
+  if (tab === "overview") {
+    await initOverviewTab();
+    perfLog("tab.init.overview", started);
+    return;
+  }
+  if (tab === "va_statistics") {
+    await initVAStatisticsTab();
+    perfLog("tab.init.va_statistics", started);
+    return;
+  }
+  if (tab === "trends") {
+    await initTrendsTab();
+    perfLog("tab.init.trends", started);
+    return;
+  }
+  if (tab === "operations_supervision") {
+    await initOperationsTab();
+    perfLog("tab.init.operations_supervision", started);
+  }
+}
+
+const detectActiveHomeTab = () =>
+  document.querySelector(".dashboard-shell[data-shell='home'] .dashboard-tab-panel.show.active")?.dataset?.tabPanel
+  || "overview";
+
+const initialStarted = perfNow();
+initHomeTab(detectActiveHomeTab())
+  .then(() => {
+    perfLog("initial.page_bootstrap", initialStarted, { activeTab: detectActiveHomeTab() });
+    if (!firstRenderMeasured) {
+      firstRenderMeasured = true;
+      console.log("[perf][acceptance] home.first_render_ms", {
+        durationMs: Number((perfNow() - initialStarted).toFixed(2)),
+      });
+    }
+  })
+  .catch((error) => console.error(error));
+
+document.querySelectorAll(".dashboard-shell[data-shell='home'] [data-tab]").forEach((tabLink) => {
+  tabLink.addEventListener("click", () => {
+    console.log("[perf][home] ui.tab_click", { tab: tabLink.dataset.tab });
+  });
+});
+
+document.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-action='refresh-component']");
+  if (!trigger) return;
+  const targetSelector = trigger.dataset.target || "";
+  if (targetSelector === "#homeTrendsComponentSlot" || targetSelector === "#homeVAStatisticsComponentSlot") {
+    clearHomeTrendsCache();
+    invalidateScope("trends-data");
+  }
+  if (targetSelector === "#novEventsComponentSlot" || targetSelector === "#novKpisComponentSlot") {
+    invalidateScope("overview-data");
+  }
+});
+
+document.addEventListener("dashboard:component-loaded", (event) => {
+  const slot = event.target;
+  if (!slot || !slot.id) return;
+
+  if (slot.id === "homeTrendsComponentSlot" && trendsInitialized) {
+    fetchHomeTrendsPayload()
+      .then((payload) => {
+        applyTrendsPayload(payload);
+        resizeChartsForTab("trends");
+      })
+      .catch((error) => console.error(error));
+    return;
+  }
+
+  if (slot.id === "homeVAStatisticsComponentSlot" && vaStatsInitialized) {
+    fetchHomeTrendsPayload()
+      .then((payload) => {
+        applyVAStatisticsPayload(payload);
+        resizeChartsForTab("va_statistics");
+      })
+      .catch((error) => console.error(error));
+    return;
+  }
+
+  if (slot.id === "novEventsComponentSlot" && overviewInitialized) {
+    if (novEventsChartInstance) {
+      novEventsChartInstance.destroy();
+      novEventsChartInstance = null;
+    }
+    initNationalOperationalEventsChart();
+    requestNationalOperationalFilterData();
+    return;
+  }
+
+  if (slot.id === "novKpisComponentSlot" && overviewInitialized) {
+    requestNationalOperationalFilterData();
+  }
+});
 
 document.addEventListener("dashboard:refresh-tab", (event) => {
   const detail = event?.detail || {};
   if (detail.shell !== "home") return;
-
-  if (detail.tab === "overview") {
-    initNationalOperationalEventsChart();
-    syncNovChartHeightToKpiCards();
-  }
+  const tab = detail.tab || "";
+  const started = perfNow();
+  initHomeTab(tab)
+    .then(() => {
+      const durationMs = perfNow() - started;
+      if (tabWarmCache.has(tab)) {
+        const nearInstantThresholdMs = 220;
+        const pass = durationMs <= nearInstantThresholdMs;
+        console.log("[perf][acceptance] tab_switch_cached", {
+          tab,
+          durationMs: Number(durationMs.toFixed(2)),
+          thresholdMs: nearInstantThresholdMs,
+          pass,
+        });
+      } else {
+        tabWarmCache.add(tab);
+      }
+    })
+    .catch((error) => console.error(error));
 });

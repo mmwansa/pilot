@@ -1,5 +1,10 @@
 from django.urls import path
 
+from va_explorer.home.views import (
+    home_dashboard_kpis_api_view,
+    home_dashboard_tab_chart_api_view,
+    home_dashboard_tab_table_api_view,
+)
 from va_explorer.va_analytics.views import (
     DeathsAgeSexAPIView,
     DeathsCauseTrendAPIView,
@@ -209,6 +214,21 @@ urlpatterns = [
         "api/outcomes/deaths/timeliness/",
         view=DeathsTimelinessAPIView.as_view(),
         name="outcomes-deaths-timeliness-api",
+    ),
+    path(
+        "home-dashboard/kpis/",
+        view=home_dashboard_kpis_api_view,
+        name="home-dashboard-kpis-api",
+    ),
+    path(
+        "home-dashboard/tab/<str:tab>/chart/<str:chart>/",
+        view=home_dashboard_tab_chart_api_view,
+        name="home-dashboard-tab-chart-api",
+    ),
+    path(
+        "home-dashboard/tab/<str:tab>/table/<str:table>/",
+        view=home_dashboard_tab_table_api_view,
+        name="home-dashboard-tab-table-api",
     ),
     path("supervision/", view=user_supervision_view, name="supervision"),
 ]

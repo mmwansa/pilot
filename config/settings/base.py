@@ -199,6 +199,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Track which user makes VA data edits
     "simple_history.middleware.HistoryRequestMiddleware",
+    # Lightweight profiling for dashboard request/DB/render timings.
+    "va_explorer.utils.middleware.DashboardProfilingMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 

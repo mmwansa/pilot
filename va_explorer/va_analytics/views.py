@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 
 from va_explorer.users.models import User
 from va_explorer.utils.mixins import CustomAuthMixin
+from va_explorer.utils.profiling import timed_block
 from va_explorer.va_analytics.filters import SupervisionFilter
 from va_explorer.va_data_management.models import Death, Pregnancy, PregnancyOutcome
 from va_explorer.va_data_management.utils.date_parsing import (
@@ -1079,7 +1080,8 @@ class OutcomesDashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateVi
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         request = self.request
-        filter_state = get_pregnancy_outcomes_filter_state(request)
+        with timed_block("outcomes.page.filter_state", request=request):
+            filter_state = get_pregnancy_outcomes_filter_state(request)
         raw_tab = (request.GET.get("tab") or "pregnancies").strip().lower()
         tab_aliases = {
             "pregnancy_outcomes": "pregnancy_outcomes",
@@ -1100,30 +1102,42 @@ class OutcomesDashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateVi
         }
         active_tab = tab_aliases.get(raw_tab, "pregnancies")
 
-        outcome_options = (
-            PregnancyOutcome.objects.exclude(po_group__isnull=True)
-            .exclude(po_group="")
-            .values_list("po_group", flat=True)
-            .distinct()
-            .order_by("po_group")
-        )
-        filtered_qs = build_pregnancy_outcomes_qs(request)
-        summary_cards = _build_outcomes_summary_cards(filtered_qs)
-        trend_labels, trend_counts = _build_pregnancy_outcomes_trend_series(filtered_qs)
-        birth_labels, birth_count_data, birth_percentage_data = _build_birth_outcomes_bar_data(
-            filtered_qs
-        )
-        gest_age_labels, gest_age_counts = _build_gestational_age_distribution(filtered_qs)
-        anc_visits_labels, anc_visits_counts = _build_anc_visits_distribution(filtered_qs)
-        (
-            place_of_birth_labels,
-            place_of_birth_count_data,
-            place_of_birth_percentage_data,
-        ) = _build_place_of_birth_distribution(filtered_qs)
-        map_province_counts, map_district_counts = _build_map_counts(filtered_qs)
-        mean_age, hiv_positive_pct = _build_outcomes_bottom_kpis(filtered_qs)
-        deaths_qs = build_deaths_qs(request)
-        deaths_summary_cards = _build_deaths_summary_cards(deaths_qs)
+        with timed_block("outcomes.page.outcome_options", request=request):
+            outcome_options = (
+                PregnancyOutcome.objects.exclude(po_group__isnull=True)
+                .exclude(po_group="")
+                .values_list("po_group", flat=True)
+                .distinct()
+                .order_by("po_group")
+            )
+        with timed_block("outcomes.page.filtered_qs", request=request):
+            filtered_qs = build_pregnancy_outcomes_qs(request)
+        with timed_block("outcomes.page.summary_cards", request=request):
+            summary_cards = _build_outcomes_summary_cards(filtered_qs)
+        with timed_block("outcomes.page.trend_series", request=request):
+            trend_labels, trend_counts = _build_pregnancy_outcomes_trend_series(filtered_qs)
+        with timed_block("outcomes.page.birth_outcomes", request=request):
+            birth_labels, birth_count_data, birth_percentage_data = _build_birth_outcomes_bar_data(
+                filtered_qs
+            )
+        with timed_block("outcomes.page.gest_age_distribution", request=request):
+            gest_age_labels, gest_age_counts = _build_gestational_age_distribution(filtered_qs)
+        with timed_block("outcomes.page.anc_visits_distribution", request=request):
+            anc_visits_labels, anc_visits_counts = _build_anc_visits_distribution(filtered_qs)
+        with timed_block("outcomes.page.place_of_birth_distribution", request=request):
+            (
+                place_of_birth_labels,
+                place_of_birth_count_data,
+                place_of_birth_percentage_data,
+            ) = _build_place_of_birth_distribution(filtered_qs)
+        with timed_block("outcomes.page.map_counts", request=request):
+            map_province_counts, map_district_counts = _build_map_counts(filtered_qs)
+        with timed_block("outcomes.page.bottom_kpis", request=request):
+            mean_age, hiv_positive_pct = _build_outcomes_bottom_kpis(filtered_qs)
+        with timed_block("outcomes.page.deaths_qs", request=request):
+            deaths_qs = build_deaths_qs(request)
+        with timed_block("outcomes.page.deaths_summary_cards", request=request):
+            deaths_summary_cards = _build_deaths_summary_cards(deaths_qs)
 
         context.update(
             {
@@ -1164,17 +1178,21 @@ outcomes_dashboard_view = OutcomesDashboardView.as_view()
 
 class _PregnancyOutcomesBaseAPIView(APIView):
     def _qs(self, request):
-        return build_pregnancy_outcomes_qs(request)
+        with timed_block("outcomes.api.filtered_qs", request=request):
+            return build_pregnancy_outcomes_qs(request)
 
 
 class PregnancyOutcomesSummaryAPIView(_PregnancyOutcomesBaseAPIView):
     def get(self, request, format=None):
-        return Response(_build_outcomes_summary_cards(self._qs(request)))
+        with timed_block("outcomes.api.summary_cards", request=request):
+            payload = _build_outcomes_summary_cards(self._qs(request))
+        return Response(payload)
 
 
 class PregnancyOutcomesTrendAPIView(_PregnancyOutcomesBaseAPIView):
     def get(self, request, format=None):
-        labels, counts = _build_pregnancy_outcomes_trend_series(self._qs(request))
+        with timed_block("outcomes.api.trend_series", request=request):
+            labels, counts = _build_pregnancy_outcomes_trend_series(self._qs(request))
         return Response({"labels": labels, "data": counts})
 
 
@@ -1230,7 +1248,8 @@ class PregnancyOutcomesPlaceOfBirthAPIView(_PregnancyOutcomesBaseAPIView):
 class PregnancyOutcomesMapAPIView(_PregnancyOutcomesBaseAPIView):
     def get(self, request, format=None):
         filter_state = get_pregnancy_outcomes_filter_state(request)
-        hierarchy = _build_map_hierarchy_counts(self._qs(request))
+        with timed_block("outcomes.api.map_hierarchy", request=request):
+            hierarchy = _build_map_hierarchy_counts(self._qs(request))
         province_counts = [
             {"name": row.get("province_name") or "", "count": row.get("count") or 0}
             for row in hierarchy["map_province_sums"]
@@ -1435,7 +1454,8 @@ class DeathsTrendAPIView(APIView):
         invalid_tab_response = _validate_deaths_tab(request)
         if invalid_tab_response is not None:
             return invalid_tab_response
-        labels, counts = _build_deaths_trend_series(build_deaths_qs(request))
+        with timed_block("outcomes.deaths.trend_series", request=request):
+            labels, counts = _build_deaths_trend_series(build_deaths_qs(request))
         return Response({"labels": labels, "data": counts})
 
 
@@ -1444,7 +1464,9 @@ class DeathsSummaryAPIView(APIView):
         invalid_tab_response = _validate_deaths_tab(request)
         if invalid_tab_response is not None:
             return invalid_tab_response
-        return Response(_build_deaths_summary_cards(build_deaths_qs(request)))
+        with timed_block("outcomes.deaths.summary_cards", request=request):
+            payload = _build_deaths_summary_cards(build_deaths_qs(request))
+        return Response(payload)
 
 
 class DeathsMapAPIView(APIView):
@@ -1457,7 +1479,8 @@ class DeathsMapAPIView(APIView):
             map_view = "Province"
         if map_view == "Ea":
             map_view = "EA"
-        hierarchy = _build_map_hierarchy_counts(build_deaths_qs(request))
+        with timed_block("outcomes.deaths.map_hierarchy", request=request):
+            hierarchy = _build_map_hierarchy_counts(build_deaths_qs(request))
         province_counts = [
             {"name": row.get("province_name") or "", "count": row.get("count") or 0}
             for row in hierarchy["map_province_sums"]

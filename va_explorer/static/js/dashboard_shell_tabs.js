@@ -1,11 +1,27 @@
 (function () {
   "use strict";
 
+  function perfNow() {
+    return (window.performance && typeof window.performance.now === "function")
+      ? window.performance.now()
+      : Date.now();
+  }
+
+  function perfLog(name, startMs, meta) {
+    const durationMs = perfNow() - startMs;
+    if (meta) {
+      console.log(`[perf][client] ${name} ${durationMs.toFixed(2)}ms`, meta);
+    } else {
+      console.log(`[perf][client] ${name} ${durationMs.toFixed(2)}ms`);
+    }
+  }
+
   function discoverComponents(panel) {
     return Array.from(panel.querySelectorAll("[data-component]"));
   }
 
   function refreshActiveComponents(shell, panel, tabKey) {
+    const started = perfNow();
     const shellName = shell.dataset.shell || "unknown";
     const components = discoverComponents(panel);
 
@@ -32,6 +48,11 @@
         },
       })
     );
+    perfLog("tab.refresh_components", started, {
+      shell: shellName,
+      tab: tabKey,
+      componentCount: components.length,
+    });
   }
 
   function setPanelVisibility(panel, isActive) {
@@ -41,6 +62,7 @@
   }
 
   function activateTab(shell, tabKey, options) {
+    const started = perfNow();
     const opts = options || {};
     const tabLinks = Array.from(shell.querySelectorAll("[data-tab]"));
     const tabPanels = Array.from(shell.querySelectorAll(".dashboard-tab-panel[data-tab-panel]"));
@@ -72,6 +94,11 @@
     if (activePanel) {
       refreshActiveComponents(shell, activePanel, activeTab);
     }
+    perfLog("tab.activate", started, {
+      shell: shell.dataset.shell || "unknown",
+      tab: activeTab,
+      pushState: !!opts.pushState,
+    });
   }
 
   function getInitialTab(shell) {
@@ -116,8 +143,10 @@
   }
 
   function init() {
+    const started = perfNow();
     const shells = Array.from(document.querySelectorAll(".dashboard-shell[data-shell]"));
     shells.forEach(initShell);
+    perfLog("dashboard_shell.init", started, { shellCount: shells.length });
   }
 
   if (document.readyState === "loading") {
