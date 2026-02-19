@@ -24,7 +24,7 @@ from va_explorer.va_data_management.utils.date_parsing import (
     parse_date,
 )
 
-from .utils.loading import load_va_data
+from .utils.loading import get_filtered_va_queryset, load_va_data
 
 
 def get_pregnancy_outcomes_filter_state(request):
@@ -1004,6 +1004,9 @@ class DashboardAPIView(APIView):
         region_of_interest = request.query_params.get("region_of_interest") or None
         age = request.query_params.get("age") or None
         sex = request.query_params.get("sex") or None
+        source = request.query_params.get("source") or None
+        compare_by = request.query_params.get("compare_by") or "province"
+        filtered_qs = get_filtered_va_queryset(request)
 
         data = load_va_data(
             request.user,
@@ -1013,6 +1016,9 @@ class DashboardAPIView(APIView):
             region_of_interest=region_of_interest,
             age=age,
             sex=sex,
+            source=source,
+            compare_by=compare_by,
+            filtered_qs=filtered_qs,
         )
         return Response(data)
 

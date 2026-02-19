@@ -91,6 +91,10 @@
   /* Let deaths sections grow to fit chart content instead of fixed fractional rows. */
   grid-template-rows: max-content auto auto auto auto auto;
 }
+#dashboardApp {
+  /* Keep VA panel proportions aligned with other outcomes dashboards. */
+  grid-template-rows: max-content auto auto auto auto auto;
+}
 #pregnancyDashboardApp {
   grid-template-columns: minmax(0, 4fr) minmax(0, 4fr) minmax(0, 4fr) minmax(0, 2.8fr) minmax(0, 2.8fr) minmax(0, 2.8fr);
 }
@@ -99,6 +103,13 @@
   border: 1px solid var(--od-border);
   border-radius: var(--od-radius);
   box-shadow: var(--od-shadow);
+}
+.outcomes-dashboard-root .dashboard-card {
+  border-radius: var(--od-radius);
+  box-shadow: var(--od-shadow);
+}
+.outcomes-dashboard-root .dashboard-card-body {
+  padding: 0.15rem 0.25rem 0.25rem;
 }
 .outcomes-dashboard-root .panelView {
   height: auto;
@@ -197,12 +208,27 @@
   font-size: 0.65rem;
   color: var(--od-muted);
 }
+.outcomes-dashboard-root .dashboard-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+  flex-wrap: wrap;
+}
+.outcomes-dashboard-root .dashboard-section-head h2 {
+  margin-bottom: 0;
+}
+.outcomes-dashboard-root .chart-mode-toggle--right {
+  margin-bottom: 0;
+}
 .outcomes-dashboard-root .button.updateDataBtn {
   margin-left: 10px;
 }
 #peFiltersForm .filtersRow,
 #poFiltersForm .filtersRow,
-#deathsFiltersForm .filtersRow {
+#deathsFiltersForm .filtersRow,
+#vaFiltersForm .filtersRow {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -211,6 +237,51 @@
   overflow-y: hidden;
   white-space: nowrap;
 }
+/*
+ * Stage 1: Modern dashboard design patterns (Pregnancy / Outcomes / Deaths)
+ *
+ * Layout container structure
+ * - Page shell uses `.row.mt-4.dashboard-shell[data-shell="outcomes"]` with a single `.col`.
+ * - Each tab root uses `main.outcomes-dashboard-root` + CSS grid (`grid-template-columns` and row tracks).
+ * - Sections are semantic blocks: `.sectionContainer.panelView`, `.mapView`, `.trendView`, and chart sections.
+ * - Split chart rows use `.po-split-row` (two equal cards) where applicable.
+ *
+ * Grid / spacing
+ * - Uniform section spacing uses shared `--od-gap` and 10-16px paddings.
+ * - Section headers use `.outcomes-dashboard-root h2` with consistent weight/size and margin.
+ * - Charts live in `.chartsContainer` and `.chart-canvas-wrap` for consistent inner spacing/height.
+ *
+ * Card structure pattern (dashboard-card mapping in this codebase)
+ * - `.dashboard-card` equivalent: `.highlight`
+ * - `.dashboard-card-header` equivalent: `.highlight h3`
+ * - `.dashboard-card-body` equivalent: `.highlight p`
+ * - KPI cards use `.highlightsContainer > .highlight > h3 + p`.
+ * - Header/body split: `.highlight h3` (label band) and `.highlight p` (metric body).
+ * - Visual treatment: rounded corners, border, subtle shadow, neutral surface colors.
+ * - Deaths-specific signal/date badges are implemented as highlight variants (`.deaths-signal-card*`).
+ *
+ * KPI summary panel pattern
+ * - Top summary metrics rendered as highlight cards with bold numeric value.
+ * - Label styling in header band; value styling in card body.
+ * - Optional secondary cards (signals/subtext) follow same card primitives.
+ *
+ * Filter panel design
+ * - Form wrapper uses `.controls`; note text uses `.dashboard-note`.
+ * - Horizontal control alignment uses `.filtersRow`.
+ * - Grouping uses `.mainFiltersContainer`, `.betweenDatesContainer`/`.customDatesContainer`, `.formBtnsContainer`.
+ * - Reset action uses `.button.resetBtn`; control heights normalized to ~2.25rem.
+ * - Radio/toggle controls align via `.chart-mode-toggle`.
+ *
+ * Chart container styling
+ * - Shared chart body: `.chartsContainer` with rounded corners and neutral background.
+ * - Canvas wrapper: `.chart-canvas-wrap` (and `.compact` variant where needed).
+ * - Toggle placement is directly below section title via `.chart-mode-toggle`.
+ * - Compare button uses standard `.button` style token set.
+ *
+ * Color theme / tokens
+ * - Uses outcomes tokens: `--od-surface`, `--od-card`, `--od-border`, `--od-text`, `--od-muted`, shadows, radius.
+ * - VA customizations below intentionally inherit these same variables for full parity.
+ */
 #peFiltersForm .filtersRow .betweenDatesContainer,
 #peFiltersForm .filtersRow .customDatesContainer,
 #peFiltersForm .filtersRow .formBtnsContainer,
@@ -219,12 +290,17 @@
 #poFiltersForm .filtersRow .mainFiltersContainer,
 #poFiltersForm .filtersRow .betweenDatesContainer,
 #poFiltersForm .filtersRow .customDatesContainer,
-#poFiltersForm .filtersRow .formBtnsContainer {
+#poFiltersForm .filtersRow .formBtnsContainer,
+#vaFiltersForm .filtersRow .mainFiltersContainer,
+#vaFiltersForm .filtersRow .betweenDatesContainer,
+#vaFiltersForm .filtersRow .customDatesContainer,
+#vaFiltersForm .filtersRow .formBtnsContainer {
   flex-wrap: nowrap;
   min-width: 0;
 }
 #peFiltersForm .filtersRow .formBtnsContainer,
-#poFiltersForm .filtersRow .formBtnsContainer {
+#poFiltersForm .filtersRow .formBtnsContainer,
+#vaFiltersForm .filtersRow .formBtnsContainer {
   margin-left: auto;
   flex: 0 0 auto;
 }
@@ -233,14 +309,16 @@
   margin-left: 0;
 }
 #peFiltersForm :is(select, input[type="date"]),
-#poFiltersForm :is(select, input[type="date"]) {
+#poFiltersForm :is(select, input[type="date"]),
+#vaFiltersForm :is(select, input[type="date"]) {
   min-width: 0;
   height: 2.25rem;
   max-height: 2.25rem;
 }
 #peFiltersForm .filtersRow button,
 #poFiltersForm .filtersRow button,
-#deathsFiltersForm .filtersRow button {
+#deathsFiltersForm .filtersRow button,
+#vaFiltersForm .filtersRow button {
   height: 2.25rem;
   max-height: 2.25rem;
 }
@@ -743,7 +821,11 @@
   #peAncVisitsSection,
   #deathsTrendSection,
   #deathsCauseSection,
-  #deathsTimelinessSection {
+  #deathsTimelinessSection,
+  #vaMapSection,
+  #vaCodSection,
+  #vaTrendSection,
+  #vaRegionalComparisonSection {
     grid-column: 1 / -1;
     grid-row: auto;
     margin-top: 0;
@@ -778,8 +860,47 @@
   }
   #peTrendSection,
   #peGestationalAgeSection,
-  #peAncVisitsSection {
+  #peAncVisitsSection,
+  #vaMapSection,
+  #vaCodSection,
+  #vaTrendSection,
+  #vaRegionalComparisonSection {
     width: 100%;
     max-width: 100%;
+  }
+  #vaFiltersForm .filtersRow {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    white-space: normal;
+    gap: 0.4rem;
+  }
+  #vaFiltersForm .mainFiltersContainer {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  #vaFiltersForm .betweenDatesContainer,
+  #vaFiltersForm .formBtnsContainer {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  #vaCodSection .chart-mode-toggle {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  #vaRegionalComparisonSection .mainFiltersContainer {
+    flex-wrap: wrap;
+  }
+  #vaCodSection .chartsContainer,
+  #vaTrendSection .chartsContainer,
+  #vaRegionalComparisonSection .chartsContainer {
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+@media (max-width: 768px) {
+  #vaCodSection .chart-canvas-wrap,
+  #vaTrendSection .chart-canvas-wrap,
+  #vaRegionalComparisonSection .chart-canvas-wrap {
+    height: 220px;
   }
 }

@@ -48,6 +48,8 @@ const dashboard = new Vue({
             COD_trend: [],
             place_of_death: [],
             demographics: [],
+            vaCauseTrendPayload: { has_coded: false, periods: [], series: [] },
+            regionalCauseComparison: { compare_by: "province", groups: [], cod_categories: [], matrix_percent: [] },
             geographic_level_sums: {}, // Store aggregates by level for current drill state
             uncoded_vas: 0,
             update_stats: {
@@ -91,8 +93,10 @@ const dashboard = new Vue({
             suppressWarning: false,
             placeOfDeathValue: "count",
             causeOfDeathValue: "count",
+            regionalCompareBy: "province",
             featureHitInTick: false,
             vaCauseTrendChart: null,
+            vaRegionalCauseChart: null,
             // Fallback for environments where native dblclick can be unreliable in tab panes.
             featureClickState: { id: null, at: 0 },
             drillInFlight: false,
@@ -147,9 +151,9 @@ const dashboard = new Vue({
         causeOfDeathData() {
             if (!this.COD_grouping) return [];
             if (this.causeOfDeathValue === "count") return this.COD_grouping;
-            const totalCount = d3.sum(this.COD_grouping.map(item => item.count));
+            const totalCount = this.COD_grouping?.[0]?.total || d3.sum(this.COD_grouping.map(item => item.count));
             return JSON.parse(JSON.stringify(this.COD_grouping)).map(d => {
-                d.percentage = Math.round(d.count * 1000 / totalCount) / 10;
+                d.percentage = totalCount > 0 ? Math.round(d.count * 1000 / totalCount) / 10 : 0;
                 delete d.count;
                 return d;
             })
@@ -171,6 +175,7 @@ const dashboard = new Vue({
         await this.initializeBaseMap();
         await this.addGeoJSONToMap();
         await this.refreshVACauseTrendChart();
+        this.renderRegionalCauseComparisonChart();
         await this.$nextTick();
         this.resizeCharts();
     },
@@ -510,6 +515,7 @@ const dashboard = new Vue({
                 end_date: endDate,
                 cause_of_death: this.causeSelected,
                 region_of_interest: parentRegion || "",
+                compare_by: this.regionalCompareBy,
                 age, sex
             }), {
                 method: 'GET',
@@ -520,11 +526,18 @@ const dashboard = new Vue({
             const jsonRes = await dataReq.json();
             this.COD_grouping = jsonRes.COD_grouping;
             this.COD_trend = jsonRes.COD_trend;
-            this.place_of_death = jsonRes.place_of_death.map(d => {
+            this.place_of_death = (jsonRes.place_of_death || []).map(d => {
                 d.place = d.place.replace(/_/g, " ");
                 return d;
             });
-            this.demographics = jsonRes.demographics;
+            this.demographics = jsonRes.demographics || [];
+            this.vaCauseTrendPayload = jsonRes.va_cause_trend || { has_coded: false, periods: [], series: [] };
+            this.regionalCauseComparison = jsonRes.regional_cod_comparison || {
+                compare_by: this.regionalCompareBy,
+                groups: [],
+                cod_categories: [],
+                matrix_percent: [],
+            };
             
             // Get aggregates for current drill level
             this.geographic_level_sums = this.getAggregatesForLevel(jsonRes);
@@ -566,6 +579,7 @@ const dashboard = new Vue({
                 }
             }
 
+            this.refreshVAEmptyStates();
             this.loading = false;
         },
         getAggregatesForLevel(jsonRes) {
@@ -1158,12 +1172,12 @@ const dashboard = new Vue({
             return html_tooltip;
         },
         resizeCharts() {
-            const demographicsRef = this.$refs.demographics;
+            const regionalRef = this.$refs.regionalComparison;
             const codRef = this.$refs.cod;
 
-            if (demographicsRef) {
-                this.demographicsWidth = Math.max(demographicsRef.clientWidth - 1, 360);
-                this.demographicsHeight = Math.max(demographicsRef.clientHeight - 1, 185);
+            if (regionalRef) {
+                this.demographicsWidth = Math.max(regionalRef.clientWidth - 1, 360);
+                this.demographicsHeight = Math.max(regionalRef.clientHeight - 1, 185);
             }
 
             if (codRef) {
@@ -1174,6 +1188,11 @@ const dashboard = new Vue({
         setVAEmpty(id, isEmpty) {
             const el = document.getElementById(id);
             if (el) el.hidden = !isEmpty;
+        },
+        refreshVAEmptyStates() {
+            const codTotal = (this.COD_grouping || [])
+                .reduce((acc, row) => acc + Number(row?.count || 0), 0);
+            this.setVAEmpty("vaCodEmpty", codTotal === 0);
         },
         buildVACauseTrendFilters() {
             const { age, sex } = this.getAgeAndSex();
@@ -1204,24 +1223,14 @@ const dashboard = new Vue({
         },
         async refreshVACauseTrendChart() {
             const canvas = document.getElementById("vaCauseTrendChart");
-            if (!canvas || typeof Chart === "undefined" || !this.vaCauseTrendEndpoint) return;
+            if (!canvas || typeof Chart === "undefined") return;
 
-            let payload = { has_coded: false, labels: [], datasets: [] };
-            try {
-                const params = this.buildVACauseTrendFilters();
-                const url = params.toString()
-                    ? `${this.vaCauseTrendEndpoint}?${params.toString()}`
-                    : this.vaCauseTrendEndpoint;
-                const response = await fetch(url, {
-                    method: "GET",
-                    headers: { "X-Requested-With": "XMLHttpRequest" },
-                    credentials: "same-origin",
-                });
-                if (!response.ok) throw new Error(`Cause trend request failed: ${url}`);
-                payload = await response.json();
-            } catch (err) {
-                console.warn("[VA Cause Trend] Failed to load cause trend data", err);
-            }
+            const payload = this.vaCauseTrendPayload || { has_coded: false, periods: [], series: [] };
+            const periods = payload.periods || payload.labels || [];
+            const seriesRows = payload.series || (payload.datasets || []).map((d) => ({
+                name: d.label,
+                values: d.data || [],
+            }));
 
             if (!this.vaCauseTrendChart) {
                 this.vaCauseTrendChart = new Chart(canvas.getContext("2d"), {
@@ -1245,10 +1254,10 @@ const dashboard = new Vue({
             }
 
             const palette = ["#d73027", "#4575b4", "#4CAF50", "#f46d43", "#8e44ad"];
-            this.vaCauseTrendChart.data.labels = payload.labels || [];
-            this.vaCauseTrendChart.data.datasets = (payload.datasets || []).map((series, idx) => ({
-                label: series.label,
-                data: series.data || [],
+            this.vaCauseTrendChart.data.labels = periods;
+            this.vaCauseTrendChart.data.datasets = seriesRows.map((series, idx) => ({
+                label: series.name,
+                data: series.values || [],
                 borderColor: palette[idx % palette.length],
                 backgroundColor: palette[idx % palette.length],
                 pointRadius: 2,
@@ -1258,15 +1267,77 @@ const dashboard = new Vue({
             this.vaCauseTrendChart.update();
 
             const hasCoded = !!payload.has_coded;
-            const total = (payload.datasets || [])
-                .flatMap((series) => series.data || [])
+            const total = seriesRows
+                .flatMap((series) => series.values || [])
                 .reduce((acc, value) => acc + Number(value || 0), 0);
             this.setVAEmpty("vaCauseTrendEmpty", !hasCoded || total === 0);
+        },
+        renderRegionalCauseComparisonChart() {
+            const canvas = document.getElementById("vaRegionalCauseComparisonChart");
+            if (!canvas || typeof Chart === "undefined") return;
+
+            const payload = this.regionalCauseComparison || {};
+            const labels = payload.groups || payload.regions || [];
+            const causes = payload.cod_categories || payload.causes || [];
+            const matrix = payload.matrix_percent || payload.percentage_matrix || [];
+
+            const palette = ["#4575b4", "#d73027", "#4CAF50", "#f46d43", "#8e44ad", "#607D8B"];
+            const datasets = causes.map((cause, idx) => ({
+                label: cause,
+                data: labels.map((_region, rowIdx) => Number(matrix[rowIdx]?.[idx] || 0)),
+                backgroundColor: palette[idx % palette.length],
+                borderColor: palette[idx % palette.length],
+                borderWidth: 1,
+                stack: "regional-cause",
+            }));
+
+            if (!this.vaRegionalCauseChart) {
+                this.vaRegionalCauseChart = new Chart(canvas.getContext("2d"), {
+                    type: "bar",
+                    data: { labels: [], datasets: [] },
+                    options: {
+                        indexAxis: "y",
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: "top" } },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                beginAtZero: true,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: "Percent",
+                                },
+                                ticks: {
+                                    callback: (value) => `${value}%`,
+                                },
+                            },
+                            y: { stacked: true },
+                        },
+                    },
+                });
+            }
+
+            this.vaRegionalCauseChart.options.scales.x.max = 100;
+            this.vaRegionalCauseChart.options.scales.x.title.text = "Percent";
+            this.vaRegionalCauseChart.data.labels = labels;
+            this.vaRegionalCauseChart.data.datasets = datasets;
+            this.vaRegionalCauseChart.update();
+
+            const total = datasets
+                .flatMap((series) => series.data || [])
+                .reduce((acc, value) => acc + Number(value || 0), 0);
+            this.setVAEmpty("vaRegionalComparisonEmpty", labels.length === 0 || total === 0);
         },
         async updateDataAndMap() {
             await this.getData();
             await this.addGeoJSONToMap();
             await this.refreshVACauseTrendChart();
+            this.renderRegionalCauseComparisonChart();
+        },
+        async runRegionalComparison() {
+            await this.updateDataAndMap();
         },
         async refreshDashboardForDrillChange(reason = "drill_change") {
             await this.updateDataAndMap();
@@ -1308,6 +1379,6 @@ const dashboard = new Vue({
             if (this.geojsonCache[this.currentLevel]) {
                 this.addGeoJSONToMap();
             }
-        }
+        },
     }
 });
