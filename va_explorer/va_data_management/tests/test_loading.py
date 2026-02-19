@@ -6,7 +6,11 @@ import pytest
 from django.core.management import call_command
 
 from va_explorer.tests.factories import VerbalAutopsyFactory
-from va_explorer.va_data_management.models import Location, VerbalAutopsy
+from va_explorer.va_data_management.models import (
+    Location,
+    SRSClusterLocation,
+    VerbalAutopsy,
+)
 from va_explorer.va_data_management.utils.loading import load_records_from_dataframe
 
 pytestmark = pytest.mark.django_db
@@ -55,6 +59,121 @@ def test_loading_from_dataframe():
     assert result["created"][1].instanceid == data[1]["instanceid"]
     assert result["created"][1].Id10007 == data[1]["testing-dashes-Id10007"]
     assert result["created"][1].location == loc
+
+
+def test_loading_from_dataframe_with_community_va_field():
+    Location.add_root(
+        name="Test Location", key="test_location", location_type="facility"
+    )
+
+    data = [
+        {
+            "instanceid": "instance-community-1",
+            "Id10017": "name",
+            "Id10018": "1",
+            "Id10012": "2021-03-21",
+            "instancename": "_Dec---name 1---2021-03-21",
+            "Id10023": "03/01/2021",
+            "hospital": "test_location",
+            "community_va": "yes",
+        }
+    ]
+    df = pandas.DataFrame.from_records(data)
+
+    result = load_records_from_dataframe(df)
+    created = result["created"][0]
+
+    assert len(result["created"]) == 1
+    assert created.community_va == "no"
+    assert (
+        VerbalAutopsy.objects.get(instanceid="instance-community-1").community_va
+        == "no"
+    )
+
+
+def test_loading_from_dataframe_ward_sets_community_va_yes():
+    Location.add_root(
+        name="Test Location", key="test_location", location_type="facility"
+    )
+
+    data = [
+        {
+            "instanceid": "instance-community-ward-1",
+            "Id10017": "name",
+            "Id10018": "1",
+            "Id10012": "2021-03-21",
+            "instancename": "_Dec---name 1---2021-03-21",
+            "Id10023": "03/01/2021",
+            "ward": "ward_1",
+        }
+    ]
+    df = pandas.DataFrame.from_records(data)
+
+    result = load_records_from_dataframe(df)
+    created = result["created"][0]
+
+    assert len(result["created"]) == 1
+    assert created.community_va == "yes"
+    assert (
+        VerbalAutopsy.objects.get(instanceid="instance-community-ward-1").community_va
+        == "yes"
+    )
+
+
+def test_loading_from_dataframe_sets_cluster_for_community_va():
+    Location.add_root(
+        name="Test Location", key="test_location", location_type="facility"
+    )
+    ward = SRSClusterLocation.add_root(
+        name="Ward 10", location_type="ward", code="W10", status="Active"
+    )
+
+    data = [
+        {
+            "instanceid": "instance-community-cluster-1",
+            "Id10017": "name",
+            "Id10018": "1",
+            "Id10012": "2021-03-21",
+            "instancename": "_Dec---name 1---2021-03-21",
+            "Id10023": "03/01/2021",
+            "ward": "Ward 10",
+        }
+    ]
+    df = pandas.DataFrame.from_records(data)
+
+    result = load_records_from_dataframe(df)
+    assert len(result["created"]) == 1
+    created = VerbalAutopsy.objects.get(instanceid="instance-community-cluster-1")
+    assert created.community_va == "yes"
+    assert created.cluster_id == ward.id
+
+
+def test_loading_from_dataframe_missing_hospital_and_ward_defaults_community_va_yes():
+    Location.add_root(
+        name="Test Location", key="test_location", location_type="facility"
+    )
+
+    data = [
+        {
+            "instanceid": "instance-community-default-1",
+            "Id10017": "name",
+            "Id10018": "1",
+            "Id10012": "2021-03-21",
+            "instancename": "_Dec---name 1---2021-03-21",
+            "Id10023": "03/01/2021",
+        }
+    ]
+    df = pandas.DataFrame.from_records(data)
+
+    result = load_records_from_dataframe(df)
+    created = result["created"][0]
+
+    assert len(result["created"]) == 1
+    assert created.community_va == "yes"
+    assert (
+        VerbalAutopsy.objects.get(instanceid="instance-community-default-1").community_va
+        == "yes"
+    )
 
 
 def test_loading_from_dataframe_with_ignored():
@@ -194,6 +313,46 @@ def test_load_va_csv_command():
     assert VerbalAutopsy.objects.get(instanceid="instance1").Id10007 == "name1"
     assert VerbalAutopsy.objects.get(instanceid="instance2").Id10007 == "name2"
     assert VerbalAutopsy.objects.get(instanceid="instance3").Id10007 == "name3"
+
+
+def test_update_va_locations_command_updates_by_instanceid(tmp_path):
+    Location.add_root(
+        name="Test Facility", key="test_facility", location_type="facility"
+    )
+    ward = SRSClusterLocation.add_root(
+        name="Ward 22", location_type="ward", code="W22", status="Active"
+    )
+
+    va = VerbalAutopsyFactory.create(
+        instanceid="loc-instance-1",
+        hospital="test_facility",
+        community_va="no",
+    )
+    assert va.community_va == "no"
+
+    csv_file = tmp_path / "va_location_updates.csv"
+    csv_file.write_text(
+        "instanceid,province,district,constituency,ward,ea,hospital\n"
+        "loc-instance-1,Lusaka,Lusaka Central,Some Constituency,Ward 22,EA-001,\n",
+        encoding="utf-8",
+    )
+
+    output = StringIO()
+    call_command(
+        "update_va_locations",
+        str(csv_file),
+        stdout=output,
+        stderr=output,
+    )
+
+    va.refresh_from_db()
+    assert va.province == "Lusaka"
+    assert va.district == "Lusaka Central"
+    assert va.constituency == "Some Constituency"
+    assert va.ward == "Ward 22"
+    assert va.ea == "EA-001"
+    assert va.community_va == "yes"
+    assert va.cluster_id == ward.id
 
 
 def test_loading_duplicate_vas(settings):

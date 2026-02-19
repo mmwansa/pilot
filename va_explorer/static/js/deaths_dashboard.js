@@ -8,8 +8,6 @@
     map: app.dataset.mapEndpoint,
     ageSex: app.dataset.ageSexEndpoint,
     place: app.dataset.placeEndpoint,
-    topCauses: app.dataset.topCausesEndpoint,
-    causeTrend: app.dataset.causeTrendEndpoint,
     signals: app.dataset.signalsEndpoint,
     timeliness: app.dataset.timelinessEndpoint,
   };
@@ -28,8 +26,6 @@
     ageSexPercentage: document.getElementById("deathsAgeSexModePercentage"),
     placeCount: document.getElementById("deathsPlaceModeCount"),
     placePercentage: document.getElementById("deathsPlaceModePercentage"),
-    topCauseCount: document.getElementById("deathsTopCauseModeCount"),
-    topCausePercentage: document.getElementById("deathsTopCauseModePercentage"),
   };
 
   const mapState = {
@@ -42,19 +38,14 @@
   let trendChart = null;
   let ageSexChart = null;
   let placeChart = null;
-  let topCausesChart = null;
-  let causeTrendChart = null;
   let timelinessChart = null;
   let ageSexPayload = null;
   let placePayload = null;
-  let topCausesPayload = null;
 
   const currentAgeSexMode = () =>
     filterElements.ageSexPercentage?.checked ? "percentage" : "count";
   const currentPlaceMode = () =>
     filterElements.placePercentage?.checked ? "percentage" : "count";
-  const currentTopCauseMode = () =>
-    filterElements.topCausePercentage?.checked ? "percentage" : "count";
 
   const normalizeGeoName = (value) =>
     (value || "")
@@ -337,67 +328,61 @@
         data: {
           labels: [],
           datasets: [
-            { label: "Male", data: [], backgroundColor: "#4b84ce", borderColor: "#2f6ec2", borderWidth: 1 },
             { label: "Female", data: [], backgroundColor: "#f46d43", borderColor: "#d73027", borderWidth: 1 },
-            { label: "Unknown/Other", data: [], backgroundColor: "#9aa4b2", borderColor: "#6b7280", borderWidth: 1 },
+            { label: "Male", data: [], backgroundColor: "#4b84ce", borderColor: "#2f6ec2", borderWidth: 1 },
           ],
         },
         options: {
+          indexAxis: "y",
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: true, position: "top" }, tooltip: { enabled: true } },
           scales: {
-            x: { stacked: true, grid: { display: false } },
-            y: {
+            x: {
               stacked: true,
               beginAtZero: true,
               ticks: { precision: 0 },
               title: { display: true, text: "Count of deaths" },
               grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
             },
+            y: { stacked: true, grid: { display: false } },
           },
         },
       });
     }
 
     const labels = payload.labels || [];
-    const male = payload.male || [];
     const female = payload.female || [];
-    const other = payload.other || [];
+    const male = payload.male || [];
     const mode = currentAgeSexMode();
 
-    let maleData = male;
     let femaleData = female;
-    let otherData = other;
+    let maleData = male;
 
     if (mode === "percentage") {
-      maleData = [];
       femaleData = [];
-      otherData = [];
+      maleData = [];
       for (let i = 0; i < labels.length; i += 1) {
-        const m = Number(male[i] || 0);
         const f = Number(female[i] || 0);
-        const o = Number(other[i] || 0);
-        const total = m + f + o;
-        maleData.push(total ? Number(((m / total) * 100).toFixed(1)) : 0);
+        const m = Number(male[i] || 0);
+        const total = f + m;
         femaleData.push(total ? Number(((f / total) * 100).toFixed(1)) : 0);
-        otherData.push(total ? Number(((o / total) * 100).toFixed(1)) : 0);
+        maleData.push(total ? Number(((m / total) * 100).toFixed(1)) : 0);
       }
-      ageSexChart.options.scales.y.max = 100;
-      ageSexChart.options.scales.y.title.text = "Percentage (%)";
+      ageSexChart.options.scales.x.max = 100;
+      ageSexChart.options.scales.x.title.text = "Percentage (%)";
     } else {
-      ageSexChart.options.scales.y.max = undefined;
-      ageSexChart.options.scales.y.title.text = "Count of deaths";
+      ageSexChart.options.scales.x.max = undefined;
+      ageSexChart.options.scales.x.title.text = "Count of deaths";
     }
 
     ageSexChart.data.labels = labels;
-    ageSexChart.data.datasets[0].data = maleData;
-    ageSexChart.data.datasets[1].data = femaleData;
-    ageSexChart.data.datasets[2].data = otherData;
+    ageSexChart.data.datasets[0].data = femaleData;
+    ageSexChart.data.datasets[1].data = maleData;
     ageSexChart.update();
 
     const total = []
-      .concat(payload.male || [], payload.female || [], payload.other || [])
+      .concat(payload.male || [], payload.female || [])
       .reduce((acc, value) => acc + Number(value || 0), 0);
     setEmpty("deathsAgeSexEmpty", total === 0);
   };
@@ -454,100 +439,6 @@
     setEmpty("deathsPlaceEmpty", total === 0);
   };
 
-  const renderTopCauses = (payload) => {
-    topCausesPayload = payload;
-    const canvas = document.getElementById("deathsTopCausesChart");
-    if (!canvas || typeof Chart === "undefined") return;
-
-    if (!topCausesChart) {
-      topCausesChart = new Chart(canvas.getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: [],
-          datasets: [{
-            label: "Top causes",
-            data: [],
-            backgroundColor: "#556b8e",
-            borderColor: "#3f516b",
-            borderWidth: 1,
-          }],
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { enabled: true } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: { precision: 0 },
-              title: { display: true, text: "Count" },
-              grid: { display: true, color: "rgba(148,163,184,0.35)" },
-            },
-            y: { grid: { display: false } },
-          },
-        },
-      });
-    }
-
-    const mode = currentTopCauseMode();
-    topCausesChart.data.labels = payload.labels || [];
-    topCausesChart.data.datasets[0].data =
-      mode === "percentage" ? (payload.percentage_data || []) : (payload.count_data || []);
-    topCausesChart.options.scales.x.title.text = mode === "percentage" ? "Percentage (%)" : "Count";
-    topCausesChart.options.scales.x.max = mode === "percentage" ? 100 : undefined;
-    topCausesChart.update();
-
-    const hasCoded = !!payload.has_coded;
-    const total = (payload.count_data || []).reduce((acc, value) => acc + Number(value || 0), 0);
-    setEmpty("deathsTopCausesEmpty", !hasCoded || total === 0);
-  };
-
-  const renderCauseTrend = (payload) => {
-    const canvas = document.getElementById("deathsCauseTrendChart");
-    if (!canvas || typeof Chart === "undefined") return;
-
-    if (!causeTrendChart) {
-      causeTrendChart = new Chart(canvas.getContext("2d"), {
-        type: "line",
-        data: { labels: [], datasets: [] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: true, position: "top" }, tooltip: { enabled: true } },
-          scales: {
-            x: { title: { display: true, text: "Month" }, grid: { display: true, color: "rgba(148, 163, 184, 0.35)" } },
-            y: {
-              beginAtZero: true,
-              ticks: { precision: 0 },
-              title: { display: true, text: "Count of deaths" },
-              grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
-            },
-          },
-        },
-      });
-    }
-
-    const palette = ["#d73027", "#4575b4", "#4CAF50", "#f46d43", "#8e44ad"];
-    causeTrendChart.data.labels = payload.labels || [];
-    causeTrendChart.data.datasets = (payload.datasets || []).map((series, idx) => ({
-      label: series.label,
-      data: series.data || [],
-      borderColor: palette[idx % palette.length],
-      backgroundColor: palette[idx % palette.length],
-      pointRadius: 2,
-      tension: 0.25,
-      fill: false,
-    }));
-    causeTrendChart.update();
-
-    const hasCoded = !!payload.has_coded;
-    const total = (payload.datasets || [])
-      .flatMap((series) => series.data || [])
-      .reduce((acc, value) => acc + Number(value || 0), 0);
-    setEmpty("deathsCauseTrendEmpty", !hasCoded || total === 0);
-  };
-
   const renderTimeliness = (payload) => {
     const canvas = document.getElementById("deathsTimelinessChart");
     if (!canvas || typeof Chart === "undefined") return;
@@ -598,8 +489,6 @@
       mapPayload,
       ageSexPayloadResp,
       placePayloadResp,
-      topCausesPayloadResp,
-      causeTrendPayloadResp,
       signalsPayload,
       timelinessPayloadResp,
     ] = await Promise.all([
@@ -608,8 +497,6 @@
       fetchJSON(endpoints.map, filters),
       fetchJSON(endpoints.ageSex, filters),
       fetchJSON(endpoints.place, filters),
-      fetchJSON(endpoints.topCauses, filters),
-      fetchJSON(endpoints.causeTrend, filters),
       fetchJSON(endpoints.signals, filters),
       fetchJSON(endpoints.timeliness, filters),
     ]);
@@ -620,8 +507,6 @@
     await renderMap(mapPayload);
     renderAgeSex(ageSexPayloadResp);
     renderPlace(placePayloadResp);
-    renderTopCauses(topCausesPayloadResp);
-    renderCauseTrend(causeTrendPayloadResp);
     renderTimeliness(timelinessPayloadResp);
   };
 
@@ -672,7 +557,6 @@
         if (filterElements.mapView) filterElements.mapView.value = "Province";
         if (filterElements.ageSexCount) filterElements.ageSexCount.checked = true;
         if (filterElements.placeCount) filterElements.placeCount.checked = true;
-        if (filterElements.topCauseCount) filterElements.topCauseCount.checked = true;
         refreshAll().catch((err) => console.error(err));
       });
     }
@@ -697,15 +581,6 @@
       filterElements.placePercentage.addEventListener("change", rerenderPlace);
     }
 
-    const rerenderTopCauses = () => {
-      if (topCausesPayload) renderTopCauses(topCausesPayload);
-    };
-    if (filterElements.topCauseCount) {
-      filterElements.topCauseCount.addEventListener("change", rerenderTopCauses);
-    }
-    if (filterElements.topCausePercentage) {
-      filterElements.topCausePercentage.addEventListener("change", rerenderTopCauses);
-    }
   };
 
   const init = async () => {

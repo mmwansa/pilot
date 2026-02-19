@@ -78,8 +78,20 @@ class VerbalAutopsy(SoftDeletionModel):
     bid_check = models.TextField("BID Check", blank=True)
     bid_image = models.TextField("BID Image", blank=True)
     province = models.TextField("Province", blank=True)
+    district = models.TextField("District", blank=True, null=True)
+    constituency = models.TextField("Constituency", blank=True, null=True)
+    ward = models.TextField("Ward", blank=True, null=True)
+    ea = models.TextField("EA", blank=True, null=True)
     area = models.TextField("Area", blank=True)
     hospital = models.TextField("Hospital", blank=True)
+    cluster = models.ForeignKey(
+        "SRSClusterLocation",
+        related_name="verbalautopsies",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    community_va = models.TextField("Community VA", blank=True, null=True)
     submissiondate = models.TextField("Submission Date", blank=True)
     Id10002 = models.TextField(
         "Is this a region of high HIV/AIDS mortality?", blank=True
@@ -1747,10 +1759,63 @@ class VerbalAutopsy(SoftDeletionModel):
                 self.duplicate = False
 
     def save(self, *args, **kwargs):
+        self.community_va = self.community_va_normalized
         if VerbalAutopsy.auto_detect_duplicates():
             self.handle_update_duplicates()
 
         super().save(*args, **kwargs)
+        
+    @staticmethod
+    def _has_meaningful_value(value):
+        normalized = ("" if value is None else str(value)).strip().lower()
+        return normalized not in {"", "nan", "none", "null"}
+
+    @property
+    def community_va_normalized(self):
+        """
+        community_va semantics:
+        - completed hospital => "no"
+        - completed ward (or area fallback) => "yes"
+        - explicit community_va "no" => "no"
+        - otherwise => "yes"
+        """
+        if self._has_meaningful_value(self.hospital):
+            return "no"
+
+        ward_value = getattr(self, "ward", None) or self.area
+        if self._has_meaningful_value(ward_value):
+            return "yes"
+
+        value = (self.community_va or "").strip().lower()
+        return "no" if value == "no" else "yes"
+
+    @property
+    def is_community_va(self):
+        return self.community_va_normalized == "yes"
+
+    def resolve_location_context(self):
+        """
+        Canonical location context for downstream consumers.
+        Keeps legacy facility-location behavior while enabling community VA
+        geographies through SRS cluster hierarchy.
+        """
+        if self.is_community_va:
+            return {
+                "mode": "community",
+                "cluster": self.cluster,
+                "province": self.province,
+                "district": self.district,
+                "constituency": self.constituency,
+                "ward": self.ward,
+                "ea": self.ea,
+            }
+        return {
+            "mode": "facility",
+            "location": self.location,
+            "province": self.province,
+            "area": self.area,
+            "hospital": self.hospital,
+        }
         
     
     def __str__(self):

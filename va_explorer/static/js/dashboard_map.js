@@ -34,6 +34,9 @@ const dashboard = new Vue({
             map: null,
             geojsonCache: {}, // Cache loaded GeoJSON by level
             layer: null,
+            vaCauseTrendEndpoint: (typeof document !== "undefined" && document.getElementById("dashboardApp"))
+                ? document.getElementById("dashboardApp").dataset.causeTrendEndpoint
+                : "",
             drill: {
                 hierarchy: DRILL_HIERARCHY,
                 path: [{ level: "Zambia", id: "ZM", name: "Zambia", levelIndex: 0 }],
@@ -89,6 +92,7 @@ const dashboard = new Vue({
             placeOfDeathValue: "count",
             causeOfDeathValue: "count",
             featureHitInTick: false,
+            vaCauseTrendChart: null,
             // Fallback for environments where native dblclick can be unreliable in tab panes.
             featureClickState: { id: null, at: 0 },
             drillInFlight: false,
@@ -166,6 +170,9 @@ const dashboard = new Vue({
 
         await this.initializeBaseMap();
         await this.addGeoJSONToMap();
+        await this.refreshVACauseTrendChart();
+        await this.$nextTick();
+        this.resizeCharts();
     },
     beforeDestroy() {
         window.removeEventListener('resize', this.resizeCharts);
@@ -1134,18 +1141,111 @@ const dashboard = new Vue({
             const codRef = this.$refs.cod;
 
             if (demographicsRef) {
-                this.demographicsWidth = demographicsRef.clientWidth - 1;
+                this.demographicsWidth = Math.max(demographicsRef.clientWidth - 1, 360);
                 this.demographicsHeight = Math.max(demographicsRef.clientHeight - 1, 185);
             }
 
             if (codRef) {
-                this.codWidth = codRef.clientWidth - 1;
+                this.codWidth = Math.max(codRef.clientWidth - 1, 420);
                 this.codHeight = Math.max(codRef.clientHeight - 1, 185);
             }
+        },
+        setVAEmpty(id, isEmpty) {
+            const el = document.getElementById(id);
+            if (el) el.hidden = !isEmpty;
+        },
+        buildVACauseTrendFilters() {
+            const { age, sex } = this.getAgeAndSex();
+            const { startDate, endDate } = this.getStartAndEndDates();
+            const params = new URLSearchParams();
+            params.set("tab", "deaths");
+
+            if (sex) params.set("sex", sex.charAt(0).toUpperCase() + sex.slice(1));
+            if (age) params.set("age_group", age);
+            params.set("coded_only", "1");
+
+            if (this.deathDateSelected === "Any Time") {
+                params.set("time_preset", "all_time");
+            } else if (this.deathDateSelected === "Within 1 Month") {
+                params.set("time_preset", "last_30_days");
+            } else if (this.deathDateSelected === "Custom") {
+                params.set("time_preset", "custom");
+                if (startDate) params.set("start_datetime", startDate);
+                if (endDate) params.set("end_datetime", endDate);
+            } else {
+                // "Within 3 months" and "Within 1 year" don't map to deaths presets; use explicit custom range.
+                params.set("time_preset", "custom");
+                if (startDate) params.set("start_datetime", startDate);
+                if (endDate) params.set("end_datetime", endDate);
+            }
+
+            return params;
+        },
+        async refreshVACauseTrendChart() {
+            const canvas = document.getElementById("vaCauseTrendChart");
+            if (!canvas || typeof Chart === "undefined" || !this.vaCauseTrendEndpoint) return;
+
+            let payload = { has_coded: false, labels: [], datasets: [] };
+            try {
+                const params = this.buildVACauseTrendFilters();
+                const url = params.toString()
+                    ? `${this.vaCauseTrendEndpoint}?${params.toString()}`
+                    : this.vaCauseTrendEndpoint;
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    credentials: "same-origin",
+                });
+                if (!response.ok) throw new Error(`Cause trend request failed: ${url}`);
+                payload = await response.json();
+            } catch (err) {
+                console.warn("[VA Cause Trend] Failed to load cause trend data", err);
+            }
+
+            if (!this.vaCauseTrendChart) {
+                this.vaCauseTrendChart = new Chart(canvas.getContext("2d"), {
+                    type: "line",
+                    data: { labels: [], datasets: [] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: "top" }, tooltip: { enabled: true } },
+                        scales: {
+                            x: { title: { display: true, text: "Month" }, grid: { display: true, color: "rgba(148, 163, 184, 0.35)" } },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 },
+                                title: { display: true, text: "Count of deaths" },
+                                grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
+                            },
+                        },
+                    },
+                });
+            }
+
+            const palette = ["#d73027", "#4575b4", "#4CAF50", "#f46d43", "#8e44ad"];
+            this.vaCauseTrendChart.data.labels = payload.labels || [];
+            this.vaCauseTrendChart.data.datasets = (payload.datasets || []).map((series, idx) => ({
+                label: series.label,
+                data: series.data || [],
+                borderColor: palette[idx % palette.length],
+                backgroundColor: palette[idx % palette.length],
+                pointRadius: 2,
+                tension: 0.25,
+                fill: false,
+            }));
+            this.vaCauseTrendChart.update();
+
+            const hasCoded = !!payload.has_coded;
+            const total = (payload.datasets || [])
+                .flatMap((series) => series.data || [])
+                .reduce((acc, value) => acc + Number(value || 0), 0);
+            this.setVAEmpty("vaCauseTrendEmpty", !hasCoded || total === 0);
         },
         async updateDataAndMap() {
             await this.getData();
             await this.addGeoJSONToMap();
+            await this.refreshVACauseTrendChart();
         },
         async refreshDashboardForDrillChange(reason = "drill_change") {
             await this.updateDataAndMap();

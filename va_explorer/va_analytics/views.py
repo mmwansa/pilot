@@ -602,9 +602,9 @@ def _matches_death_age_group(age_group, dob_value, dod_value):
     if group == "neonate":
         return age_days < 28
     if group == "child":
-        return age_days >= 28 and age_years < 15
+        return age_days >= 28 and age_years <= 12
     if group == "adult":
-        return age_years >= 15
+        return age_years > 12
     return True
 
 
@@ -1373,41 +1373,19 @@ class DeathsMapAPIView(APIView):
 
 def _build_deaths_age_sex_profile(filtered_qs):
     age_groups = [
-        "Neonate (<28 days)",
-        "Post-neonatal (28d-<1y)",
-        "1-4",
-        "5-14",
-        "15-24",
-        "25-34",
-        "35-44",
-        "45-54",
-        "55-64",
-        "65+",
+        "Neonate (< 28 days)",
+        "Child (≤ 12 years)",
+        "Adult (> 12 years)",
     ]
     male_counts = [0] * len(age_groups)
     female_counts = [0] * len(age_groups)
-    other_counts = [0] * len(age_groups)
 
     def _bucket(age_years, age_days):
         if age_days < 28:
             return 0
-        if age_days < 365:
+        if age_years <= 12:
             return 1
-        if age_years < 5:
-            return 2
-        if age_years < 15:
-            return 3
-        if age_years < 25:
-            return 4
-        if age_years < 35:
-            return 5
-        if age_years < 45:
-            return 6
-        if age_years < 55:
-            return 7
-        if age_years < 65:
-            return 8
-        return 9
+        return 2
 
     for row in filtered_qs.values("DE_04", "DE_06", "DE_05").iterator():
         age_years, age_days = _compute_death_age_years(row.get("DE_04"), row.get("DE_06"))
@@ -1420,14 +1398,11 @@ def _build_deaths_age_sex_profile(filtered_qs):
             male_counts[idx] += 1
         elif sex.startswith("f"):
             female_counts[idx] += 1
-        else:
-            other_counts[idx] += 1
 
     return {
         "labels": age_groups,
         "male": male_counts,
         "female": female_counts,
-        "other": other_counts,
     }
 
 

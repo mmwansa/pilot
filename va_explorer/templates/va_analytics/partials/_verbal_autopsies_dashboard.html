@@ -1,4 +1,4 @@
-<main id="dashboardApp">
+<main id="dashboardApp" data-cause-trend-endpoint="{% url 'va_analytics:outcomes-deaths-cause-trend-api' %}">
   <section class="sectionContainer panelView">
     <h2>Summaries and Control Panel</h2>
 
@@ -130,23 +130,13 @@
   </section>
 
   <section class="sectionContainer trendView">
-    <h2>Trend</h2>
+    <h2>Cause of Death Trend</h2>
     <div class="chartsContainer" ref="trend">
-      <div class="topCauseLineChartContainer">
-        <line-chart
-          v-if="COD_trend.length > 0"
-          :plot-data="COD_trend"
-          x-key="month"
-          :width="codWidth"
-          :height="demographicsHeight"
-          :x-ticks="6"
-          :show-points="true"
-          :point-radius="2.5"
-          :margin="{top: 10, bottom: 20, left: 30, right: 20}"
-        >
-        </line-chart>
+      <div class="chart-canvas-wrap">
+        <canvas id="vaCauseTrendChart" data-component="cause-trend-chart"></canvas>
       </div>
     </div>
+    <p id="vaCauseTrendEmpty" class="po-empty-state" hidden>No coded cause trend data available for the selected filters.</p>
   </section>
 
   <section class="sectionContainer demographicsView">

@@ -50,6 +50,83 @@ def normalize_value(val):
     except Exception:
         return normalize_string(val)
 
+
+def _has_meaningful_value(value):
+    if pd.isnull(value):
+        return False
+    normalized = normalize_string(value).lower()
+    return normalized not in {"", "nan", "none", "null"}
+
+
+def normalize_community_va_value(value, *, hospital=None, ward=None):
+    """
+    community_va rules:
+    - completed hospital => "no"
+    - completed ward => "yes"
+    - explicit community_va "no" variants => "no"
+    - otherwise => "yes"
+    """
+    if _has_meaningful_value(hospital):
+        return "no"
+    if _has_meaningful_value(ward):
+        return "yes"
+
+    if pd.isnull(value):
+        return "yes"
+    normalized = normalize_string(value).lower()
+    if normalized in {"", "nan", "none", "null"}:
+        return "yes"
+    if normalized in {"no", "n", "false", "0"}:
+        return "no"
+    return "yes"
+
+
+def _normalized_geo_token(value):
+    return normalize_string(value).strip().lower()
+
+
+def build_srs_location_maps():
+    """
+    Build lightweight lookup maps for SRSClusterLocation by level and token.
+    Token uses normalized name and normalized code.
+    """
+    maps = {
+        "ea": {},
+        "ward": {},
+        "constituency": {},
+        "district": {},
+        "province": {},
+    }
+    for loc in SRSClusterLocation.objects.only("id", "name", "code", "location_type").iterator():
+        level = _normalized_geo_token(loc.location_type)
+        if level not in maps:
+            continue
+        name_token = _normalized_geo_token(loc.name)
+        if name_token:
+            maps[level][name_token] = loc
+        code_token = _normalized_geo_token(loc.code)
+        if code_token:
+            maps[level][code_token] = loc
+    return maps
+
+
+def resolve_srs_cluster_from_row(row, srs_maps):
+    # deepest-to-broadest precedence
+    for field_name, level in (
+        ("ea", "ea"),
+        ("ward", "ward"),
+        ("constituency", "constituency"),
+        ("district", "district"),
+        ("province", "province"),
+    ):
+        token = _normalized_geo_token(row.get(field_name))
+        if not token:
+            continue
+        match = srs_maps.get(level, {}).get(token)
+        if match:
+            return match
+    return None
+
 def normalize_dataframe_columns(df, model):
     """
     Rename and filter DataFrame columns to align with model fields.
@@ -251,6 +328,19 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
     # (e.x. Id10010_other, Id10010)
     record_df = deduplicate_columns(record_df)
 
+    # Normalize community_va before dropping non-model columns so we can use
+    # transient import fields such as ward.
+    if "community_va" not in record_df.columns:
+        record_df["community_va"] = None
+    record_df["community_va"] = record_df.apply(
+        lambda row: normalize_community_va_value(
+            row.get("community_va"),
+            hospital=row.get("hospital"),
+            ward=row.get("ward"),
+        ),
+        axis=1,
+    )
+
     csv_field_names = record_df.columns
     common_field_names = csv_field_names.intersection(model_field_names)
 
@@ -280,6 +370,7 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
             .only("name", "key")
             .values_list("key", "name")
         }
+    srs_maps = build_srs_location_maps()
 
     # if random locations, assign random locations via a random field worker.
     if random_locations:
@@ -365,7 +456,10 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
             user = random.choice(field_workers)
             va.location = user.location_restrictions.first()
         else:
-            assign_va_location(va, location_map)
+            if va.community_va_normalized == "yes":
+                va.cluster = resolve_srs_cluster_from_row(row, srs_maps)
+            else:
+                assign_va_location(va, location_map)
             if "hospital" in row and logger:
                 logger.info(
                     "va_id: %s - Matched hospital %s to %s location in DB",

@@ -7,8 +7,6 @@
   data-map-endpoint="{% url 'va_analytics:outcomes-deaths-map-api' %}"
   data-age-sex-endpoint="{% url 'va_analytics:outcomes-deaths-age-sex-api' %}"
   data-place-endpoint="{% url 'va_analytics:outcomes-deaths-place-api' %}"
-  data-top-causes-endpoint="{% url 'va_analytics:outcomes-deaths-top-causes-api' %}"
-  data-cause-trend-endpoint="{% url 'va_analytics:outcomes-deaths-cause-trend-api' %}"
   data-signals-endpoint="{% url 'va_analytics:outcomes-deaths-signals-api' %}"
   data-timeliness-endpoint="{% url 'va_analytics:outcomes-deaths-timeliness-api' %}"
 >
@@ -37,7 +35,7 @@
             <option value="District" {% if filter_map_view == "District" %}selected{% endif %}>District</option>
           </select>
 
-          <label for="deathsFilterTimePreset">Date of Death:</label>
+          <label for="deathsFilterTimePreset">DOD:</label>
           <select id="deathsFilterTimePreset" class="select" name="time_preset">
             <option value="all_time">All time</option>
             <option value="last_30_days">Last 30 days</option>
@@ -53,7 +51,7 @@
             <option value="Female">Female</option>
           </select>
 
-          <label for="deathsFilterAgeGroup">Age Group:</label>
+          <label for="deathsFilterAgeGroup">Age:</label>
           <select id="deathsFilterAgeGroup" class="select" name="age_group">
             <option value="">All</option>
             <option value="neonate">Neonate</option>
@@ -93,22 +91,23 @@
   </section>
 
   <section class="sectionContainer" id="deathsCauseSection" data-component="causes-and-place">
-    <div class="deaths-cause-row">
-      <section class="sectionContainer" id="deathsTopCausesSection">
-        <h2 class="section-title-spaced">Top 10 Causes of Death</h2>
+    <div class="po-split-row">
+      <section class="sectionContainer" id="deathsDemographicsSection" data-component="demographics">
+        <h2>All Cause National Demographics</h2>
         <div class="chart-mode-toggle">
-          <input id="deathsTopCauseModeCount" type="radio" value="count" name="deaths_top_cause_mode" checked>
-          <label for="deathsTopCauseModeCount">Count</label>
-          <input id="deathsTopCauseModePercentage" type="radio" value="percentage" name="deaths_top_cause_mode">
-          <label for="deathsTopCauseModePercentage">Percentage</label>
+          <input id="deathsAgeSexModeCount" type="radio" value="count" name="deaths_age_sex_mode" checked>
+          <label for="deathsAgeSexModeCount">Count</label>
+          <input id="deathsAgeSexModePercentage" type="radio" value="percentage" name="deaths_age_sex_mode">
+          <label for="deathsAgeSexModePercentage">Percentage</label>
         </div>
         <div class="chartsContainer">
           <div class="chart-canvas-wrap">
-            <canvas id="deathsTopCausesChart" data-component="top-causes-chart"></canvas>
+            <canvas id="deathsAgeSexChart" data-component="age-sex-chart"></canvas>
           </div>
         </div>
-        <p id="deathsTopCausesEmpty" class="po-empty-state" hidden>No coded cause data available for the selected filters.</p>
+        <p id="deathsAgeSexEmpty" class="po-empty-state" hidden>No age-sex mortality data available for the selected filters.</p>
       </section>
+
       <section class="sectionContainer" id="deathsPlaceSection">
         <h2>Place of Death Distribution</h2>
         <div class="chart-mode-toggle">
@@ -125,33 +124,10 @@
         <p id="deathsPlaceEmpty" class="po-empty-state" hidden>No place-of-death data available for the selected filters.</p>
       </section>
     </div>
-    <section class="sectionContainer" id="deathsCauseTrendSection">
-      <h2 class="section-title-spaced">Cause Trend</h2>
-      <div class="chartsContainer">
-        <div class="chart-canvas-wrap">
-          <canvas id="deathsCauseTrendChart" data-component="cause-trend-chart"></canvas>
-        </div>
-      </div>
-      <p id="deathsCauseTrendEmpty" class="po-empty-state" hidden>No coded cause trend data available for the selected filters.</p>
-    </section>
   </section>
 
-  <section class="sectionContainer" id="deathsDemographicsSection" data-component="demographics-and-timeliness">
-    <h2>Mortality by Age Group and Sex</h2>
-    <div class="chart-mode-toggle">
-      <input id="deathsAgeSexModeCount" type="radio" value="count" name="deaths_age_sex_mode" checked>
-      <label for="deathsAgeSexModeCount">Count</label>
-      <input id="deathsAgeSexModePercentage" type="radio" value="percentage" name="deaths_age_sex_mode">
-      <label for="deathsAgeSexModePercentage">Percentage</label>
-    </div>
-    <div class="chartsContainer">
-      <div class="chart-canvas-wrap">
-        <canvas id="deathsAgeSexChart" data-component="age-sex-chart"></canvas>
-      </div>
-    </div>
-    <p id="deathsAgeSexEmpty" class="po-empty-state" hidden>No age-sex mortality data available for the selected filters.</p>
-
-    <h2 class="section-title-spaced">Reporting Timeliness</h2>
+  <section class="sectionContainer" id="deathsTimelinessSection" data-component="timeliness">
+    <h2>Reporting Timeliness</h2>
     <div class="chartsContainer">
       <div class="chart-canvas-wrap compact">
         <canvas id="deathsTimelinessChart" data-component="timeliness-chart"></canvas>
