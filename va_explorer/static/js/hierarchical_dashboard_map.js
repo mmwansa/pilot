@@ -312,7 +312,7 @@
           const isVAStyle = styleVariant === "va";
           return {
             stroke: true,
-            weight: isVAStyle ? 3 : 2,
+            weight: 1,
             color: isVAStyle ? "black" : color,
             opacity: 1,
             fillColor: color,

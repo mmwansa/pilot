@@ -453,15 +453,18 @@
 }
 .map-breadcrumbs {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: baseline;
+  flex-wrap: nowrap;
   gap: 6px;
   margin: 8px 0 10px;
   font-size: 0.85rem;
+  white-space: nowrap;
+  overflow-x: auto;
 }
 .map-breadcrumb-label {
   color: #475569;
   font-weight: 600;
+  line-height: 1.2;
 }
 .map-breadcrumb-item {
   border: none;
@@ -470,6 +473,10 @@
   padding: 0;
   cursor: pointer;
   text-decoration: underline;
+  font: inherit;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: baseline;
 }
 .map-breadcrumb-item.is-active {
   color: #111827;

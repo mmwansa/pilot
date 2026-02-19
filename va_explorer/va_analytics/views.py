@@ -1059,7 +1059,7 @@ class DashboardView(CustomAuthMixin, PermissionRequiredMixin, RedirectView):
     permission_required = "va_analytics.view_dashboard"
 
     def get_redirect_url(self, *args, **kwargs):
-        return f"{reverse('va_analytics:outcomes-dashboard')}?tab=verbal_autopsies"
+        return f"{reverse('va_analytics:outcomes-dashboard')}?tab=pregnancies"
 
 dashboard_view = DashboardView.as_view()
 
@@ -1069,7 +1069,7 @@ class DashboardMapView(CustomAuthMixin, PermissionRequiredMixin, RedirectView):
     permission_required = "va_analytics.view_dashboard"
 
     def get_redirect_url(self, *args, **kwargs):
-        return f"{reverse('va_analytics:outcomes-dashboard')}?tab=verbal_autopsies"
+        return f"{reverse('va_analytics:outcomes-dashboard')}?tab=pregnancies"
 
 dashboard_map_view = DashboardMapView.as_view()
 

@@ -89,14 +89,16 @@
               </div>
             </div>
             <div class="national-operational-grid">
-              <div id="novEventsComponentSlot" data-component-slot data-component="events-chart-container" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_events_component' %}" data-cache-key="home:overview:events">
-                <div class="home-panel home-panel-placeholder">Loading overview trend...</div>
+              <div class="nov-overview-left-col">
+                <div id="novEventsComponentSlot" data-component-slot data-component="events-chart-container" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_events_component' %}" data-cache-key="home:overview:events">
+                  <div class="home-panel home-panel-placeholder">Loading overview trend...</div>
+                </div>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-component" data-target="#novEventsComponentSlot">Refresh Trend</button>
-              <div id="novKpisComponentSlot" data-component-slot data-component="kpi-cards" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_kpis_component' %}" data-cache-key="home:overview:kpis">
-                <div class="home-panel home-panel-placeholder">Loading overview KPIs...</div>
+              <div class="nov-overview-right-col">
+                <div id="novKpisComponentSlot" data-component-slot data-component="kpi-cards" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_kpis_component' %}" data-cache-key="home:overview:kpis">
+                  <div class="home-panel home-panel-placeholder">Loading overview KPIs...</div>
+                </div>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-component" data-target="#novKpisComponentSlot">Refresh KPIs</button>
             </div>
           </div>
         </div>
@@ -170,6 +172,7 @@
 
 {% block page_scripts %}
   <script src="{% static 'js/dashboard_loader.js' %}"></script>
+  <script src="{% static 'js/dashboard_tabs.js' %}"></script>
   <script src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
   <script src="{% static 'js/regional_operations.js' %}"></script>
   <script src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
