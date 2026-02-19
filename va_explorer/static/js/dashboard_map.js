@@ -75,6 +75,9 @@ const dashboard = new Vue({
             suppressWarning: false,
             placeOfDeathValue: "count",
             causeOfDeathValue: "count",
+            // Fallback for environments where native dblclick can be unreliable in tab panes.
+            featureClickState: { id: null, at: 0 },
+            drillInFlight: false,
         }
     },
     computed: {
@@ -302,7 +305,8 @@ const dashboard = new Vue({
             const {age, sex} = this.getAgeAndSex();
             const {startDate, endDate} = this.getStartAndEndDates();
 
-            this.csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const csrfField = document.querySelector('[name=csrfmiddlewaretoken]');
+            this.csrftoken = csrfField ? csrfField.value : "";
 
             // Construct parent region filter based on current drill-down path
             // Use the deepest breadcrumb when available (e.g., Province, District, Constituency...)
@@ -313,6 +317,9 @@ const dashboard = new Vue({
             }
 
             const data_url = `${window.location.origin}/va_analytics/api/dashboard?`;
+            const headers = {'Content-Type': 'application/json'};
+            if (this.csrftoken) headers['X-CSRFToken'] = this.csrftoken;
+
             const dataReq = await fetch(data_url + new URLSearchParams({
                 start_date: startDate,
                 end_date: endDate,
@@ -321,7 +328,7 @@ const dashboard = new Vue({
                 age, sex
             }), {
                 method: 'GET',
-                headers: {'X-CSRFToken': this.csrftoken, 'Content-Type': 'application/json'},
+                headers,
                 mode: 'same-origin'
             });
 
@@ -432,7 +439,8 @@ const dashboard = new Vue({
                 }).addTo(this.map);
                 // Ensure zoom is enabled
                 this.map.scrollWheelZoom.enable();
-                this.map.doubleClickZoom.enable();
+                // Dblclick is used for drill-down on features; avoid map zoom swallowing the event.
+                this.map.doubleClickZoom.disable();
             } catch (err) {
                 console.warn('Could not add zoom control:', err);
             }
@@ -546,13 +554,20 @@ const dashboard = new Vue({
                     const html_tooltip = vm.generateTooltip(feature);
                     layer.bindTooltip(html_tooltip);
                     
-                    // Single click: show details (currently just shows tooltip)
-                    layer.on("click", (e) => {
-                        // Do nothing on single click
+                    // Handle double intent via rapid consecutive clicks as a robust fallback.
+                    layer.on("click", async (e) => {
+                        await vm.handleRegionClick(e);
                     });
 
                     // Double-click: drill down
                     layer.on("dblclick", async (e) => {
+                        if (e && e.originalEvent) {
+                            e.originalEvent.preventDefault();
+                            e.originalEvent.stopPropagation();
+                        }
+                        if (typeof L !== "undefined" && L.DomEvent) {
+                            L.DomEvent.stop(e);
+                        }
                         await vm.drillIntoRegion(e.target.feature);
                     });
                 }
@@ -648,44 +663,75 @@ const dashboard = new Vue({
         setupFullscreen() {
             // Removed: custom fullscreen implementation. Using Leaflet.fullscreen control instead.
         },
+        async handleRegionClick(e) {
+            if (!e || !e.target || !e.target.feature || this.drillInFlight) return;
+            const feature = e.target.feature;
+            const featureId = feature?.properties?.area_id ?? feature?.properties?.area_name;
+            const now = Date.now();
+            const isRapidRepeat = this.featureClickState.id === featureId && (now - this.featureClickState.at) <= 380;
+
+            this.featureClickState = { id: featureId, at: now };
+            if (!isRapidRepeat) return;
+
+            if (e && e.originalEvent) {
+                e.originalEvent.preventDefault();
+                e.originalEvent.stopPropagation();
+            }
+            if (typeof L !== "undefined" && L.DomEvent) {
+                L.DomEvent.stop(e);
+            }
+            this.featureClickState = { id: null, at: 0 };
+            await this.drillIntoRegion(feature);
+        },
         async drillIntoRegion(feature) {
             // Handle double-click drill-down
+            if (this.drillInFlight) return;
             if (this.currentLevel >= MAX_DRILL_LEVEL) {
                 console.log("Already at deepest drill level (Ward)");
                 return;
             }
+            this.drillInFlight = true;
+            try {
+                const regionName = feature.properties.area_name;
+                const regionLevel = LEVEL_CONFIG[this.currentLevel].label;
+                const regionAreaId = feature.properties.area_id;
 
-            const regionName = feature.properties.area_name;
-            const regionLevel = LEVEL_CONFIG[this.currentLevel].label;
-            const regionAreaId = feature.properties.area_id;
-
-            console.log(`[Drill Down] Clicked on ${regionLevel}: "${regionName}" with area_id=${regionAreaId}, parent_id=${feature.properties.parent_id}`);
+                console.log(`[Drill Down] Clicked on ${regionLevel}: "${regionName}" with area_id=${regionAreaId}, parent_id=${feature.properties.parent_id}`);
             
             // Verify the clicked feature's area_id matches what's in the current GeoJSON cache
             // This helps detect cache mismatches
-            const currentGeojson = this.geojsonCache[this.currentLevel];
-            if (currentGeojson) {
-                const matchingFeature = currentGeojson.features.find(f => 
-                    f.properties.area_name === regionName && 
-                    f.properties.area_id === regionAreaId
-                );
-                if (!matchingFeature) {
-                    console.warn(`[Drill Down] WARNING: Clicked feature (area_id=${regionAreaId}) not found in cached GeoJSON for level ${this.currentLevel}. Possible cache mismatch!`);
-                    // Try to find by name only
-                    const byName = currentGeojson.features.find(f => f.properties.area_name === regionName);
-                    if (byName) {
-                        console.warn(`[Drill Down] Found feature with same name but different area_id: ${byName.properties.area_id}. Using this instead.`);
-                        // Use the correct area_id from the cache
-                        const correctedAreaId = byName.properties.area_id;
-                        this.drilldownPath.push({
-                            level: regionLevel,
-                            name: regionName,
-                            levelIndex: this.currentLevel,
-                            id: correctedAreaId
-                        });
-                        console.log(`[Drill Down] Using corrected area_id=${correctedAreaId} instead of ${regionAreaId}`);
+                const currentGeojson = this.geojsonCache[this.currentLevel];
+                if (currentGeojson) {
+                    const matchingFeature = currentGeojson.features.find(f => 
+                        f.properties.area_name === regionName && 
+                        f.properties.area_id === regionAreaId
+                    );
+                    if (!matchingFeature) {
+                        console.warn(`[Drill Down] WARNING: Clicked feature (area_id=${regionAreaId}) not found in cached GeoJSON for level ${this.currentLevel}. Possible cache mismatch!`);
+                        // Try to find by name only
+                        const byName = currentGeojson.features.find(f => f.properties.area_name === regionName);
+                        if (byName) {
+                            console.warn(`[Drill Down] Found feature with same name but different area_id: ${byName.properties.area_id}. Using this instead.`);
+                            // Use the correct area_id from the cache
+                            const correctedAreaId = byName.properties.area_id;
+                            this.drilldownPath.push({
+                                level: regionLevel,
+                                name: regionName,
+                                levelIndex: this.currentLevel,
+                                id: correctedAreaId
+                            });
+                            console.log(`[Drill Down] Using corrected area_id=${correctedAreaId} instead of ${regionAreaId}`);
+                        } else {
+                            // Fallback: use the clicked feature's area_id
+                            this.drilldownPath.push({
+                                level: regionLevel,
+                                name: regionName,
+                                levelIndex: this.currentLevel,
+                                id: regionAreaId
+                            });
+                        }
                     } else {
-                        // Fallback: use the clicked feature's area_id
+                        // Feature matches, use it
                         this.drilldownPath.push({
                             level: regionLevel,
                             name: regionName,
@@ -694,7 +740,7 @@ const dashboard = new Vue({
                         });
                     }
                 } else {
-                    // Feature matches, use it
+                    // No cache, use clicked feature
                     this.drilldownPath.push({
                         level: regionLevel,
                         name: regionName,
@@ -702,23 +748,17 @@ const dashboard = new Vue({
                         id: regionAreaId
                     });
                 }
-            } else {
-                // No cache, use clicked feature
-                this.drilldownPath.push({
-                    level: regionLevel,
-                    name: regionName,
-                    levelIndex: this.currentLevel,
-                    id: regionAreaId
-                });
+
+                console.log(`[Drill Down] Moving from level ${this.currentLevel} to level ${this.currentLevel + 1}`);
+
+                // Move to next level
+                this.currentLevel += 1;
+
+                // Load and display map for next level
+                await this.updateDataAndMap();
+            } finally {
+                this.drillInFlight = false;
             }
-
-            console.log(`[Drill Down] Moving from level ${this.currentLevel} to level ${this.currentLevel + 1}`);
-
-            // Move to next level
-            this.currentLevel += 1;
-
-            // Load and display map for next level
-            await this.updateDataAndMap();
         },
         async drillBack() {
             // Go back one level

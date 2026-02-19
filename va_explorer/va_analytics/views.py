@@ -8,7 +8,7 @@ from django.db.models.functions import Cast, Lower, Substr, Trim, TruncMonth
 from django.utils import timezone
 from django.utils.dateparse import parse_date as django_parse_date
 from django.utils.dateparse import parse_datetime as django_parse_datetime
-from django.views.generic import ListView, TemplateView
+from django.views.generic import ListView, RedirectView, TemplateView
 from numpy import round
 from pandas import to_datetime as to_dt
 from rest_framework.response import Response
@@ -1016,8 +1016,10 @@ class DashboardAPIView(APIView):
         return Response(data)
 
 
-class DashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateView):
-    template_name = "va_analytics/dashboard.html"
+class DashboardView(CustomAuthMixin, PermissionRequiredMixin, RedirectView):
+    pattern_name = "va_analytics:dashboard-map"
+    permanent = False
+    query_string = True
     permission_required = "va_analytics.view_dashboard"
 
 dashboard_view = DashboardView.as_view()

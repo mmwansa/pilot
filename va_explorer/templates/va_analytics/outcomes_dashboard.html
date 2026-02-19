@@ -7,7 +7,45 @@
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'css/outcomes_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/vuesalize-0.2.0/vuesalize.css' %}">
   <link rel="stylesheet" href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
+  <style>
+    .breadcrumb-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      flex-wrap: wrap;
+    }
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .breadcrumb-item:not(:last-child)::after {
+      content: none !important;
+    }
+    .breadcrumb-text {
+      color: #333;
+      font-weight: 500;
+    }
+    #map {
+      width: 100%;
+      height: calc(100vh - 360px);
+      max-height: calc(100vh - 200px);
+      min-height: 360px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 10px 0;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -104,12 +142,7 @@
           role="tabpanel"
           aria-labelledby="verbal-autopsies-tab"
         >
-          <main id="verbalAutopsiesDashboardApp" class="outcomes-dashboard-root" data-component="dashboard">
-            <section class="sectionContainer panelView" data-component="panel">
-              <h2>Verbal Autopsies</h2>
-              <p class="dashboard-note">Verbal autopsy dashboard components will appear here.</p>
-            </section>
-          </main>
+          {% include "va_analytics/partials/_verbal_autopsies_dashboard.html" %}
         </div>
       </div>
     </div>
@@ -117,9 +150,14 @@
 {% endblock %}
 
 {% block page_scripts %}
+  <script type="text/javascript" src="{% static 'vendor/vue-2.7.13/vue.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/vuesalize-0.2.0/vuesalize.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/d3-array-3.2.0/d3-array.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/leaflet-fullscreen/Control.FullScreen.umd.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/outcomes_dashboard.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/pregnancy_dashboard.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/deaths_dashboard.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/dashboard_map.js' %}"></script>
 {% endblock %}
