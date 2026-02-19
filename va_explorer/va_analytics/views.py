@@ -3,6 +3,7 @@ from statistics import median
 
 import pandas as pd
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.urls import reverse
 from django.db.models import Avg, Case, CharField, Count, DateField, F, IntegerField, Max, Q, Value, When
 from django.db.models.functions import Cast, Lower, Substr, Trim, TruncMonth
 from django.utils import timezone
@@ -1017,16 +1018,22 @@ class DashboardAPIView(APIView):
 
 
 class DashboardView(CustomAuthMixin, PermissionRequiredMixin, RedirectView):
-    pattern_name = "va_analytics:dashboard-map"
     permanent = False
     query_string = True
     permission_required = "va_analytics.view_dashboard"
 
+    def get_redirect_url(self, *args, **kwargs):
+        return f"{reverse('va_analytics:outcomes-dashboard')}?tab=verbal_autopsies"
+
 dashboard_view = DashboardView.as_view()
 
-class DashboardMapView(CustomAuthMixin, PermissionRequiredMixin, TemplateView):
-    template_name = "va_analytics/dashboard_map.html"
+class DashboardMapView(CustomAuthMixin, PermissionRequiredMixin, RedirectView):
+    permanent = False
+    query_string = True
     permission_required = "va_analytics.view_dashboard"
+
+    def get_redirect_url(self, *args, **kwargs):
+        return f"{reverse('va_analytics:outcomes-dashboard')}?tab=verbal_autopsies"
 
 dashboard_map_view = DashboardMapView.as_view()
 

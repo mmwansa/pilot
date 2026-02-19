@@ -126,19 +126,6 @@
         {% endif %}
       </ul>
 
-      <ul class="collapse-section" id="analytics-section" style="display: block">
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'dashboard-map' %}active{% endif %}"
-            href="{% url 'va_analytics:dashboard-map' %}"
-            data-tooltip="Dashboard Map"
-          >
-            <i class="fas fa-map nav-icon"></i>
-            <span class="nav-label">Dashboard Map</span>
-          </a>
-        </li>
-      </ul>
-
       <li class="nav-item">
         <a
           class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}"
