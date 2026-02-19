@@ -148,6 +148,7 @@ LOCAL_APPS = [
     "va_explorer.va_export.apps.VaExportConfig",
     "va_explorer.va_data_cleanup.apps.VaDataCleanupConfig",
     "va_explorer.vacms.apps.VacmsConfig",
+    "va_explorer.admin_panel.apps.AdminPanelConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -243,6 +244,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
+                "django.template.context_processors.csrf",
                 "django.contrib.auth.context_processors.auth",
                 "django.template.context_processors.i18n",
                 "django.template.context_processors.media",

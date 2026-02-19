@@ -8,6 +8,7 @@ from va_explorer.va_analytics.views import (
     _build_pregnancy_ga_detection_distribution,
     build_pregnancy_qs,
 )
+from va_explorer.tests.factories import LocationFactory
 from va_explorer.va_data_management.models import Pregnancy
 
 
@@ -46,6 +47,24 @@ class PregnancyDashboardDataTests(TestCase):
         qs = build_pregnancy_qs(request)
 
         self.assertEqual(list(qs.values_list("key", flat=True)), [in_range.key])
+
+    def test_applies_user_location_restrictions(self):
+        User = get_user_model()
+        user = User.objects.create_user(
+            username="preg_loc_test_user",
+            email="preg-loc@example.com",
+            password="test-password-123",
+        )
+        province = LocationFactory.create(name="Southern", location_type="province")
+        user.location_restrictions.set([province])
+        self._create_pregnancy("preg-south", province="Southern", district="Choma")
+        self._create_pregnancy("preg-other", province="Lusaka", district="Lusaka")
+
+        request = self.factory.get("/va_analytics/pregnancy-dashboard/")
+        request.user = user
+        qs = build_pregnancy_qs(request)
+
+        self.assertEqual(set(qs.values_list("key", flat=True)), {"preg-south"})
 
     def test_ga_detection_distribution_computation(self):
         self._create_pregnancy(

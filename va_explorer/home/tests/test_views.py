@@ -6,14 +6,25 @@ import pytest
 import time_machine
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import gettz
+from django.contrib.auth.models import Permission
+from django.core.cache import cache
 from django.test import Client
+from django.urls import reverse
 
 from va_explorer.tests.factories import (
     CauseCodingIssueFactory,
     CauseOfDeathFactory,
+    GroupFactory,
+    LocationFactory,
+    UserFactory,
     VerbalAutopsyFactory,
 )
-from va_explorer.va_data_management.models import Death
+from va_explorer.va_data_management.models import (
+    Death,
+    Household,
+    Pregnancy,
+    PregnancyOutcome,
+)
 from va_explorer.users.models import User
 from va_explorer.vacms.cmsmodels.events import Event
 
@@ -219,6 +230,162 @@ def test_trends_no_data(user: User):
     assert json_data["additionalIndeterminateCods"] == 0
 
     assert json_data["isFieldWorker"] is False
+
+
+def _seed_home_dashboard_scope_data():
+    southern = LocationFactory.create(name="Southern", location_type="province")
+    southern_district = southern.add_child(name="Choma", location_type="district")
+    southern_facility = southern_district.add_child(
+        name="Choma Facility", location_type="facility"
+    )
+
+    lusaka = LocationFactory.create(name="Lusaka", location_type="province")
+    lusaka_district = lusaka.add_child(name="Lusaka", location_type="district")
+    lusaka_facility = lusaka_district.add_child(
+        name="Lusaka Facility", location_type="facility"
+    )
+
+    today = "2026-02-10"
+
+    Household.objects.create(
+        key="hh-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        ea="EA-S-1",
+    )
+    Household.objects.create(
+        key="hh-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        ea="EA-L-1",
+    )
+
+    Pregnancy.objects.create(
+        key="preg-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        PE_09A=today,
+    )
+    Pregnancy.objects.create(
+        key="preg-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        PE_09A=today,
+    )
+
+    PregnancyOutcome.objects.create(
+        key="po-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        PO_41=today,
+    )
+    PregnancyOutcome.objects.create(
+        key="po-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        PO_41=today,
+    )
+
+    Death.objects.create(
+        key="death-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        DE_06=today,
+    )
+    Death.objects.create(
+        key="death-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        DE_06=today,
+    )
+
+    VerbalAutopsyFactory.create(
+        instanceid="va-southern",
+        Id10012=today,
+        Id10023=today,
+        submissiondate=today,
+        location=southern_facility,
+    )
+    VerbalAutopsyFactory.create(
+        instanceid="va-lusaka",
+        Id10012=today,
+        Id10023=today,
+        submissiondate=today,
+        location=lusaka_facility,
+    )
+
+    return southern
+
+
+def _scoped_dashboard_user(scope_location):
+    permission = Permission.objects.filter(codename="view_dashboard").first()
+    group = GroupFactory.create(permissions=[permission] if permission else [])
+    return UserFactory.create(groups=[group], location_restrictions=[scope_location])
+
+
+def test_home_dashboard_kpis_are_scoped_to_user_province():
+    cache.clear()
+    southern = _seed_home_dashboard_scope_data()
+    user = _scoped_dashboard_user(southern)
+    client = Client()
+    client.force_login(user=user)
+
+    response = client.get(reverse("va_analytics:home-dashboard-kpis-api"))
+    assert response.status_code == 200
+    kpis = response.json()["kpis"]
+
+    assert kpis["eas"]["total"] == 1
+    assert kpis["households"]["total"] == 1
+    assert kpis["pregnancies"]["total"] == 1
+    assert kpis["preg_outcomes"]["total"] == 1
+    assert kpis["deaths"]["total"] == 1
+    assert kpis["vas"]["total"] == 1
+
+
+def test_home_dashboard_overview_chart_is_scoped_to_user_province():
+    cache.clear()
+    southern = _seed_home_dashboard_scope_data()
+    user = _scoped_dashboard_user(southern)
+    client = Client()
+    client.force_login(user=user)
+
+    response = client.get(
+        reverse(
+            "va_analytics:home-dashboard-tab-chart-api",
+            kwargs={"tab": "overview", "chart": "events"},
+        )
+    )
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert sum(payload["pregnancy"]) == 1
+    assert sum(payload["pregnancy_outcome"]) == 1
+    assert sum(payload["death"]) == 1
+    assert sum(payload["va"]) == 1
 
 
 def test_regional_operations_page_loads(user: User):

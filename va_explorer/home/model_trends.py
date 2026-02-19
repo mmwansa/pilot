@@ -6,6 +6,9 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
 from va_explorer.va_data_management.models import Death, Household, Pregnancy, PregnancyOutcome
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_queryset_to_user_locations,
+)
 
 WINDOW_COLUMNS = ("24", "1 week", "1 month", "Overall")
 
@@ -123,10 +126,14 @@ def build_trend_for_queryset(queryset, key_field="key"):
     return output
 
 
-def get_model_trends_data():
+def get_model_trends_data(user=None):
+    households_qs = restrict_queryset_to_user_locations(Household.objects.all(), user)
+    pregnancies_qs = restrict_queryset_to_user_locations(Pregnancy.objects.all(), user)
+    outcomes_qs = restrict_queryset_to_user_locations(PregnancyOutcome.objects.all(), user)
+    deaths_qs = restrict_queryset_to_user_locations(Death.objects.all(), user)
     return {
-        "households": build_trend_for_queryset(Household.objects.all()),
-        "pregnancies": build_trend_for_queryset(Pregnancy.objects.all()),
-        "pregnancy_outcomes": build_trend_for_queryset(PregnancyOutcome.objects.all()),
-        "deaths": build_trend_for_queryset(Death.objects.all()),
+        "households": build_trend_for_queryset(households_qs),
+        "pregnancies": build_trend_for_queryset(pregnancies_qs),
+        "pregnancy_outcomes": build_trend_for_queryset(outcomes_qs),
+        "deaths": build_trend_for_queryset(deaths_qs),
     }

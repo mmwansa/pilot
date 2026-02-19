@@ -31,9 +31,6 @@ class PregnancyOutcomes(CustomAuthMixin, PermissionRequiredMixin, ListView):
         queryset = restrict_queryset_to_user_locations(
             queryset,
             self.request.user,
-            {
-                "province": "province",
-            },
         ).order_by("-id")
         # Filtering example: by district
         if self.request.GET.get("id"):
@@ -56,8 +53,10 @@ class PregnancyOutcomes(CustomAuthMixin, PermissionRequiredMixin, ListView):
 
 class PregnancyOutcomeAccessMixin(SingleObjectMixin):
     def get_queryset(self):
-        # You can add restrictions here if needed
-        return PregnancyOutcome.objects.all()
+        return restrict_queryset_to_user_locations(
+            PregnancyOutcome.objects.all(),
+            self.request.user,
+        )
 
 class PregnancyOutcomeDetail(
     CustomAuthMixin, PregnancyOutcomeAccessMixin, PermissionRequiredMixin, DetailView
@@ -104,6 +103,12 @@ class PregnancyOutcomeDelete(CustomAuthMixin, PermissionRequiredMixin, DeleteVie
     error_message = (
         "Pregnancy outcome %(id)s could not be deleted. This record doesn't exist or you don't have access."
     )
+
+    def get_queryset(self):
+        return restrict_queryset_to_user_locations(
+            PregnancyOutcome.objects.all(),
+            self.request.user,
+        )
 
     def form_valid(self, form):
         obj = self.get_object()

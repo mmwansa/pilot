@@ -78,7 +78,7 @@
             data-tooltip="Pregnancy Outcomes"
           >
             <i class="fas fa-baby nav-icon"></i>
-            <span class="nav-label">P. Outcomes</span>
+            <span class="nav-label">Pregnancy<br>Outcomes</span>
           </a>
         </li>
         <li class="nav-item">
@@ -97,8 +97,8 @@
             href="{% url 'va_data_management:index' %}"
             data-tooltip="Data Management"
           >
-            <i class="fas fa-cog nav-icon"></i>
-            <span class="nav-label">V. Autopsies</span>
+            <i class="fas fa-notes-medical nav-icon"></i>
+            <span class="nav-label">Verbal<br>Autopsies</span>
           </a>
         </li>
         {% if not request.user|has_group:"Mortality Surveillance Officer" %}

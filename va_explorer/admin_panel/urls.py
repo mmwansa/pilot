@@ -1,0 +1,25 @@
+from django.urls import path
+
+from va_explorer.admin_panel.views import (
+    admin_panel_alert_log_view,
+    admin_panel_alerts_view,
+    admin_panel_csrf_token_view,
+    admin_panel_logs_view,
+    admin_panel_run_view,
+    admin_panel_upload_file_view,
+    admin_panel_validate_file_view,
+    admin_panel_view,
+)
+
+app_name = "admin_panel"
+
+urlpatterns = [
+    path("", view=admin_panel_view, name="index"),
+    path("run/", view=admin_panel_run_view, name="run"),
+    path("upload-file/", view=admin_panel_upload_file_view, name="upload-file"),
+    path("validate-file/", view=admin_panel_validate_file_view, name="validate-file"),
+    path("logs/", view=admin_panel_logs_view, name="logs"),
+    path("csrf-token/", view=admin_panel_csrf_token_view, name="csrf-token"),
+    path("alerts/", view=admin_panel_alerts_view, name="alerts"),
+    path("alerts/log/", view=admin_panel_alert_log_view, name="alerts-log"),
+]

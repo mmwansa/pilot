@@ -20,14 +20,28 @@ class DateInput(forms.DateInput):
 
 
 class VADownloadForm(forms.Form):
+    dataset = forms.ChoiceField(
+        label="Dataset",
+        choices=(
+            ("verbalautopsy", "Verbal Autopsy"),
+            ("household", "Household"),
+            ("pregnancy", "Pregnancy"),
+            ("pregnancy_outcome", "Pregnancy Outcome"),
+            ("death", "Death"),
+        ),
+        initial="verbalautopsy",
+        widget=Select(),
+        required=True,
+        help_text="Choose which dataset to export.",
+    )
+
     action = forms.ChoiceField(
         label="Action",
-        choices=(("export", "Export Data"), ("download", "Download Data")),
+        choices=(("download", "Download Data"),),
         initial="download",
         widget=Select(),
         required=True,
-        help_text="Either export data to an external database (i.e. DHIS2) or \
-        download locally",
+        help_text="Download data locally as a file.",
     )
 
     start_date = DateField(
@@ -106,10 +120,14 @@ class VADownloadForm(forms.Form):
 
         # Convert any COD objects back to ids for API
         cods = cleaned_data.get("causes", [])
-        if len(cods) > 0:
+        if cleaned_data.get("dataset") == "verbalautopsy" and len(cods) > 0:
             cleaned_data["causes"] = ",".join([str(cod.cause) for cod in cods])
         else:
             cleaned_data["causes"] = None
+
+        # Non-VA datasets are exported as CSV.
+        if cleaned_data.get("dataset") != "verbalautopsy":
+            cleaned_data["format"] = "csv"
 
         # convert format to lowercase
         cleaned_data["format"] = cleaned_data.get("format", "csv").lower()

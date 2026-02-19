@@ -16,6 +16,9 @@ from va_explorer.va_data_management.models import (
     PregnancyOutcome,
     VerbalAutopsy,
 )
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_queryset_to_user_locations,
+)
 
 
 def _fix_tz_offset(s: str) -> str:
@@ -163,19 +166,27 @@ def _safe_int(value: object) -> int:
             return 0
 
 
-CACHE_KEY = "homepage_metrics:v1"
-LOCK_KEY = f"{CACHE_KEY}:lock"
+CACHE_KEY = "homepage_metrics:v2"
 CACHE_TIMEOUT_SECONDS = 60 * 60 * 24  # 1 day
 LOCK_TIMEOUT_SECONDS = 60
 LOCK_WAIT_SECONDS = 2
 LOCK_SLEEP_SECONDS = 0.1
 
 
-def _compute_homepage_metrics() -> dict[str, int]:
+def _scope_suffix(user) -> str:
+    if not user or not getattr(user, "is_authenticated", False):
+        return "anon"
+    location_ids = ",".join(
+        str(pk) for pk in user.location_restrictions.order_by("pk").values_list("pk", flat=True)
+    )
+    return f"user:{user.pk}|super:{int(bool(user.is_superuser))}|loc:{location_ids}"
+
+
+def _compute_homepage_metrics(user=None) -> dict[str, int]:
     # -------------------------
     # Households / clusters
     # -------------------------
-    households_qs = Household.objects.all()
+    households_qs = restrict_queryset_to_user_locations(Household.objects.all(), user)
 
     (
         total_households,
@@ -202,6 +213,10 @@ def _compute_homepage_metrics() -> dict[str, int]:
 
     # Total Number of people counted: count rows in HouseholdMember (counting IDs)
     total_people = HouseholdMember.objects.count()
+    if user and getattr(user, "is_authenticated", False):
+        total_people = HouseholdMember.objects.filter(
+            household__in=households_qs.values_list("pk", flat=True)
+        ).count()
     today_people = (
         HouseholdMember.objects.filter(
             household__key__in=list(today_household_keys)
@@ -221,7 +236,7 @@ def _compute_homepage_metrics() -> dict[str, int]:
     # Pregnancies (use submissiondate/start/today)
     # -------------------------
     total_pregnancies, today_pregnancies, week_pregnancies = _count_recent_records(
-        Pregnancy.objects.all(),
+        restrict_queryset_to_user_locations(Pregnancy.objects.all(), user),
         key_field="key",
         date_fields=("submissiondate", "start", "today"),
     )
@@ -230,7 +245,7 @@ def _compute_homepage_metrics() -> dict[str, int]:
     # Pregnancy Outcomes (use submissiondate/start/today)
     # -------------------------
     total_preg_outcomes, today_preg_outcomes, week_preg_outcomes = _count_recent_records(
-        PregnancyOutcome.objects.all(),
+        restrict_queryset_to_user_locations(PregnancyOutcome.objects.all(), user),
         key_field="key",
         date_fields=("submissiondate", "start", "today"),
     )
@@ -239,7 +254,7 @@ def _compute_homepage_metrics() -> dict[str, int]:
     # Deaths (use submissiondate/start/today)
     # -------------------------
     total_deaths, today_deaths, week_deaths = _count_recent_records(
-        Death.objects.all(),
+        restrict_queryset_to_user_locations(Death.objects.all(), user),
         key_field="key",
         date_fields=("submissiondate", "start", "today"),
     )
@@ -247,7 +262,10 @@ def _compute_homepage_metrics() -> dict[str, int]:
     # -------------------------
     # Verbal Autopsies (canonical, non-deleted; use submissiondate/Id10012/created)
     # -------------------------
-    vas_canonical = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
+    if user and getattr(user, "is_authenticated", False):
+        vas_canonical = user.verbal_autopsies().filter(deleted_at__isnull=True, duplicate=False)
+    else:
+        vas_canonical = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
     total_vas, today_vas, week_vas = _count_recent_records(
         vas_canonical,
         key_field="instanceid",
@@ -283,34 +301,38 @@ def invalidate_homepage_metrics_cache() -> None:
     cache.delete(CACHE_KEY)
 
 
-def get_homepage_metrics() -> dict[str, int]:
-    cached = cache.get(CACHE_KEY)
+def get_homepage_metrics(user=None) -> dict[str, int]:
+    scope_key = _scope_suffix(user)
+    cache_key = f"{CACHE_KEY}:{scope_key}"
+    lock_key = f"{cache_key}:lock"
+
+    cached = cache.get(cache_key)
     if cached is not None:
         return cached
 
-    have_lock = cache.add(LOCK_KEY, True, timeout=LOCK_TIMEOUT_SECONDS)
+    have_lock = cache.add(lock_key, True, timeout=LOCK_TIMEOUT_SECONDS)
     if have_lock:
         try:
-            metrics = _compute_homepage_metrics()
-            cache.set(CACHE_KEY, metrics, CACHE_TIMEOUT_SECONDS)
+            metrics = _compute_homepage_metrics(user=user)
+            cache.set(cache_key, metrics, CACHE_TIMEOUT_SECONDS)
             return metrics
         finally:
-            cache.delete(LOCK_KEY)
+            cache.delete(lock_key)
 
     deadline = time.monotonic() + LOCK_WAIT_SECONDS
     while time.monotonic() < deadline:
-        metrics = cache.get(CACHE_KEY)
+        metrics = cache.get(cache_key)
         if metrics is not None:
             return metrics
         time.sleep(LOCK_SLEEP_SECONDS)
 
     # Fallback: try once more to become the lock holder, otherwise compute without caching.
-    if cache.add(LOCK_KEY, True, timeout=LOCK_TIMEOUT_SECONDS):
+    if cache.add(lock_key, True, timeout=LOCK_TIMEOUT_SECONDS):
         try:
-            metrics = _compute_homepage_metrics()
-            cache.set(CACHE_KEY, metrics, CACHE_TIMEOUT_SECONDS)
+            metrics = _compute_homepage_metrics(user=user)
+            cache.set(cache_key, metrics, CACHE_TIMEOUT_SECONDS)
             return metrics
         finally:
-            cache.delete(LOCK_KEY)
+            cache.delete(lock_key)
 
-    return _compute_homepage_metrics()
+    return _compute_homepage_metrics(user=user)

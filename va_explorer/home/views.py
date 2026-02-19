@@ -38,6 +38,9 @@ from va_explorer.va_data_management.models import (
     VerbalAutopsy,
 )
 from va_explorer.va_data_management.utils.date_parsing import parse_date
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_queryset_to_user_locations,
+)
 from va_explorer.va_data_management.utils.loading import get_va_summary_stats
 from va_explorer.vacms.cmsmodels.events import Event
 
@@ -384,18 +387,35 @@ def _get_national_operational_view_data(
         end_dt = timezone.localtime(timezone.now())
 
     households_qs = _apply_text_geography_filter(
-        Household.objects.all(), Household, location_level, location_value
+        restrict_queryset_to_user_locations(Household.objects.all(), getattr(request, "user", None)),
+        Household,
+        location_level,
+        location_value,
     )
     pregnancies_qs = _apply_text_geography_filter(
-        Pregnancy.objects.all(), Pregnancy, location_level, location_value
+        restrict_queryset_to_user_locations(Pregnancy.objects.all(), getattr(request, "user", None)),
+        Pregnancy,
+        location_level,
+        location_value,
     )
     pregnancy_outcomes_qs = _apply_text_geography_filter(
-        PregnancyOutcome.objects.all(), PregnancyOutcome, location_level, location_value
+        restrict_queryset_to_user_locations(
+            PregnancyOutcome.objects.all(), getattr(request, "user", None)
+        ),
+        PregnancyOutcome,
+        location_level,
+        location_value,
     )
     deaths_qs = _apply_text_geography_filter(
-        Death.objects.all(), Death, location_level, location_value
+        restrict_queryset_to_user_locations(Death.objects.all(), getattr(request, "user", None)),
+        Death,
+        location_level,
+        location_value,
     )
-    va_qs = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
+    if request and getattr(request, "user", None):
+        va_qs = request.user.verbal_autopsies().filter(deleted_at__isnull=True, duplicate=False)
+    else:
+        va_qs = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
     if location_value and location_level != "national":
         # Inference: VA location references a location node name, so direct
         # name matching is used when text geography fields are unavailable.
@@ -501,7 +521,7 @@ def _get_national_operational_view_data(
 
     if use_legacy_metrics and start_dt is None:
         with timed_block("home.nov.legacy_metrics", request=request):
-            metrics = get_homepage_metrics()
+            metrics = get_homepage_metrics(request.user if request else None)
         kpis = {
             "eas": {
                 "today": metrics.get("today_eas", 0),
@@ -626,7 +646,7 @@ def _get_cached_trends_bundle(request):
             additional_indeterminate_cods,
         ) = get_trends_data(request.user)
     with timed_block("home.trends.model_trends_data", request=request):
-        model_trends = get_model_trends_data()
+        model_trends = get_model_trends_data(request.user)
 
     payload = {
         "vaTable": va_table,

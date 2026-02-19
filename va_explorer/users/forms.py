@@ -8,7 +8,6 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group
-from django.db.models import Q
 from django.forms import (
     ModelChoiceField,
     ModelMultipleChoiceField,
@@ -156,8 +155,9 @@ class UserCommonFields(forms.ModelForm):
     )
     location_restrictions = ModelMultipleChoiceField(
         # Don't include 'Unknown' or Root/Country node in options
-        queryset=SRSClusterLocation.objects.all()
-        .exclude(Q(location_type="country") | Q(name="Unknown"))
+        queryset=SRSClusterLocation.objects.filter(
+            location_type__in=["province", "district"]
+        ).exclude(name="Unknown")
         .order_by("path"),
         widget=LocationRestrictionsSelectMultiple(
             attrs={"class": "location-restrictions-select"}

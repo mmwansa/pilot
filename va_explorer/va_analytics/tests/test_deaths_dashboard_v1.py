@@ -3,7 +3,12 @@ from django.contrib.auth.models import Group, Permission
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from va_explorer.va_analytics.views import _build_deaths_summary_cards, get_deaths_filter_state
+from va_explorer.tests.factories import LocationFactory
+from va_explorer.va_analytics.views import (
+    _build_deaths_summary_cards,
+    build_deaths_qs,
+    get_deaths_filter_state,
+)
 from va_explorer.va_data_management.models import Death
 
 
@@ -33,6 +38,24 @@ class DeathsFilterParsingTests(TestCase):
         self.assertEqual(state["time_preset"], "all_time")
         self.assertEqual(state["age_group"], "")
         self.assertEqual(state["map_view"], "Ward")
+
+    def test_applies_user_location_restrictions(self):
+        User = get_user_model()
+        user = User.objects.create_user(
+            username="death_loc_test_user",
+            email="death-loc@example.com",
+            password="test-password-123",
+        )
+        province = LocationFactory.create(name="Southern", location_type="province")
+        user.location_restrictions.set([province])
+        Death.objects.create(key="death-south", province="Southern", district="Choma")
+        Death.objects.create(key="death-other", province="Lusaka", district="Lusaka")
+
+        request = self.factory.get("/va_analytics/outcomes-dashboard/")
+        request.user = user
+        qs = build_deaths_qs(request)
+
+        self.assertEqual(set(qs.values_list("key", flat=True)), {"death-south"})
 
 
 class DeathsUnder5CalculationTests(TestCase):

@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 import pandas as pd
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.db.models import F
+from django.db.models import F, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -16,8 +16,126 @@ from django.views.generic.edit import FormView
 from va_explorer.utils.mixins import CustomAuthMixin
 from va_explorer.va_data_management.constants import PII_FIELDS, REDACTED_STRING
 from va_explorer.users.utils.location_mapping import map_srs_clusters_to_locations
-from va_explorer.va_data_management.models import Location, SRSClusterLocation
+from va_explorer.va_data_management.models import (
+    Death,
+    Household,
+    Location,
+    Pregnancy,
+    PregnancyOutcome,
+    SRSClusterLocation,
+)
 from va_explorer.va_export.forms import VADownloadForm
+
+
+EXPORT_DATASETS = {
+    "verbalautopsy",
+    "household",
+    "pregnancy",
+    "pregnancy_outcome",
+    "death",
+}
+
+
+def _normalize_export_format(raw_value, dataset):
+    fmt = str(raw_value or "csv").lower().replace("/", "")
+    if dataset != "verbalautopsy":
+        return "csv"
+    return fmt if fmt in {"csv", "json"} else "csv"
+
+
+def _build_zip_response(filename, body):
+    response = HttpResponse(content_type="application/zip")
+    response["Content-Disposition"] = f"attachment; filename={filename}"
+    response.status_code = 200
+    archive = zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED)
+    archive.writestr(*body)
+    archive.close()
+    return response
+
+
+def _build_geo_filter_from_srs(loc_query, field_mapping):
+    if not loc_query:
+        return Q()
+    id_list = [int(pk) for pk in str(loc_query).split(",") if pk]
+    if not id_list:
+        return Q()
+    selected = SRSClusterLocation.objects.filter(pk__in=id_list)
+    descendants = selected
+    for node in selected:
+        descendants = descendants | node.get_descendants()
+    descendants = descendants.distinct()
+
+    level_names = {level: set() for level in field_mapping.keys()}
+    for node in descendants:
+        level = str(node.location_type or "").lower()
+        if level in level_names and node.name:
+            level_names[level].add(str(node.name).strip())
+
+    geo_filter = Q()
+    for level, names in level_names.items():
+        if not names:
+            continue
+        field_name = field_mapping[level]
+        geo_filter |= Q(**{f"{field_name}__in": list(names)})
+    return geo_filter
+
+
+def _apply_date_filter(qs, start_date, end_date, date_field):
+    if start_date:
+        qs = qs.filter(**{f"{date_field}__gte": start_date})
+    if end_date:
+        qs = qs.filter(**{f"{date_field}__lte": end_date})
+    return qs
+
+
+def _export_non_va_dataset(request, dataset, params):
+    start_date = params.get("start_date") or None
+    end_date = params.get("end_date") or None
+    loc_query = params.get("locations") or None
+
+    field_mapping = {
+        "province": "province",
+        "district": "district",
+        "constituency": "constituency",
+        "ward": "ward",
+        "ea": "ea",
+    }
+    geo_filter = _build_geo_filter_from_srs(loc_query, field_mapping)
+
+    if dataset == "household":
+        queryset = Household.objects.all()
+        date_field = "today"
+        filename = "household_download.csv"
+    elif dataset == "pregnancy":
+        queryset = Pregnancy.objects.all()
+        date_field = "today"
+        filename = "pregnancy_download.csv"
+    elif dataset == "pregnancy_outcome":
+        queryset = PregnancyOutcome.objects.all()
+        date_field = "today"
+        filename = "pregnancy_outcome_download.csv"
+    else:
+        queryset = Death.objects.all()
+        date_field = "today"
+        filename = "death_download.csv"
+
+    if getattr(geo_filter, "children", None):
+        queryset = queryset.filter(geo_filter)
+    queryset = _apply_date_filter(queryset, start_date, end_date, date_field)
+
+    dataset_df = pd.DataFrame.from_records(queryset.values())
+    if "index" in dataset_df.columns:
+        dataset_df = dataset_df.drop(columns=["index"])
+
+    if not request.user.can_view_pii:
+        for field in PII_FIELDS:
+            if field in dataset_df.columns:
+                dataset_df[field] = REDACTED_STRING
+
+    return _build_zip_response(
+        filename=f"{dataset}.csv.zip",
+        body=(filename, dataset_df.to_csv(index=False)),
+    )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -31,6 +149,12 @@ class VaApi(CustomAuthMixin, View):
 
         # for nullity checks
         empty_values = (None, "None", "", [])
+        dataset = str(params.get("dataset") or "verbalautopsy").strip().lower()
+        if dataset not in EXPORT_DATASETS:
+            dataset = "verbalautopsy"
+
+        if dataset != "verbalautopsy":
+            return _export_non_va_dataset(request, dataset, params)
 
         # NOTE: using same filters as dashboard - exclude vas w/ null locations,
         # unknown death dates, or unknown CODs
@@ -144,34 +268,26 @@ class VaApi(CustomAuthMixin, View):
 
         # =========DATA FORMAT LOGIC===================#
         # convert VAs to proper format. Currently supports .csv (default) and .json
-        fmt = params.get("format", "csv").lower().replace("/", "")
-
-        response = HttpResponse(content_type="application/zip")
+        fmt = _normalize_export_format(params.get("format", "csv"), dataset)
 
         # download only for csv
         if fmt.endswith("csv"):
-            response["Content-Disposition"] = "attachment; filename=export.csv.zip"
-            response.status_code = 200
-
-            # Write zip to response (must use zipfile.ZIP_DEFLATED for compression)
-            z = zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED)
-            # Write csv file to zip
-            z.writestr("va_download.csv", va_df.to_csv(index=False))
+            response = _build_zip_response(
+                filename="export.csv.zip",
+                body=("va_download.csv", va_df.to_csv(index=False)),
+            )
         # download for json
         elif fmt.endswith("json"):
-            response["Content-Disposition"] = "attachment; filename=export.json.zip"
-            response.status_code = 200
-
-            # Write zip to response (must use zipfile.ZIP_DEFLATED for compression)
-            z = zipfile.ZipFile(response, "w", zipfile.ZIP_DEFLATED)
-            # Write JSON to zip
-            z.writestr(
-                "va_download.json",
-                json.dumps(
-                    {
-                        "count": va_df.shape[0],
-                        "records": va_df.to_json(orient="records"),
-                    }
+            response = _build_zip_response(
+                filename="export.json.zip",
+                body=(
+                    "va_download.json",
+                    json.dumps(
+                        {
+                            "count": va_df.shape[0],
+                            "records": va_df.to_json(orient="records"),
+                        }
+                    ),
                 ),
             )
         else:

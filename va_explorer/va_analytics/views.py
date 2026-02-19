@@ -24,6 +24,9 @@ from va_explorer.va_data_management.utils.date_parsing import (
     get_interview_dates,
     parse_date,
 )
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_queryset_to_user_locations,
+)
 
 from .utils.loading import get_filtered_va_queryset, load_va_data
 
@@ -530,6 +533,7 @@ def _apply_geography_filter(qs, filter_state):
 
 def build_pregnancy_outcomes_qs(request):
     qs = PregnancyOutcome.objects.select_related("cluster").all()
+    qs = restrict_queryset_to_user_locations(qs, getattr(request, "user", None))
     filter_state = get_pregnancy_outcomes_filter_state(request)
 
     pregnancy_outcome = filter_state["pregnancy_outcome"]
@@ -582,6 +586,7 @@ def build_pregnancy_qs(request):
     # Pregnancy model currently stores geography and person fields directly,
     # so there are no FK relations to eagerly load via select_related.
     qs = Pregnancy.objects.select_related().all()
+    qs = restrict_queryset_to_user_locations(qs, getattr(request, "user", None))
     filter_state = get_pregnancy_outcomes_filter_state(request)
     qs = _apply_geography_filter(qs, filter_state)
 
@@ -693,6 +698,7 @@ def build_deaths_qs(request, *, apply_time_filter=True):
     # Death model stores geography/person fields directly as text, so there are
     # currently no FK relationships to include in select_related().
     qs = Death.objects.select_related().all()
+    qs = restrict_queryset_to_user_locations(qs, getattr(request, "user", None))
 
     filter_state = get_deaths_filter_state(request)
 
@@ -1104,7 +1110,10 @@ class OutcomesDashboardView(CustomAuthMixin, PermissionRequiredMixin, TemplateVi
 
         with timed_block("outcomes.page.outcome_options", request=request):
             outcome_options = (
-                PregnancyOutcome.objects.exclude(po_group__isnull=True)
+                restrict_queryset_to_user_locations(
+                    PregnancyOutcome.objects.all(), request.user
+                )
+                .exclude(po_group__isnull=True)
                 .exclude(po_group="")
                 .values_list("po_group", flat=True)
                 .distinct()

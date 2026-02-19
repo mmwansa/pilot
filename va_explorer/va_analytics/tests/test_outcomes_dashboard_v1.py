@@ -5,7 +5,7 @@ from django.contrib.auth.models import Permission
 from django.urls import reverse
 from django.utils import timezone
 
-from va_explorer.tests.factories import GroupFactory, UserFactory
+from va_explorer.tests.factories import GroupFactory, LocationFactory, UserFactory
 from va_explorer.va_analytics.views import (
     build_pregnancy_outcomes_qs,
     get_pregnancy_outcomes_filter_state,
@@ -77,6 +77,18 @@ class TestPregnancyOutcomesQuerysetBuilder:
         keys = set(qs.values_list("key", flat=True))
         assert recent.key in keys
         assert old.key not in keys
+
+    def test_applies_user_location_restrictions(self, rf):
+        province = LocationFactory.create(name="Southern", location_type="province")
+        user = UserFactory.create(location_restrictions=[province])
+        self._create_po(key="po-southern", province="Southern", district="Choma")
+        self._create_po(key="po-lusaka", province="Lusaka", district="Lusaka")
+
+        request = rf.get("/va_analytics/outcomes-dashboard/")
+        request.user = user
+        qs = build_pregnancy_outcomes_qs(request)
+
+        assert set(qs.values_list("key", flat=True)) == {"po-southern"}
 
 
 class TestPregnancyOutcomesApiSchemas:

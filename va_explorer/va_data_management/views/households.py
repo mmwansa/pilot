@@ -22,7 +22,10 @@ from va_explorer.va_data_management.models.data_quality import (
 
 class HouseholdAccessMixin(SingleObjectMixin):
     def get_queryset(self):
-        return Household.objects.all()
+        return restrict_queryset_to_user_locations(
+            Household.objects.all(),
+            self.request.user,
+        )
 
 
 class Households(CustomAuthMixin, PermissionRequiredMixin, ListView):
@@ -100,6 +103,12 @@ class HouseholdDelete(CustomAuthMixin, PermissionRequiredMixin, DeleteView):
     success_url = reverse_lazy("va_data_management:households")
     template_name = "va_data_management/household_confirm_delete.html"
     success_message = "Household %(id)s was deleted successfully."
+
+    def get_queryset(self):
+        return restrict_queryset_to_user_locations(
+            Household.objects.all(),
+            self.request.user,
+        )
 
     def form_valid(self, form):
         messages.success(self.request, self.success_message % self.get_object().__dict__)

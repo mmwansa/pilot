@@ -30,6 +30,20 @@ def create_matching_srs_location(name="Test Location", location_type="province")
 
 
 class TestUserCreationForm:
+    def test_location_restrictions_queryset_only_province_and_district(self):
+        province = SRSClusterLocation.add_root(
+            name="Province A", location_type="province"
+        )
+        district = province.add_child(name="District A", location_type="district")
+        _ = district.add_child(name="Constituency A", location_type="constituency")
+
+        form = ExtendedUserCreationForm()
+        queryset = form.fields["location_restrictions"].queryset
+        selected_types = set(queryset.values_list("location_type", flat=True))
+
+        assert selected_types == {"province", "district"}
+        assert queryset.filter(location_type="constituency").count() == 0
+
     def test_valid_form_with_national_access(self, rf: RequestFactory):
         # A user with proto_user params does not exist yet.
         proto_user = NewUserFactory.build()
