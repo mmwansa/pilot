@@ -1,6 +1,6 @@
 from django.urls import path
 
-from va_explorer.admin_panel.views import (
+from va_explorer.va_admin.views import (
     admin_panel_alert_log_view,
     admin_panel_alerts_view,
     admin_panel_csrf_token_view,
@@ -11,7 +11,7 @@ from va_explorer.admin_panel.views import (
     admin_panel_view,
 )
 
-app_name = "admin_panel"
+app_name = "va_admin"
 
 urlpatterns = [
     path("", view=admin_panel_view, name="index"),

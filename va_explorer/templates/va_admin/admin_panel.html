@@ -40,7 +40,7 @@
         <input id="vacmsCommandSearch" type="text" class="form-control" placeholder="Search commands by name or description">
       </div>
       <div class="btn-toolbar">
-        <a class="btn btn-outline-secondary btn-sm mr-2" href="{% url 'admin_panel:logs' %}">Open Logs</a>
+        <a class="btn btn-outline-secondary btn-sm mr-2" href="{% url 'va_admin:logs' %}">Open Logs</a>
         <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="vacmsBulkUploadBtn">Bulk Upload Files</button>
         <button type="button" class="btn btn-outline-secondary btn-sm" id="vacmsRefreshCommandsBtn">Refresh List</button>
       </div>
@@ -298,13 +298,13 @@
   </style>
   <script>
     window.VACMS_ADMIN_PANEL = {
-      runUrl: "{% url 'admin_panel:run' %}",
-      uploadFileUrl: "{% url 'admin_panel:upload-file' %}",
-      validateFileUrl: "{% url 'admin_panel:validate-file' %}",
-      logsUrl: "{% url 'admin_panel:logs' %}",
-      csrfTokenUrl: "{% url 'admin_panel:csrf-token' %}",
-      alertsUrl: "{% url 'admin_panel:alerts' %}",
-      alertsLogUrl: "{% url 'admin_panel:alerts-log' %}",
+      runUrl: "{% url 'va_admin:run' %}",
+      uploadFileUrl: "{% url 'va_admin:upload-file' %}",
+      validateFileUrl: "{% url 'va_admin:validate-file' %}",
+      logsUrl: "{% url 'va_admin:logs' %}",
+      csrfTokenUrl: "{% url 'va_admin:csrf-token' %}",
+      alertsUrl: "{% url 'va_admin:alerts' %}",
+      alertsLogUrl: "{% url 'va_admin:alerts-log' %}",
       csrfToken: "{{ csrf_token|escapejs }}"
     };
   </script>

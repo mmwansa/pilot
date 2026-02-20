@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class AdminPanelConfig(AppConfig):
+class VaAdminConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "va_explorer.admin_panel"
+    name = "va_explorer.va_admin"
+    label = "admin_panel"

@@ -148,7 +148,7 @@ LOCAL_APPS = [
     "va_explorer.va_export.apps.VaExportConfig",
     "va_explorer.va_data_cleanup.apps.VaDataCleanupConfig",
     "va_explorer.vacms.apps.VacmsConfig",
-    "va_explorer.admin_panel.apps.AdminPanelConfig",
+    "va_explorer.va_admin.apps.VaAdminConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

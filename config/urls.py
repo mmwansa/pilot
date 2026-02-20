@@ -21,7 +21,7 @@ urlpatterns = [
     ),
     path(
         "admin-panel/",
-        include("va_explorer.admin_panel.urls", namespace="admin_panel"),
+        include("va_explorer.va_admin.urls", namespace="va_admin"),
     ),
     path(
         "va_data_management/",

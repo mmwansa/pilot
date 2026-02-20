@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from va_explorer.admin_panel.models import AdminPanelAlert
+from va_explorer.va_admin.models import AdminPanelAlert
 
 
 class Command(BaseCommand):

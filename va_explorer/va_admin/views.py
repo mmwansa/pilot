@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date as django_parse_date
 from django.views.decorators.http import require_POST
 
-from va_explorer.admin_panel.command_registry import (
+from va_explorer.va_admin.command_registry import (
     ALLOWLIST,
     STANDARD_FILENAME_PLACEHOLDERS,
     data_dir,
@@ -23,7 +23,7 @@ from va_explorer.admin_panel.command_registry import (
     is_safe_filename,
     resolve_data_file,
 )
-from va_explorer.admin_panel.models import AdminPanelAlert
+from va_explorer.va_admin.models import AdminPanelAlert
 from va_explorer.vacms.models import AdminCommandRun
 
 
@@ -189,7 +189,7 @@ def admin_panel_view(request):
         "filename_placeholders": STANDARD_FILENAME_PLACEHOLDERS,
         "alerts_feed": [_serialize_alert(alert) for alert in _fetch_alert_feed()],
     }
-    return render(request, "admin_panel/admin_panel.html", context)
+    return render(request, "va_admin/admin_panel.html", context)
 
 
 def _sanitize_input_value(field, raw_value):
@@ -565,7 +565,7 @@ def admin_panel_logs_view(request):
 
     runs = AdminCommandRun.objects.select_related("user").order_by("-created_at")[:100]
     context = {"runs": runs}
-    return render(request, "admin_panel/admin_panel_logs.html", context)
+    return render(request, "va_admin/admin_panel_logs.html", context)
 
 
 @login_required

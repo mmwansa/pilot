@@ -5,8 +5,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from va_explorer.admin_panel.command_registry import ALLOWLIST
-from va_explorer.admin_panel.command_registry import data_dir
+from va_explorer.va_admin.command_registry import ALLOWLIST
+from va_explorer.va_admin.command_registry import data_dir
 
 
 class AdminPanelRegistryTests(TestCase):
@@ -24,7 +24,7 @@ class AdminPanelRegistryTests(TestCase):
         self.client.force_login(admin)
 
         response = self.client.post(
-            reverse("admin_panel:run"),
+            reverse("va_admin:run"),
             data=json.dumps({"command_id": "definitely_not_allowlisted", "inputs": {}}),
             content_type="application/json",
         )
@@ -39,7 +39,7 @@ class AdminPanelRegistryTests(TestCase):
             name="Regular User",
         )
         self.client.force_login(user)
-        response = self.client.get(reverse("admin_panel:index"))
+        response = self.client.get(reverse("va_admin:index"))
         self.assertEqual(response.status_code, 403)
 
     def test_non_admin_cannot_run_endpoint(self):
@@ -50,7 +50,7 @@ class AdminPanelRegistryTests(TestCase):
         )
         self.client.force_login(user)
         response = self.client.post(
-            reverse("admin_panel:run"),
+            reverse("va_admin:run"),
             data=json.dumps({"command_id": "load_death_csv", "inputs": {"csv_file": "E_DEATH.csv"}}),
             content_type="application/json",
         )
@@ -66,7 +66,7 @@ class AdminPanelRegistryTests(TestCase):
         self.client.force_login(admin)
 
         response = self.client.post(
-            reverse("admin_panel:run"),
+            reverse("va_admin:run"),
             data=json.dumps({"command_id": "load_death_csv", "inputs": {"csv_file": "../etc/passwd"}}),
             content_type="application/json",
         )
@@ -84,7 +84,7 @@ class AdminPanelRegistryTests(TestCase):
         self.client.force_login(admin)
 
         response = self.client.post(
-            reverse("admin_panel:run"),
+            reverse("va_admin:run"),
             data=json.dumps({"command_id": "load_death_csv", "inputs": {"csv_file": "does_not_exist.csv"}}),
             content_type="application/json",
         )
@@ -103,18 +103,18 @@ class AdminPanelRegistryTests(TestCase):
         csrf_client.force_login(admin)
 
         no_token_response = csrf_client.post(
-            reverse("admin_panel:run"),
+            reverse("va_admin:run"),
             data=json.dumps({"command_id": "definitely_not_allowlisted", "inputs": {}}),
             content_type="application/json",
         )
         self.assertEqual(no_token_response.status_code, 403)
 
-        panel_response = csrf_client.get(reverse("admin_panel:index"))
+        panel_response = csrf_client.get(reverse("va_admin:index"))
         self.assertEqual(panel_response.status_code, 200)
         csrf_token = panel_response.cookies.get("csrftoken").value
 
         with_token_response = csrf_client.post(
-            reverse("admin_panel:run"),
+            reverse("va_admin:run"),
             data=json.dumps({"command_id": "definitely_not_allowlisted", "inputs": {}}),
             content_type="application/json",
             HTTP_X_CSRFTOKEN=csrf_token,
@@ -132,7 +132,7 @@ class AdminPanelRegistryTests(TestCase):
 
         upload = SimpleUploadedFile("demo.csv", b"col\n1\n", content_type="text/csv")
         response = self.client.post(
-            reverse("admin_panel:upload-file"),
+            reverse("va_admin:upload-file"),
             data={"file": upload, "filename": "demo.csv"},
         )
         self.assertEqual(response.status_code, 403)
@@ -148,7 +148,7 @@ class AdminPanelRegistryTests(TestCase):
 
         upload = SimpleUploadedFile("demo.csv", b"col\n1\n", content_type="text/csv")
         response = self.client.post(
-            reverse("admin_panel:upload-file"),
+            reverse("va_admin:upload-file"),
             data={"file": upload, "filename": "../demo.csv"},
         )
         self.assertEqual(response.status_code, 400)
@@ -170,7 +170,7 @@ class AdminPanelRegistryTests(TestCase):
         try:
             first = SimpleUploadedFile(filename, b"col\n1\n", content_type="text/csv")
             response_one = self.client.post(
-                reverse("admin_panel:upload-file"),
+                reverse("va_admin:upload-file"),
                 data={"file": first, "filename": filename},
             )
             self.assertEqual(response_one.status_code, 200)
@@ -178,7 +178,7 @@ class AdminPanelRegistryTests(TestCase):
 
             second = SimpleUploadedFile(filename, b"col\n2\n", content_type="text/csv")
             response_two = self.client.post(
-                reverse("admin_panel:upload-file"),
+                reverse("va_admin:upload-file"),
                 data={"file": second, "filename": filename},
             )
             self.assertEqual(response_two.status_code, 200)

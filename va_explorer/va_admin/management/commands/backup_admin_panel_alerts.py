@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from va_explorer.admin_panel.models import AdminPanelAlert
+from va_explorer.va_admin.models import AdminPanelAlert
 
 
 class Command(BaseCommand):
