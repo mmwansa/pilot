@@ -3,6 +3,7 @@
   class="outcomes-dashboard-root"
   data-component="dashboard"
   data-cause-trend-endpoint="{% url 'va_analytics:dashboard-api' %}"
+  data-map-endpoint="{% url 'va_analytics:dashboard-api' %}"
 >
   <section class="sectionContainer dashboard-card panelView mb-4" id="vaPanelSection" data-component="panel">
     <h2>Summaries and Control Panel</h2>
@@ -71,31 +72,11 @@
   <section class="sectionContainer dashboard-card mapView mb-4" id="vaMapSection" data-component="map">
     <h2>Geographic Distribution</h2>
     <div class="dashboard-card-body">
-      <div class="breadcrumb-container">
-        <div v-if="drilldownBreadcrumbs.length > 0" class="breadcrumb-item">
-          <span class="breadcrumb-text">Location:</span>
-        </div>
-        <div v-if="drilldownBreadcrumbs.length > 0" class="breadcrumb-item" v-for="(breadcrumb, index) in drilldownBreadcrumbs" :key="index">
-          <span class="breadcrumb-text" @click="drillbackToLevel(index)"><% breadcrumb.name %></span>
-        </div>
-      </div>
-
+      <div id="vaMapBreadcrumb" class="map-breadcrumbs"></div>
       <div id="map">
-        <div class="legend" v-if="geoScale && !isNaN(geoScale[0])">
-          <div>
-            <svg width="18" height="14">
-              <rect fill="#c0c0c0" width="14" height="14"></rect>
-            </svg>
-            0
-          </div>
-          <div v-for="(color, i) in colorScale" :key="i">
-            <svg width="18" height="14">
-              <rect :fill="color" width="14" height="14"></rect>
-            </svg>
-            <% geoScale[i] + (i < geoScale.length - 2 ? ' - ' + (geoScale[i + 1] - 1) : '+') %>
-          </div>
-        </div>
+        <div id="vaMapLegend" class="legend"></div>
       </div>
+      <p id="vaMapEmpty" class="po-empty-state" hidden>No geographic VA data available for the selected filters.</p>
     </div>
   </section>
 

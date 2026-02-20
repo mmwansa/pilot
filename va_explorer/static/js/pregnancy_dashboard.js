@@ -15,6 +15,7 @@
     gestationalAge: null,
     ancVisits: null,
   };
+  let mapSelection = { geography_level: "", geography_value: "" };
 
   const getEl = (id) => document.getElementById(id);
 
@@ -35,6 +36,13 @@
     map_view: filterElements.mapViewSelect?.value || "Province",
   });
 
+  const getEffectiveSelection = () => {
+    if (mapController && typeof mapController.getSelection === "function") {
+      return mapController.getSelection();
+    }
+    return { ...mapSelection };
+  };
+
   const buildParams = (filters) => {
     const params = new URLSearchParams();
     if (filters.time_preset && filters.time_preset !== "all_time") {
@@ -43,6 +51,11 @@
     if (filters.start_datetime) params.set("start_datetime", filters.start_datetime);
     if (filters.end_datetime) params.set("end_datetime", filters.end_datetime);
     if (filters.map_view && filters.map_view !== "Province") params.set("map_view", filters.map_view);
+    const selection = getEffectiveSelection();
+    if (selection.geography_level && selection.geography_value) {
+      params.set("geography_level", selection.geography_level);
+      params.set("geography_value", selection.geography_value);
+    }
     return params;
   };
 
@@ -82,6 +95,13 @@
           emptyStateId: "peMapEmpty",
           endpoint: endpoints.map,
           buildParams,
+          onSelectionChange: (selection) => {
+            mapSelection = {
+              geography_level: selection?.geography_level || "",
+              geography_value: selection?.geography_value || "",
+            };
+            refreshDataOnly().catch((err) => console.error(err));
+          },
           styleVariant: "va",
           noDataMessage: "No mapped pregnancy events in current filter range.",
         })
@@ -295,7 +315,7 @@
     setEmptyState("peMapEmpty", (mapData.counts || []).length === 0);
   };
 
-  const refreshAll = async () => {
+  const refreshDataOnly = async () => {
     const filters = getFilters();
     syncFilterHiddenFields();
     syncUrl(filters);
@@ -311,6 +331,10 @@
     renderTrend(trend);
     renderGestationalAge(gestAge);
     renderAncVisits(anc);
+  };
+
+  const refreshAll = async () => {
+    await refreshDataOnly();
     await refreshMapOnly();
   };
 
@@ -372,11 +396,24 @@
   const pane = app.closest(".tab-pane");
   if (pane && !pane.classList.contains("show")) {
     let initializedFromTab = false;
-    const activateHandler = (event) => {
+    const isPaneActivationEvent = (event) => {
+      if (!event) return false;
+      if (event.type === "dashboard:refresh-tab") {
+        const detail = event.detail || {};
+        const shell = detail.shell || "";
+        const tab = detail.tab || "";
+        const paneTab = pane.dataset.tabPanel || "";
+        const paneShell = app.closest(".dashboard-shell")?.dataset?.shell || "";
+        if (shell && paneShell && shell !== paneShell) return false;
+        return !!paneTab && tab === paneTab;
+      }
       const targetSelector =
-        event?.target?.getAttribute("data-bs-target") ||
-        event?.target?.getAttribute("data-target");
-      if (targetSelector !== `#${pane.id}`) return;
+        event.target?.getAttribute("data-bs-target") ||
+        event.target?.getAttribute("data-target");
+      return targetSelector === `#${pane.id}`;
+    };
+    const activateHandler = (event) => {
+      if (!isPaneActivationEvent(event)) return;
       if (!initializedFromTab) {
         initializedFromTab = true;
         init()
@@ -392,6 +429,7 @@
     } else {
       document.addEventListener("shown.bs.tab", activateHandler);
     }
+    document.addEventListener("dashboard:refresh-tab", activateHandler);
     return;
   }
 

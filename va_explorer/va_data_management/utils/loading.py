@@ -1,5 +1,6 @@
 import logging
 import random
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -543,22 +544,43 @@ def deduplicate_columns(record_df, drop_duplicates=True):
     return record_df
 
 
-def get_va_summary_stats(vas, filter_fields=False):
+def get_va_summary_stats(vas, filter_fields=False, cache_key="va_summary_stats"):
     # if vas.count() > 0 code is the slowest SQL query
 
     # if filter_fields=True, filter down to only relevant fields
     if filter_fields:
-        vas = vas.only("created", "id", "location", "Id10023")
+        vas = vas.only("created", "id", "location", "Id10023", "submissiondate", "Id10012")
+
+    def _max_parsed_date(values):
+        latest = None
+        for value in values:
+            parsed = parse_date(value)
+            if not parsed or parsed in {"dk", "nan", "none", "null"}:
+                continue
+            try:
+                current = datetime.strptime(parsed, "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if latest is None or current > latest:
+                latest = current
+        return latest
 
     # check cache for va summary stats and set it if not already there
-    stats = cache.get("va_summary_stats")
+    stats = cache.get(cache_key) if cache_key else None
     if not stats:
-        stats = vas.aggregate(
-            last_update=Max("created"),
+        agg = vas.aggregate(
+            last_created=Max("created"),
             last_interview=Max("Id10012"),
             total_vas=Count("id"),
         )
-        cache.set("va_summary_stats", stats, timeout=60 * 60)
+        latest_submission = _max_parsed_date(vas.values_list("submissiondate", flat=True))
+        stats = {
+            "last_update": latest_submission or agg.get("last_created"),
+            "last_interview": agg.get("last_interview"),
+            "total_vas": agg.get("total_vas"),
+        }
+        if cache_key:
+            cache.set(cache_key, stats, timeout=60 * 60)
 
     stats["ineligible_vas"] = vas.filter(
         Q(Id10023__in=["DK", "dk"]) | Q(Id10023__isnull=True) | Q(location__isnull=True)

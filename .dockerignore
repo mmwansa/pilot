@@ -1,3 +1,6 @@
 .coveragerc
+.env
 .vaenv
+.venv
 .pylintrc
+dockerfile

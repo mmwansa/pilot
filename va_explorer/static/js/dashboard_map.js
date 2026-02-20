@@ -37,6 +37,11 @@ const dashboard = new Vue({
             vaCauseTrendEndpoint: (typeof document !== "undefined" && document.getElementById("dashboardApp"))
                 ? document.getElementById("dashboardApp").dataset.causeTrendEndpoint
                 : "",
+            mapEndpoint: (typeof document !== "undefined" && document.getElementById("dashboardApp"))
+                ? document.getElementById("dashboardApp").dataset.mapEndpoint
+                : "",
+            mapController: null,
+            mapSelection: { geography_level: "", geography_value: "" },
             drill: {
                 hierarchy: DRILL_HIERARCHY,
                 path: [{ level: "Zambia", id: "ZM", name: "Zambia", levelIndex: 0 }],
@@ -160,20 +165,34 @@ const dashboard = new Vue({
         },
     },
     async created() {
-        this.syncDrillState();
-        
-        // Request data from API endpoint
         await this.getData();
-
-        // Pre-load province level GeoJSON
-        await this.loadGeojsonLevel(1);
     },
     async mounted() {
         this.resizeCharts();
         window.addEventListener('resize', this.resizeCharts);
 
-        await this.initializeBaseMap();
-        await this.addGeoJSONToMap();
+        if (typeof window.createHierarchicalDashboardMap === "function") {
+            this.mapController = window.createHierarchicalDashboardMap({
+                containerId: "map",
+                legendId: "vaMapLegend",
+                breadcrumbId: "vaMapBreadcrumb",
+                emptyStateId: "vaMapEmpty",
+                endpoint: this.mapEndpoint || this.vaCauseTrendEndpoint,
+                buildParams: () => this.buildDashboardQueryParams(false),
+                onSelectionChange: async (selection) => {
+                    this.mapSelection = {
+                        geography_level: selection?.geography_level || "",
+                        geography_value: selection?.geography_value || "",
+                    };
+                    await this.getData();
+                    await this.refreshVACauseTrendChart();
+                    this.renderRegionalCauseComparisonChart();
+                },
+                styleVariant: "va",
+                noDataMessage: "No geographic VA data available for the selected filters.",
+            });
+            await this.mapController.refresh({});
+        }
         await this.refreshVACauseTrendChart();
         this.renderRegionalCauseComparisonChart();
         await this.$nextTick();
@@ -186,15 +205,58 @@ const dashboard = new Vue({
         normalizeMapKey(value) {
             return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
         },
+        normalizeGeoNameKey(value, levelLabel) {
+            const base = this.normalizeMapKey(value);
+            if (!base) return "";
+
+            const level = this.normalizeMapKey(levelLabel);
+            const suffixes = {
+                province: [" province"],
+                district: [" district"],
+                constituency: [" constituency"],
+                ward: [" ward"],
+                ea: [" ea", " enumeration area"],
+            };
+            const levelSuffixes = suffixes[level] || [];
+            for (const suffix of levelSuffixes) {
+                if (base.endsWith(suffix)) {
+                    const stripped = base.slice(0, -suffix.length).trim();
+                    return stripped || base;
+                }
+            }
+            return base;
+        },
+        normalizeEAKey(value) {
+            const raw = this.normalizeMapKey(value);
+            if (!raw) return "";
+            const digits = raw.replace(/\D/g, "");
+            if (!digits) return raw;
+            const stripped = digits.replace(/^0+/, "");
+            return stripped || "0";
+        },
         normalizeLevelName(value) {
             return String(value || "").trim().toLowerCase();
         },
         getFeatureCount(feature) {
             const props = feature?.properties || {};
-            const areaNameKey = this.normalizeMapKey(props.area_name);
+            const levelLabel = LEVEL_CONFIG[this.currentLevel]?.label || "";
             const areaIdRaw = props.area_id;
-            const areaIdKey = this.normalizeMapKey(areaIdRaw);
-            const candidates = [areaNameKey, areaIdKey];
+            const candidates = new Set();
+            const addCandidate = (value, normalizeAsName = true) => {
+                const raw = this.normalizeMapKey(value);
+                if (raw) candidates.add(raw);
+                if (normalizeAsName) {
+                    const normalized = this.normalizeGeoNameKey(value, levelLabel);
+                    if (normalized) candidates.add(normalized);
+                }
+            };
+
+            addCandidate(props.area_name, true);
+            addCandidate(areaIdRaw, false);
+            if ((levelLabel || "").toLowerCase() === "ea") {
+                addCandidate(this.normalizeEAKey(props.area_name), false);
+                addCandidate(this.normalizeEAKey(areaIdRaw), false);
+            }
 
             const areaIdNum = Number(areaIdRaw);
             // Province ids in GeoJSON are often 101..110 while VA data may store 1..10.
@@ -204,7 +266,7 @@ const dashboard = new Vue({
                 areaIdNum >= 101 &&
                 areaIdNum <= 110
             ) {
-                candidates.push(this.normalizeMapKey(String(areaIdNum - 100)));
+                addCandidate(String(areaIdNum - 100), false);
             }
 
             for (const key of candidates) {
@@ -489,35 +551,16 @@ const dashboard = new Vue({
             }
         },
         async getData() {
-            // Fetch data from API with current drill-down context
             this.loading = true;
-
-            const {age, sex} = this.getAgeAndSex();
-            const {startDate, endDate} = this.getStartAndEndDates();
 
             const csrfField = document.querySelector('[name=csrfmiddlewaretoken]');
             this.csrftoken = csrfField ? csrfField.value : "";
-
-            // Construct parent region filter based on current drill-down path
-            // Use the deepest breadcrumb when available (e.g., Province, District, Constituency...)
-            let parentRegion = null;
-            if (this.drill.path.length > 1) {
-                const lastDrill = this.drill.path[this.drill.path.length - 1];
-                parentRegion = `${lastDrill.name} ${lastDrill.level}`;
-            }
 
             const data_url = `${window.location.origin}/va_analytics/api/dashboard?`;
             const headers = {'Content-Type': 'application/json'};
             if (this.csrftoken) headers['X-CSRFToken'] = this.csrftoken;
 
-            const dataReq = await fetch(data_url + new URLSearchParams({
-                start_date: startDate,
-                end_date: endDate,
-                cause_of_death: this.causeSelected,
-                region_of_interest: parentRegion || "",
-                compare_by: this.regionalCompareBy,
-                age, sex
-            }), {
+            const dataReq = await fetch(data_url + this.buildDashboardQueryParams(true), {
                 method: 'GET',
                 headers,
                 mode: 'same-origin'
@@ -587,26 +630,37 @@ const dashboard = new Vue({
 
             if (this.currentLevel === 0) {
                 aggregates[this.normalizeMapKey("Zambia")] = {
-                    count: Number(jsonRes.map_total_coded_vas || 0)
+                    count: Number(jsonRes.map_total_vas ?? jsonRes.map_total_coded_vas ?? 0)
                 };
                 return aggregates;
             }
 
             const sourceByLevel = {
-                1: { rows: jsonRes.map_province_sums || [], key: "province_name" },
-                2: { rows: jsonRes.map_district_sums || [], key: "district_name" },
-                3: { rows: jsonRes.map_constituency_sums || [], key: "constituency_name" },
-                4: { rows: jsonRes.map_ward_sums || [], key: "ward_name" },
-                5: { rows: jsonRes.map_ea_sums || [], key: "ea_name" },
+                1: { rows: jsonRes.map_province_sums || [], key: "province_name", level: "Province" },
+                2: { rows: jsonRes.map_district_sums || [], key: "district_name", level: "District" },
+                3: { rows: jsonRes.map_constituency_sums || [], key: "constituency_name", level: "Constituency" },
+                4: { rows: jsonRes.map_ward_sums || [], key: "ward_name", level: "Ward" },
+                5: { rows: jsonRes.map_ea_sums || [], key: "ea_name", level: "EA" },
             };
 
             const source = sourceByLevel[this.currentLevel];
             if (!source) return aggregates;
 
             (source.rows || []).forEach((item) => {
-                const key = this.normalizeMapKey(item?.[source.key]);
-                if (!key) return;
-                aggregates[key] = { count: Number(item?.count || 0) };
+                const count = Number(item?.count || 0);
+                const rawName = item?.[source.key];
+                const rawKey = this.normalizeMapKey(rawName);
+                if (!rawKey) return;
+
+                const keys = new Set([rawKey, this.normalizeGeoNameKey(rawName, source.level)]);
+                if (source.level === "EA") {
+                    keys.add(this.normalizeEAKey(rawName));
+                }
+
+                keys.forEach((key) => {
+                    if (!key) return;
+                    aggregates[key] = { count };
+                });
             });
             return aggregates;
         },
@@ -1153,6 +1207,42 @@ const dashboard = new Vue({
                     return {startDate: this.startDate, endDate: this.endDate};
             }
         },
+        getActiveMapSelection() {
+            if (this.mapController && typeof this.mapController.getSelection === "function") {
+                return this.mapController.getSelection();
+            }
+            return this.mapSelection || { geography_level: "", geography_value: "" };
+        },
+        buildDashboardQueryParams(includeRegion = true) {
+            const { age, sex } = this.getAgeAndSex();
+            const { startDate, endDate } = this.getStartAndEndDates();
+            const params = new URLSearchParams({
+                start_date: startDate,
+                end_date: endDate,
+                cause_of_death: this.causeSelected,
+                compare_by: this.regionalCompareBy,
+                age,
+                sex,
+            });
+
+            if (includeRegion) {
+                const selection = this.getActiveMapSelection();
+                const rawLevel = String(selection?.geography_level || "").trim().toLowerCase();
+                const value = String(selection?.geography_value || "").trim();
+                if (rawLevel && value) {
+                    const levelLabel = rawLevel === "ea"
+                        ? "EA"
+                        : `${rawLevel.charAt(0).toUpperCase()}${rawLevel.slice(1)}`;
+                    params.set("region_of_interest", `${value} ${levelLabel}`);
+                } else {
+                    params.set("region_of_interest", "");
+                }
+            } else {
+                params.delete("region_of_interest");
+            }
+
+            return params;
+        },
         generateTooltip(feature) {
             const areaName = feature.properties.area_name;
             const level = LEVEL_CONFIG[this.currentLevel].label;
@@ -1165,7 +1255,7 @@ const dashboard = new Vue({
             const html_tooltip = `
                 <div class="mapTooltip">
                     <h4>${areaName}</h4>
-                    <p><strong>VAs:</strong> ${count}</p>
+                    <p><strong>Verbal Autopsies:</strong> ${count}</p>
                     ${drillHint}
                 </div>
             `;
@@ -1330,9 +1420,14 @@ const dashboard = new Vue({
                 .reduce((acc, value) => acc + Number(value || 0), 0);
             this.setVAEmpty("vaRegionalComparisonEmpty", labels.length === 0 || total === 0);
         },
+        async refreshMapOnly() {
+            if (this.mapController && typeof this.mapController.refresh === "function") {
+                await this.mapController.refresh({});
+            }
+        },
         async updateDataAndMap() {
             await this.getData();
-            await this.addGeoJSONToMap();
+            await this.refreshMapOnly();
             await this.refreshVACauseTrendChart();
             this.renderRegionalCauseComparisonChart();
         },
@@ -1349,21 +1444,16 @@ const dashboard = new Vue({
             console.log(`[Refresh] Completed component refresh for ${reason}`);
         },
         async resetAllDataToActive() {
-            // Reset all filters and drill-down to country level
             this.startDate = "";
             this.endDate = "";
             this.causeSelected = "";
             this.deathDateSelected = "Any Time";
             this.ageSelected = "";
             this.sexSelected = "";
-            
-            // Reset drill-down to provincial level
-            this.drill.path = [{ level: this.drill.hierarchy[0], id: "ZM", name: "Zambia", levelIndex: 0 }];
-            this.syncDrillState();
-            
-            // Clear GeoJSON cache to force reload with fresh data
-            this.geojsonCache = {};
-            console.log("[Reset] Cleared GeoJSON cache");
+            this.mapSelection = { geography_level: "", geography_value: "" };
+            if (this.mapController && typeof this.mapController.resetDrill === "function") {
+                await this.mapController.resetDrill();
+            }
             
             await this.updateDataAndMap();
         },
@@ -1373,12 +1463,5 @@ const dashboard = new Vue({
             console.log("[Cache] GeoJSON cache cleared manually");
         },
     },
-    watch: {
-        // Trigger map update when geojson is loaded
-        currentLevel() {
-            if (this.geojsonCache[this.currentLevel]) {
-                this.addGeoJSONToMap();
-            }
-        },
-    }
+    watch: {}
 });

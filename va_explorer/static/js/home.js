@@ -34,19 +34,61 @@ const perfLog = (name, startMs, meta) => {
 };
 
 const getDashboardLoader = () => window.DashboardLoader || null;
+const hasJqueryAjax = () => typeof window !== "undefined" && window.$ && typeof window.$.ajax === "function";
+const getHomeTrendsEndpoint = () => {
+  const shell = document.querySelector(".dashboard-shell[data-shell='home']");
+  const endpoint = shell?.dataset?.trendsEndpoint || "";
+  return endpoint || "/trends/";
+};
+
+const fetchSlotHtmlFallback = async (slot) => {
+  const endpoint = (slot && slot.dataset && slot.dataset.endpoint) ? slot.dataset.endpoint : "";
+  if (!endpoint) return;
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to load home slot from ${endpoint}`);
+  }
+  slot.innerHTML = await response.text();
+  slot.dispatchEvent(
+    new CustomEvent("dashboard:component-loaded", {
+      bubbles: true,
+      detail: { endpoint },
+    })
+  );
+}
 
 const loadSlotOnce = async (slotId) => {
   const slot = document.getElementById(slotId);
   const loader = getDashboardLoader();
-  if (!slot || !loader || typeof loader.loadComponentOnce !== "function") return;
-  await loader.loadComponentOnce(slot);
+  if (!slot) return;
+  try {
+    if (loader && typeof loader.loadComponentOnce === "function") {
+      await loader.loadComponentOnce(slot);
+      return;
+    }
+    await fetchSlotHtmlFallback(slot);
+  } catch (error) {
+    console.error(`[home] failed to load slot: ${slotId}`, error);
+  }
 }
 
 const refreshSlot = async (slotId) => {
   const slot = document.getElementById(slotId);
   const loader = getDashboardLoader();
-  if (!slot || !loader || typeof loader.refreshComponent !== "function") return;
-  await loader.refreshComponent(slot);
+  if (!slot) return;
+  try {
+    if (loader && typeof loader.refreshComponent === "function") {
+      await loader.refreshComponent(slot);
+      return;
+    }
+    await fetchSlotHtmlFallback(slot);
+  } catch (error) {
+    console.error(`[home] failed to refresh slot: ${slotId}`, error);
+  }
 }
 
 const invalidateScope = (scopeKey) => {
@@ -60,22 +102,32 @@ const clearHomeTrendsCache = () => {
   homeDataPromise = null;
 }
 
+const setHtmlIfPresent = (id, value) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = value == null ? "" : value;
+}
+
 const setVATrendsTableData = (vaTableData) => {
   const started = perfNow();
-  document.getElementById('interviewed-past-24-hours').innerHTML = vaTableData.collected["24"];
-  document.getElementById('interviewed-past-week').innerHTML = vaTableData.collected["1 week"];
-  document.getElementById('interviewed-past-month').innerHTML =  vaTableData.collected["1 month"];
-  document.getElementById('interviewed-overall').innerHTML = vaTableData.collected["Overall"];
+  const collected = vaTableData?.collected || {};
+  const coded = vaTableData?.coded || {};
+  const uncoded = vaTableData?.uncoded || {};
 
-  document.getElementById('coded-past-24-hours').innerHTML = vaTableData.coded["24"];
-  document.getElementById('coded-past-week').innerHTML = vaTableData.coded["1 week"];
-  document.getElementById('coded-past-month').innerHTML =  vaTableData.coded["1 month"];
-  document.getElementById('coded-overall').innerHTML = vaTableData.coded["Overall"];
+  setHtmlIfPresent('interviewed-past-24-hours', collected["24"] || 0);
+  setHtmlIfPresent('interviewed-past-week', collected["1 week"] || 0);
+  setHtmlIfPresent('interviewed-past-month', collected["1 month"] || 0);
+  setHtmlIfPresent('interviewed-overall', collected["Overall"] || 0);
 
-  document.getElementById('uncoded-past-24-hours').innerHTML = vaTableData.uncoded["24"];
-  document.getElementById('uncoded-past-week').innerHTML = vaTableData.uncoded["1 week"];
-  document.getElementById('uncoded-past-month').innerHTML =  vaTableData.uncoded["1 month"];
-  document.getElementById('uncoded-overall').innerHTML = vaTableData.uncoded["Overall"];
+  setHtmlIfPresent('coded-past-24-hours', coded["24"] || 0);
+  setHtmlIfPresent('coded-past-week', coded["1 week"] || 0);
+  setHtmlIfPresent('coded-past-month', coded["1 month"] || 0);
+  setHtmlIfPresent('coded-overall', coded["Overall"] || 0);
+
+  setHtmlIfPresent('uncoded-past-24-hours', uncoded["24"] || 0);
+  setHtmlIfPresent('uncoded-past-week', uncoded["1 week"] || 0);
+  setHtmlIfPresent('uncoded-past-month', uncoded["1 month"] || 0);
+  setHtmlIfPresent('uncoded-overall', uncoded["Overall"] || 0);
   perfLog("render.va_statistics.table", started);
 }
 
@@ -495,6 +547,46 @@ const requestNationalOperationalFilterData = (options = {}) => {
     novFilterXhr.abort();
   }
   toggleNovLoadingState(true);
+  if (!hasJqueryAjax()) {
+    const params = new URLSearchParams({
+      preset: selectedNovPreset(),
+      start: startInput?.value || "",
+      end: endInput?.value || "",
+      location_level: document.getElementById("novLocationLevel")?.value || "national",
+      location_value: document.getElementById("novLocationValue")?.value || "",
+    });
+    fetch(`${endpoint}?${params.toString()}`, {
+      method: "GET",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+      credentials: "same-origin",
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to load overview filter data: ${response.status}`);
+        return response.json();
+      })
+      .then((jsonResponse) => {
+        if (requestId !== novFilterRequestId) return;
+        updateNationalOperationalEventsChart(
+          jsonResponse.chart_labels || [],
+          jsonResponse.pregnancy_values || [],
+          jsonResponse.pregnancy_outcome_values || [],
+          jsonResponse.death_values || [],
+          jsonResponse.va_values || jsonResponse.verbal_autopsy_values || []
+        );
+        updateNationalOperationalKpis(jsonResponse.kpis || {});
+        perfLog("fetch.overview.filter_data", started, { requestId, transport: "fetch" });
+      })
+      .catch((error) => {
+        console.error("[home] failed to fetch National Operational View filter data", error);
+      })
+      .finally(() => {
+        if (requestId === novFilterRequestId) {
+          toggleNovLoadingState(false);
+        }
+      });
+    return;
+  }
+
   novFilterXhr = $.ajax({
     url: endpoint,
     type: "GET",
@@ -638,7 +730,7 @@ const applyVAStatisticsPayload = (jsonResponse) => {
     $('#no-coding-issues').addClass('hidden');
 
     if (jsonResponse.additionalIssues > 0) {
-      document.getElementById('additional-issues-count').innerHTML = jsonResponse.additionalIssues;
+      setHtmlIfPresent('additional-issues-count', jsonResponse.additionalIssues);
       $('#additional-issues-msg').removeClass('hidden');
     } else {
       $('#additional-issues-msg').addClass('hidden');
@@ -655,8 +747,7 @@ const applyVAStatisticsPayload = (jsonResponse) => {
     $('#no-indeterminate-cod').addClass('hidden');
 
     if (jsonResponse.additionalIndeterminateCods > 0) {
-      document.getElementById('additional-indeterminate-cods-count').innerHTML =
-        jsonResponse.additionalIndeterminateCods;
+      setHtmlIfPresent('additional-indeterminate-cods-count', jsonResponse.additionalIndeterminateCods);
       $('#additional-indeterminate-cods-msg').removeClass('hidden');
     } else {
       $('#additional-indeterminate-cods-msg').addClass('hidden');
@@ -680,21 +771,42 @@ const fetchHomeTrendsPayload = () => {
   if (homeDataCache) return Promise.resolve(homeDataCache);
   if (homeDataPromise) return homeDataPromise;
 
-  homeDataPromise = new Promise((resolve, reject) => {
-    $.ajax({
-      url: "/trends/",
-      type: "GET",
-      dataType: "json",
-      success: (jsonResponse) => {
-        homeDataCache = jsonResponse;
-        resolve(jsonResponse);
-      },
-      error: () => {
-        homeDataPromise = null;
-        reject(new Error("Failed to fetch chart data from /trends/"));
-      },
+  if (hasJqueryAjax()) {
+    homeDataPromise = new Promise((resolve, reject) => {
+      $.ajax({
+        url: getHomeTrendsEndpoint(),
+        type: "GET",
+        dataType: "json",
+        success: (jsonResponse) => {
+          homeDataCache = jsonResponse;
+          resolve(jsonResponse);
+        },
+        error: () => {
+          homeDataPromise = null;
+          reject(new Error("Failed to fetch chart data from /trends/"));
+        },
+      });
     });
-  });
+    return homeDataPromise;
+  }
+
+  homeDataPromise = fetch(getHomeTrendsEndpoint(), {
+    method: "GET",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+    credentials: "same-origin",
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error(`Failed to fetch chart data: ${response.status}`);
+      return response.json();
+    })
+    .then((jsonResponse) => {
+      homeDataCache = jsonResponse;
+      return jsonResponse;
+    })
+    .catch((error) => {
+      homeDataPromise = null;
+      throw error;
+    });
   return homeDataPromise;
 }
 
@@ -714,7 +826,7 @@ const resizeChartsForTab = (tab) => {
 }
 
 const initOverviewTab = async () => {
-  await Promise.all([
+  await Promise.allSettled([
     loadSlotOnce("novEventsComponentSlot"),
     loadSlotOnce("novKpisComponentSlot"),
   ]);
@@ -766,7 +878,7 @@ const initTrendsTab = async () => {
 }
 
 const initOperationsTab = async () => {
-  await Promise.all([
+  await Promise.allSettled([
     loadSlotOnce("regionalFiltersComponent"),
     loadSlotOnce("regionalCsaComponent"),
     loadSlotOnce("regionalMsoComponent"),

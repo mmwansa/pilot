@@ -87,6 +87,7 @@
       endpoint,
       buildParams,
       normalizeGeoName,
+      onSelectionChange,
       colors,
       noDataMessage,
       initialView = "Province",
@@ -104,6 +105,8 @@
       colors: (
         colors && colors.length ? colors : (styleVariant === "va" ? VA_COLORS : DEFAULT_COLORS)
       ).slice(),
+      selectionKey: "",
+      selectedNode: null,
     };
 
     const normalize =
@@ -123,6 +126,38 @@
     const currentLevel = () => {
       const startLevel = resolveStartLevel(state.activeView);
       return Math.min(startLevel + state.path.length - 1, 5);
+    };
+
+    const currentSelection = () => {
+      const selected = state.selectedNode;
+      if (
+        selected &&
+        selected.levelIndex > 0 &&
+        selected.levelLabel &&
+        selected.name
+      ) {
+        return {
+          geography_level: (selected.levelLabel || "").toString().trim().toLowerCase(),
+          geography_value: (selected.name || "").toString().trim(),
+        };
+      }
+      const last = state.path[state.path.length - 1];
+      if (!last || !last.levelIndex || !last.levelLabel || !last.name) {
+        return { geography_level: "", geography_value: "" };
+      }
+      return {
+        geography_level: (last.levelLabel || "").toString().trim().toLowerCase(),
+        geography_value: (last.name || "").toString().trim(),
+      };
+    };
+
+    const emitSelectionChange = () => {
+      if (typeof onSelectionChange !== "function") return;
+      const selection = currentSelection();
+      const key = `${selection.geography_level}:${selection.geography_value}`;
+      if (key === state.selectionKey) return;
+      state.selectionKey = key;
+      onSelectionChange(selection);
     };
 
     const setEmpty = (isEmpty) => {
@@ -188,6 +223,8 @@
         item.addEventListener("click", async () => {
           if (index === crumbs.length - 1) return;
           state.path = crumbs.slice(0, index + 1);
+          state.selectedNode = null;
+          emitSelectionChange();
           await refresh(state.filters);
         });
         root.appendChild(item);
@@ -329,6 +366,15 @@
             `<div class="mapTooltip"><h4>${areaName} ${levelLabel}</h4><p>${count}</p>${canDrill ? "<small>Click to drill down</small>" : ""}</div>`
           );
           layer.on("click", async () => {
+            const selectedNode = {
+              id: feature?.properties?.area_id,
+              name: areaName,
+              levelLabel: LEVEL_CONFIG[level].label,
+              levelIndex: level,
+            };
+            state.selectedNode = selectedNode;
+            emitSelectionChange();
+
             if (!canDrill) return;
             const nextNode = {
               id: feature?.properties?.area_id,
@@ -338,6 +384,7 @@
             };
             if (!nextNode.id || !nextNode.name) return;
             state.path.push(nextNode);
+            emitSelectionChange();
             await refresh(state.filters);
           });
         },
@@ -373,6 +420,8 @@
       const nextView = filters?.map_view || state.activeView || "Province";
       if (nextView !== state.activeView) {
         state.path = [{ id: "ZM", name: "Zambia", levelLabel: "Country", levelIndex: 0 }];
+        state.selectedNode = null;
+        emitSelectionChange();
       }
       state.activeView = nextView;
       state.payload = await fetchPayload(state.filters);
@@ -386,8 +435,11 @@
       },
       resetDrill: async () => {
         state.path = [{ id: "ZM", name: "Zambia", levelLabel: "Country", levelIndex: 0 }];
+        state.selectedNode = null;
+        emitSelectionChange();
         await refresh(state.filters);
       },
+      getSelection: () => ({ ...currentSelection() }),
     };
   };
 

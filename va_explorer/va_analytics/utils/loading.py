@@ -628,13 +628,6 @@ def load_va_data(
     compare_by="province",
     filtered_qs=None,
 ):
-    user_vas = user.verbal_autopsies(date_cutoff=start_date, end_date=end_date)
-
-    # get stats on last update and last va interview date
-    update_stats = get_va_summary_stats(user_vas)
-    if len(questions_to_autodetect_duplicates()) > 0:
-        update_stats["duplicates"] = user_vas.filter(duplicate=True).count()
-
     user_vas_filtered = filtered_qs or _get_filtered_va_queryset(
         user,
         start_date=start_date,
@@ -645,6 +638,11 @@ def load_va_data(
         sex=sex,
         source=source,
     )
+    # Cards must reflect the active filter set (including selected map region).
+    # Bypass global cached summary to avoid stale unfiltered values.
+    update_stats = get_va_summary_stats(user_vas_filtered, cache_key=None)
+    if len(questions_to_autodetect_duplicates()) > 0:
+        update_stats["duplicates"] = user_vas_filtered.filter(duplicate=True).count()
 
     uncoded_vas = user_vas_filtered.filter(
         Q(final_cause__isnull=True) | Q(final_cause="")
@@ -758,37 +756,85 @@ def load_va_data(
         "EA": {},
     }
     total_map_vas = 0
+    total_map_coded_vas = 0
     for va in user_vas_filtered.select_related("location", "cluster").iterator():
         total_map_vas += 1
+        if _compact_spaces(getattr(va, "final_cause", "")):
+            total_map_coded_vas += 1
         context = va.resolve_location_context()
+        cluster = context.get("cluster")
+
+        def _first_resolved(level, *candidates):
+            for candidate in candidates:
+                resolved = _resolve_geo_name(candidate, level)
+                if resolved:
+                    return resolved
+            return ""
+
         if context.get("mode") == "community":
-            cluster = context.get("cluster")
-            province = _resolve_geo_name(context.get("province"), "Province")
-            district = _resolve_geo_name(context.get("district"), "District")
-            constituency = _resolve_geo_name(
-                context.get("constituency"), "Constituency"
+            province = _first_resolved(
+                "Province",
+                context.get("province"),
+                getattr(va, "province", None),
+                getattr(va, "province_name_from_location", None),
             )
-            ward = _resolve_geo_name(context.get("ward"), "Ward")
-            ea = _resolve_geo_name(
-                context.get("ea")
-                or getattr(cluster, "name", None)
-                or getattr(cluster, "code", None),
+            district = _first_resolved(
+                "District",
+                context.get("district"),
+                context.get("area"),
+                getattr(va, "district_name_from_location", None),
+                va.district,
+            )
+            constituency = _first_resolved(
+                "Constituency",
+                context.get("constituency"),
+                va.constituency,
+            )
+            ward = _first_resolved(
+                "Ward",
+                context.get("ward"),
+                va.ward,
+                context.get("area"),
+            )
+            ea = _first_resolved(
                 "EA",
+                context.get("ea"),
+                getattr(cluster, "name", None),
+                getattr(cluster, "code", None),
+                va.ea,
             )
         else:
-            province = _resolve_geo_name(
-                context.get("province") or getattr(va, "province_name_from_location", None),
+            province = _first_resolved(
                 "Province",
+                context.get("province"),
+                getattr(va, "province", None),
+                getattr(va, "province_name_from_location", None),
             )
-            district = _resolve_geo_name(
-                getattr(va, "district_name_from_location", None)
-                or context.get("area")
-                or va.district,
+            district = _first_resolved(
                 "District",
+                getattr(va, "district_name_from_location", None),
+                context.get("district"),
+                context.get("area"),
+                va.district,
             )
-            constituency = _resolve_geo_name(va.constituency, "Constituency")
-            ward = _resolve_geo_name(va.ward or context.get("area"), "Ward")
-            ea = _resolve_geo_name(va.ea, "EA")
+            constituency = _first_resolved(
+                "Constituency",
+                context.get("constituency"),
+                va.constituency,
+            )
+            ward = _first_resolved(
+                "Ward",
+                context.get("ward"),
+                va.ward,
+                context.get("area"),
+            )
+            ea = _first_resolved(
+                "EA",
+                context.get("ea"),
+                getattr(cluster, "name", None),
+                getattr(cluster, "code", None),
+                va.ea,
+            )
 
         if province:
             map_counts["Province"][province] = map_counts["Province"].get(province, 0) + 1
@@ -824,9 +870,10 @@ def load_va_data(
         ),
         "map_ward_sums": _serialize_geo_counts(map_counts["Ward"], "ward_name"),
         "map_ea_sums": _serialize_geo_counts(map_counts["EA"], "ea_name"),
-        # Kept for frontend compatibility; now represents all filtered VAs for map display.
-        "map_total_coded_vas": total_map_vas,
+        # Explicit totals for map semantics.
         "map_total_vas": total_map_vas,
+        # Backward-compatible key used by older frontend code paths.
+        "map_total_coded_vas": total_map_coded_vas,
     }
 
     return data

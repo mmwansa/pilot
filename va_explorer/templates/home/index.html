@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mt-4 dashboard-shell" data-shell="home">
+<div class="row dashboard-shell" data-shell="home" data-trends-endpoint="{% url 'home:charts' %}">
 
  
   <div class="col">
@@ -176,7 +176,7 @@
   <script src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
   <script src="{% static 'js/regional_operations.js' %}"></script>
   <script src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
-  <script src="{% static 'js/home.js' %}?v=20260219d"></script>
+  <script src="{% static 'js/home.js' %}?v=20260220e"></script>
 
   <script>
     // Count up animation for dashboard numbers
