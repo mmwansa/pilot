@@ -104,6 +104,7 @@
             refreshDataOnly().catch((err) => console.error(err));
           },
           styleVariant: "va",
+          fitToDataBounds: false,
           noDataMessage: "No mapped deaths in current filter range.",
         })
       : null;

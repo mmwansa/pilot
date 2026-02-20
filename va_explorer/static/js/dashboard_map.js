@@ -189,6 +189,8 @@ const dashboard = new Vue({
                     this.renderRegionalCauseComparisonChart();
                 },
                 styleVariant: "va",
+                // Keep VA dashboard default view aligned to the baseline dashboard zoom.
+                fitToDataBounds: false,
                 noDataMessage: "No geographic VA data available for the selected filters.",
             });
             await this.mapController.refresh({});

@@ -92,6 +92,7 @@
       noDataMessage,
       initialView = "Province",
       styleVariant = "default",
+      fitToDataBounds = true,
     } = options;
 
     const state = {
@@ -305,6 +306,10 @@
       if (!state.map || !state.layer) return;
       try {
         state.map.invalidateSize();
+        if (!fitToDataBounds) {
+          state.map.setView([-13, 27], 6);
+          return;
+        }
         const bounds = state.layer.getBounds();
         if (bounds && bounds.isValid()) {
           state.map.fitBounds(bounds, { padding: [8, 8], maxZoom: 18 });
