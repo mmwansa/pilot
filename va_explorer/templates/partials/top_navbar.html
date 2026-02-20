@@ -15,7 +15,7 @@
       <li class="nav-item">
         <a class="{% active 'about' %} nav-link" href="{% url 'home:about' %}">About</a>
       </li>
-      {% if request.user.is_superuser or request.user|has_group:"Admins" %}
+      {% if perms.users.view_user %}
       <li class="nav-item">
         <a class="{% active '\/(.*)users' %} nav-link" href="{% url 'users:index' %}">Users</a>
       </li>

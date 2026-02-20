@@ -10,6 +10,7 @@ from django.views.generic import ListView, View
 
 from ..utils.file_io import download_list_as_csv, download_queryset_as_csv
 from ..utils.mixins import CustomAuthMixin
+from ..va_data_management.constants import REDACTED_STRING
 from ..va_data_management.models import (
     Death,
     Household,
@@ -24,6 +25,7 @@ from .models import DataCleanup
 
 User = get_user_model()
 MAX_DQ_RELATED_ROWS = 500
+MAX_VA_TABLE_ROWS = 5
 
 
 def _norm_ref(value):
@@ -40,6 +42,39 @@ def _issue_label(issue):
     if subtype:
         return f"{issue.get_issue_type_display()} ({subtype.replace('_', ' ')})"
     return issue.get_issue_type_display()
+
+
+def _get_context_for_va_table(va_list, user):
+    context = [
+        {
+            "id": va.id,
+            "deceased": f"{va.Id10017} {va.Id10018}",
+            "interviewer": va.Id10010,
+            "interviewed": (
+                parse_date(va.Id10012) if (va.Id10012 != "dk") else "Unknown"
+            ),
+            "dod": parse_date(va.Id10023) if (va.Id10023 != "dk") else "Unknown",
+            "facility": va.location.name if va.location else "Not Provided",
+            "cause": (
+                va.causes.all()[0].cause if len(va.causes.all()) > 0 else "Not Coded"
+            ),
+            "warnings": len(
+                [
+                    issue
+                    for issue in va.coding_issues.all()
+                    if issue.severity == "warning"
+                ]
+            ),
+            "errors": len(
+                [issue for issue in va.coding_issues.all() if issue.severity == "error"]
+            ),
+        }
+        for va in va_list
+    ]
+    for item in context:
+        if not user.can_view_pii:
+            item["deceased"] = REDACTED_STRING
+    return context
 
 
 class DataCleanupIndexView(CustomAuthMixin, PermissionRequiredMixin, ListView):
@@ -63,9 +98,10 @@ class DataCleanupIndexView(CustomAuthMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user_vas = self.request.user.verbal_autopsies()
 
         context["total_duplicate_records"] = (
-            self.request.user.verbal_autopsies().filter(duplicate=True).count()
+            user_vas.filter(duplicate=True).count()
         )
         context["va_data_cleanup"] = True
 
@@ -101,6 +137,28 @@ class DataCleanupIndexView(CustomAuthMixin, PermissionRequiredMixin, ListView):
         ]
         context["object_list"] = va_duplicate_rows
         context["va_duplicate_rows"] = va_duplicate_rows
+        # Keep parity with the former Home VA Statistics tables.
+        uncoded_vas = (
+            user_vas.filter(causes__isnull=True)
+            .prefetch_related("causes", "coding_issues", "location")
+            .distinct()
+        )
+        indeterminate_vas = (
+            user_vas.filter(causes__cause="Indeterminate")
+            .prefetch_related("causes", "coding_issues", "location")
+            .distinct()
+        )
+        context["va_coding_issue_rows"] = _get_context_for_va_table(
+            uncoded_vas[:MAX_VA_TABLE_ROWS], self.request.user
+        )
+        context["va_indeterminate_cod_rows"] = _get_context_for_va_table(
+            indeterminate_vas[:MAX_VA_TABLE_ROWS], self.request.user
+        )
+        context["additional_issues"] = max(uncoded_vas.count() - MAX_VA_TABLE_ROWS, 0)
+        context["additional_indeterminate_cods"] = max(
+            indeterminate_vas.count() - MAX_VA_TABLE_ROWS,
+            0,
+        )
         active_tab = self.request.GET.get("tab", "verbal-autopsy").strip().lower()
         allowed_tabs = {
             "household",

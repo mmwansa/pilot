@@ -67,7 +67,7 @@
             <i class="fas fa-bolt"></i>
           </a>
           <div class="dropdown-menu dropdown-menu-right" aria-labelledby="quickActionsDropdown">
-            {% if request.user.is_superuser or request.user|has_group:"Admins" %}
+            {% if perms.users.view_user %}
             <a class="dropdown-item" href="{% url 'users:index' %}">
               <i class="fas fa-users mr-2"></i>Users
             </a>

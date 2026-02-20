@@ -49,6 +49,13 @@ def test_index_with_valid_permission(
     response = client.get("/va_data_cleanup/")
 
     assert response.status_code == 200
+    assert b"cleanup-household-tab" in response.content
+    assert b"cleanup-pregnancy-tab" in response.content
+    assert b"cleanup-pregnancy-outcome-tab" in response.content
+    assert b"cleanup-death-tab" in response.content
+    assert b"cleanup-va-tab" in response.content
+    assert b"VAs With Coding Issues" in response.content
+    assert b"VAs With Indeterminate Cause of Death" in response.content
 
 
 # A user must have the view_datacleanup permission to view the index

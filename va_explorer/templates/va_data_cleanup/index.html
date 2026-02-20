@@ -1,30 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Duplicate Data{% endblock %}
+{% block title %}Manage Data Quality{% endblock %}
 
-{% block heading %}Manage Duplicate Data{% endblock %}
+{% block heading %}Manage Data Quality{% endblock %}
 
 {% block content %}
-  {% if AUTO_DETECT_DUPLICATES %}
-    <ul class="nav nav-tabs tab-spacing" id="cleanupTabs" role="tablist">
-      <li class="nav-item">
-        <a class="nav-link {% if active_cleanup_tab == 'household' %}active{% endif %}" id="cleanup-household-tab" data-toggle="tab" href="#cleanup-household" role="tab" aria-controls="cleanup-household" aria-selected="{% if active_cleanup_tab == 'household' %}true{% else %}false{% endif %}">Household</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link {% if active_cleanup_tab == 'pregnancy' %}active{% endif %}" id="cleanup-pregnancy-tab" data-toggle="tab" href="#cleanup-pregnancy" role="tab" aria-controls="cleanup-pregnancy" aria-selected="{% if active_cleanup_tab == 'pregnancy' %}true{% else %}false{% endif %}">Pregnancy</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link {% if active_cleanup_tab == 'pregnancy-outcome' %}active{% endif %}" id="cleanup-pregnancy-outcome-tab" data-toggle="tab" href="#cleanup-pregnancy-outcome" role="tab" aria-controls="cleanup-pregnancy-outcome" aria-selected="{% if active_cleanup_tab == 'pregnancy-outcome' %}true{% else %}false{% endif %}">Pregnancy Outcome</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link {% if active_cleanup_tab == 'death' %}active{% endif %}" id="cleanup-death-tab" data-toggle="tab" href="#cleanup-death" role="tab" aria-controls="cleanup-death" aria-selected="{% if active_cleanup_tab == 'death' %}true{% else %}false{% endif %}">Death</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link {% if active_cleanup_tab == 'verbal-autopsy' %}active{% endif %}" id="cleanup-va-tab" data-toggle="tab" href="#cleanup-va" role="tab" aria-controls="cleanup-va" aria-selected="{% if active_cleanup_tab == 'verbal-autopsy' %}true{% else %}false{% endif %}">Verbal Autopsy</a>
-      </li>
-    </ul>
+  <ul class="nav nav-tabs tab-spacing" id="cleanupTabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link {% if active_cleanup_tab == 'household' %}active{% endif %}" id="cleanup-household-tab" data-toggle="tab" href="#cleanup-household" role="tab" aria-controls="cleanup-household" aria-selected="{% if active_cleanup_tab == 'household' %}true{% else %}false{% endif %}">Household</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if active_cleanup_tab == 'pregnancy' %}active{% endif %}" id="cleanup-pregnancy-tab" data-toggle="tab" href="#cleanup-pregnancy" role="tab" aria-controls="cleanup-pregnancy" aria-selected="{% if active_cleanup_tab == 'pregnancy' %}true{% else %}false{% endif %}">Pregnancy</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if active_cleanup_tab == 'pregnancy-outcome' %}active{% endif %}" id="cleanup-pregnancy-outcome-tab" data-toggle="tab" href="#cleanup-pregnancy-outcome" role="tab" aria-controls="cleanup-pregnancy-outcome" aria-selected="{% if active_cleanup_tab == 'pregnancy-outcome' %}true{% else %}false{% endif %}">Pregnancy Outcome</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if active_cleanup_tab == 'death' %}active{% endif %}" id="cleanup-death-tab" data-toggle="tab" href="#cleanup-death" role="tab" aria-controls="cleanup-death" aria-selected="{% if active_cleanup_tab == 'death' %}true{% else %}false{% endif %}">Death</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if active_cleanup_tab == 'verbal-autopsy' %}active{% endif %}" id="cleanup-va-tab" data-toggle="tab" href="#cleanup-va" role="tab" aria-controls="cleanup-va" aria-selected="{% if active_cleanup_tab == 'verbal-autopsy' %}true{% else %}false{% endif %}">Verbal Autopsy</a>
+    </li>
+  </ul>
 
-    <div class="tab-content pt-3" id="cleanupTabsContent">
+  <div class="tab-content pt-3" id="cleanupTabsContent">
       <section class="tab-pane fade {% if active_cleanup_tab == 'household' %}show active{% endif %}" id="cleanup-household" role="tabpanel" aria-labelledby="cleanup-household-tab">
         <section class="ou-card ou-mb-3">
           <div class="ou-card-header">
@@ -239,55 +238,161 @@
       </section>
 
       <section class="tab-pane fade {% if active_cleanup_tab == 'verbal-autopsy' %}show active{% endif %}" id="cleanup-va" role="tabpanel" aria-labelledby="cleanup-va-tab">
-        <section class="ou-card ou-mb-3">
-          <div class="ou-card-header">
-            <h2 class="ou-card-title">Duplicate Detection</h2>
-          </div>
-          <div class="ou-card-body">
-            <p>Data flagged as potential duplicates by VA Explorer are shown below.</p>
-            <p class="ou-text-muted">
-              Your system is configured to automatically flag data as potential duplicates if they match
-              across <a href="{% url 'data_cleanup:download_questions' %}">these questions</a>. To manage duplicates,
-              delete them or edit potential duplicate VAs to remove them from detection.
-            </p>
-          </div>
-        </section>
-
-        {% if total_duplicate_records == 0 %}
-          <div class="alert alert-warning ou-mb-3" role="alert">
-            There are currently no duplicate Data flagged by the system.
-          </div>
-        {% else %}
+        {% if AUTO_DETECT_DUPLICATES %}
           <section class="ou-card ou-mb-3">
             <div class="ou-card-header">
-              <h2 class="ou-card-title">Bulk Actions</h2>
+              <h2 class="ou-card-title">Duplicate Detection</h2>
             </div>
             <div class="ou-card-body">
-              <table class="table table-sm table-striped">
-                <tbody>
+              <p>Data flagged as potential duplicates by VA Explorer are shown below.</p>
+              <p class="ou-text-muted">
+                Your system is configured to automatically flag data as potential duplicates if they match
+                across <a href="{% url 'data_cleanup:download_questions' %}">these questions</a>. To manage duplicates,
+                delete them or edit potential duplicate VAs to remove them from detection.
+              </p>
+            </div>
+          </section>
+
+          {% if total_duplicate_records == 0 %}
+            <div class="alert alert-warning ou-mb-3" role="alert">
+              There are currently no duplicate Data flagged by the system.
+            </div>
+          {% else %}
+            <section class="ou-card ou-mb-3">
+              <div class="ou-card-header">
+                <h2 class="ou-card-title">Bulk Actions</h2>
+              </div>
+              <div class="ou-card-body">
+                <table class="table table-sm table-striped">
+                  <tbody>
+                    <tr>
+                      <td class="duplicates-table-text ">{{ total_duplicate_records }} potential duplicate Data</td>
+                      <td><a class="btn btn-primary" href="{% url 'data_cleanup:download_all' %}"><i class="fas fa-download"></i> Download All</a></td>
+                      {% if perms.va_data_management.bulk_delete %}
+                        <td><a class="btn btn-danger" href="{% url 'data_management:delete_all' %}"><i class="fas fa-trash"></i> Delete All</a></td>
+                      {% endif %}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            {% include "partials/card.html" with title="Individual Actions" body_template="va_data_cleanup/partials/_duplicates_table_card_body.html" class_name="ou-mb-3" body_class="p-0" %}
+            {% if page_obj.has_other_pages %}
+              {% include "partials/_pagination.html" %}
+            {% endif %}
+          {% endif %}
+        {% else %}
+          <div class="alert alert-info ou-mb-3">
+            <p>Your system is currently not configured to automatically flag Verbal Autopsies as potential duplicates.</p>
+            <p>To turn this feature on, please contact your system administrator.</p>
+          </div>
+        {% endif %}
+
+        <section class="ou-card ou-mb-3">
+          <div class="ou-card-header">
+            <h2 class="ou-card-title">VAs With Coding Issues</h2>
+          </div>
+          <div class="ou-card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped mb-0">
+                <thead>
                   <tr>
-                    <td class="duplicates-table-text ">{{ total_duplicate_records }} potential duplicate Data</td>
-                    <td><a class="btn btn-primary" href="{% url 'data_cleanup:download_all' %}"><i class="fas fa-download"></i> Download All</a></td>
-                    {% if perms.va_data_management.bulk_delete %}
-                      <td><a class="btn btn-danger" href="{% url 'data_management:delete_all' %}"><i class="fas fa-trash"></i> Delete All</a></td>
-                    {% endif %}
+                    <th>ID</th>
+                    <th>Interviewed</th>
+                    {% if not user.is_fieldworker %}<th>Interviewer</th>{% endif %}
+                    <th>Facility</th>
+                    <th>Deceased</th>
+                    <th>Deathdate</th>
+                    <th>Cause</th>
+                    <th>Warnings</th>
+                    <th>Errors</th>
+                    <th></th>
                   </tr>
+                </thead>
+                <tbody>
+                  {% for row in va_coding_issue_rows %}
+                    <tr>
+                      <td>{{ row.id }}</td>
+                      <td>{{ row.interviewed }}</td>
+                      {% if not user.is_fieldworker %}<td>{{ row.interviewer }}</td>{% endif %}
+                      <td>{{ row.facility }}</td>
+                      <td>{{ row.deceased }}</td>
+                      <td>{{ row.dod }}</td>
+                      <td>{{ row.cause }}</td>
+                      <td>{{ row.warnings }}</td>
+                      <td>{{ row.errors }}</td>
+                      <td><a class="btn btn-primary btn-sm" href="{% url 'va_data_management:show' id=row.id %}">View</a></td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="{% if user.is_fieldworker %}9{% else %}10{% endif %}">No coding issues found.</td>
+                    </tr>
+                  {% endfor %}
                 </tbody>
               </table>
             </div>
-          </section>
-          {% include "partials/card.html" with title="Individual Actions" body_template="va_data_cleanup/partials/_duplicates_table_card_body.html" class_name="ou-mb-3" body_class="p-0" %}
-          {% if page_obj.has_other_pages %}
-            {% include "partials/_pagination.html" %}
+          </div>
+          {% if additional_issues > 0 %}
+            <div class="ou-card-body pt-0">
+              <p class="mb-0">
+                There are <a href="/va_data_management/?only_errors=True">{{ additional_issues }} additional issues</a> not listed here.
+              </p>
+            </div>
           {% endif %}
-        {% endif %}
+        </section>
+
+        <section class="ou-card ou-mb-3">
+          <div class="ou-card-header">
+            <h2 class="ou-card-title">VAs With Indeterminate Cause of Death</h2>
+          </div>
+          <div class="ou-card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped mb-0">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Interviewed</th>
+                    {% if not user.is_fieldworker %}<th>Interviewer</th>{% endif %}
+                    <th>Facility</th>
+                    <th>Deceased</th>
+                    <th>Deathdate</th>
+                    <th>Cause</th>
+                    <th>Warnings</th>
+                    <th>Errors</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in va_indeterminate_cod_rows %}
+                    <tr>
+                      <td>{{ row.id }}</td>
+                      <td>{{ row.interviewed }}</td>
+                      {% if not user.is_fieldworker %}<td>{{ row.interviewer }}</td>{% endif %}
+                      <td>{{ row.facility }}</td>
+                      <td>{{ row.deceased }}</td>
+                      <td>{{ row.dod }}</td>
+                      <td>{{ row.cause }}</td>
+                      <td>{{ row.warnings }}</td>
+                      <td>{{ row.errors }}</td>
+                      <td><a class="btn btn-primary btn-sm" href="{% url 'va_data_management:show' id=row.id %}">View</a></td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="{% if user.is_fieldworker %}9{% else %}10{% endif %}">No VAs with indeterminate cause of death found.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% if additional_indeterminate_cods > 0 %}
+            <div class="ou-card-body pt-0">
+              <p class="mb-0">
+                There are <a href="/va_data_management/?cause=Indeterminate">{{ additional_indeterminate_cods }} additional VAs with indeterminate cause of death</a> not listed here.
+              </p>
+            </div>
+          {% endif %}
+        </section>
       </section>
-    </div>
-  {% else %}
-    {# Message shown if user happens upon the data_cleanup URL (it's hidden from the navbar) #}
-    <div class="alert alert-info ou-mb-3">
-      <p>Your system is currently not configured to automatically flag Verbal Autopsies as potential duplicates.</p>
-      <p>To turn this feature on, please contact your system administrator.</p>
-    </div>
-  {% endif %}
+  </div>
 {% endblock %}
