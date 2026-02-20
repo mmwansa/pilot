@@ -108,9 +108,9 @@ const dashboard = new Vue({
         causeOfDeathData() {
             if (!this.COD_grouping) return [];
             if (this.causeOfDeathValue === "count") return this.COD_grouping;
-            const totalCount = d3.sum(this.COD_grouping.map(item => item.count));
+            const totalCount = this.COD_grouping?.[0]?.total || d3.sum(this.COD_grouping.map(item => item.count));
             return JSON.parse(JSON.stringify(this.COD_grouping)).map(d => {
-                d.percentage = Math.round(d.count * 1000 / totalCount) / 10;
+                d.percentage = totalCount > 0 ? Math.round(d.count * 1000 / totalCount) / 10 : 0;
                 delete d.count;
                 return d;
             })

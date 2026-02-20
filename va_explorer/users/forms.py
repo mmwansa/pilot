@@ -8,7 +8,6 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group
-from django.db.models import Q
 from django.forms import (
     ModelChoiceField,
     ModelMultipleChoiceField,
@@ -52,7 +51,11 @@ def validate_location_access(form, geographic_access, location_restrictions, gro
     """
     Custom form validations related to geographic access and location restrictions
     """
-    if group.name == "Field Workers":
+    # Note: the Field Worker role may not be used in VACMS; for now we
+    # just ensure that the Field Worker role is treated the same as
+    # other roles when considering location restrictions by disabling
+    # the Field Workers conditional block
+    if False and group.name == "Field Workers":
         if len(location_restrictions) == 0 or geographic_access == "national":
             form._errors["facility_restrictions"] = form.error_class(
                 ["You must add one or more facilities."]
@@ -152,8 +155,9 @@ class UserCommonFields(forms.ModelForm):
     )
     location_restrictions = ModelMultipleChoiceField(
         # Don't include 'Unknown' or Root/Country node in options
-        queryset=SRSClusterLocation.objects.all()
-        .exclude(Q(location_type="country") | Q(name="Unknown"))
+        queryset=SRSClusterLocation.objects.filter(
+            location_type__in=["province", "district"]
+        ).exclude(name="Unknown")
         .order_by("path"),
         widget=LocationRestrictionsSelectMultiple(
             attrs={"class": "location-restrictions-select"}
@@ -255,7 +259,7 @@ class ExtendedUserCreationForm(UserCommonFields, UserCreationForm):
 
         Saves the location and group after the user object is saved.
         """
-        user = super(UserCreationForm, self).save(commit)
+        user = super(UserCreationForm, self).save(commit=False)
         if user:
             user.email = self.cleaned_data["email"]
             user.name = self.cleaned_data["name"]
@@ -355,9 +359,10 @@ class UserUpdateForm(UserCommonFields, forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        user = super().save(commit)
+        user = super().save(commit=False)
 
         if commit:
+            user.save()
             # only run va matching logic when user is first created
             user = process_user_data(user, self.cleaned_data)
 
@@ -397,10 +402,12 @@ class UserPasswordUpdateForm(forms.Form):
 
     #
     def clean(self):
-        password1 = self.cleaned_data["password1"]
-        password2 = self.cleaned_data["password2"]
-        if not password1 == password2:
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
             raise forms.ValidationError("The provided passwords do not match")
+        return cleaned_data
 
 
 
@@ -539,7 +546,7 @@ class UserImportForm(forms.Form):
     groups = forms.ModelChoiceField(
             queryset=Group.objects.all(),
             widget=forms.Select,
-            required=True,
-            label="Groups"
+            required=False,
+            label="Group (overwrites group in CSV file)"
         )
     file = forms.FileField()

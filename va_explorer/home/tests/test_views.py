@@ -6,14 +6,27 @@ import pytest
 import time_machine
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import gettz
+from django.contrib.auth.models import Permission
+from django.core.cache import cache
 from django.test import Client
+from django.urls import reverse
 
 from va_explorer.tests.factories import (
     CauseCodingIssueFactory,
     CauseOfDeathFactory,
+    GroupFactory,
+    LocationFactory,
+    UserFactory,
     VerbalAutopsyFactory,
 )
+from va_explorer.va_data_management.models import (
+    Death,
+    Household,
+    Pregnancy,
+    PregnancyOutcome,
+)
 from va_explorer.users.models import User
+from va_explorer.vacms.cmsmodels.events import Event
 
 pytestmark = pytest.mark.django_db
 eastern_tz = gettz("US/Eastern")
@@ -217,6 +230,317 @@ def test_trends_no_data(user: User):
     assert json_data["additionalIndeterminateCods"] == 0
 
     assert json_data["isFieldWorker"] is False
+
+
+def _seed_home_dashboard_scope_data():
+    southern = LocationFactory.create(name="Southern", location_type="province")
+    southern_district = southern.add_child(name="Choma", location_type="district")
+    southern_facility = southern_district.add_child(
+        name="Choma Facility", location_type="facility"
+    )
+
+    lusaka = LocationFactory.create(name="Lusaka", location_type="province")
+    lusaka_district = lusaka.add_child(name="Lusaka", location_type="district")
+    lusaka_facility = lusaka_district.add_child(
+        name="Lusaka Facility", location_type="facility"
+    )
+
+    today = "2026-02-10"
+
+    Household.objects.create(
+        key="hh-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        ea="EA-S-1",
+    )
+    Household.objects.create(
+        key="hh-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        ea="EA-L-1",
+    )
+
+    Pregnancy.objects.create(
+        key="preg-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        PE_09A=today,
+    )
+    Pregnancy.objects.create(
+        key="preg-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        PE_09A=today,
+    )
+
+    PregnancyOutcome.objects.create(
+        key="po-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        PO_41=today,
+    )
+    PregnancyOutcome.objects.create(
+        key="po-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        PO_41=today,
+    )
+
+    Death.objects.create(
+        key="death-southern",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Southern",
+        district="Choma",
+        DE_06=today,
+    )
+    Death.objects.create(
+        key="death-lusaka",
+        submissiondate=today,
+        today=today,
+        start=today,
+        province="Lusaka",
+        district="Lusaka",
+        DE_06=today,
+    )
+
+    VerbalAutopsyFactory.create(
+        instanceid="va-southern",
+        Id10012=today,
+        Id10023=today,
+        submissiondate=today,
+        location=southern_facility,
+    )
+    VerbalAutopsyFactory.create(
+        instanceid="va-lusaka",
+        Id10012=today,
+        Id10023=today,
+        submissiondate=today,
+        location=lusaka_facility,
+    )
+
+    return southern
+
+
+def _scoped_dashboard_user(scope_location):
+    permission = Permission.objects.filter(codename="view_dashboard").first()
+    group = GroupFactory.create(permissions=[permission] if permission else [])
+    return UserFactory.create(groups=[group], location_restrictions=[scope_location])
+
+
+def test_home_dashboard_kpis_are_scoped_to_user_province():
+    cache.clear()
+    southern = _seed_home_dashboard_scope_data()
+    user = _scoped_dashboard_user(southern)
+    client = Client()
+    client.force_login(user=user)
+
+    response = client.get(reverse("va_analytics:home-dashboard-kpis-api"))
+    assert response.status_code == 200
+    kpis = response.json()["kpis"]
+
+    assert kpis["eas"]["total"] == 1
+    assert kpis["households"]["total"] == 1
+    assert kpis["pregnancies"]["total"] == 1
+    assert kpis["preg_outcomes"]["total"] == 1
+    assert kpis["deaths"]["total"] == 1
+    assert kpis["vas"]["total"] == 1
+
+
+def test_home_dashboard_overview_chart_is_scoped_to_user_province():
+    cache.clear()
+    southern = _seed_home_dashboard_scope_data()
+    user = _scoped_dashboard_user(southern)
+    client = Client()
+    client.force_login(user=user)
+
+    response = client.get(
+        reverse(
+            "va_analytics:home-dashboard-tab-chart-api",
+            kwargs={"tab": "overview", "chart": "events"},
+        )
+    )
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert sum(payload["pregnancy"]) == 1
+    assert sum(payload["pregnancy_outcome"]) == 1
+    assert sum(payload["death"]) == 1
+    assert sum(payload["va"]) == 1
+
+
+def test_regional_operations_page_loads(user: User):
+    client = Client()
+    client.force_login(user=user)
+
+    response = client.get("/regional-operations/", follow=True)
+    assert response.status_code == 200
+    assert b"id=\"regionalFiltersComponent\"" in response.content
+    assert b"id=\"regionalCsaComponent\"" in response.content
+    assert b"id=\"regionalMsoComponent\"" in response.content
+
+
+def test_regional_operations_components_refresh_independently(user: User):
+    client = Client()
+    client.force_login(user=user)
+
+    filters_response = client.get(
+        "/regional-operations/components/filters/",
+        {"geography": "lusaka", "time_preset": "time7"},
+        follow=True,
+    )
+    assert filters_response.status_code == 200
+    assert b"id=\"geographyFilterSelect\"" in filters_response.content
+    assert b"value=\"lusaka\" selected" in filters_response.content
+
+    csa_response = client.get(
+        "/regional-operations/components/csa/",
+        {"geography": "lusaka", "csa_sort": "deaths", "csa_dir": "asc"},
+        follow=True,
+    )
+    assert csa_response.status_code == 200
+    assert b"CSA Name (Search)" in csa_response.content
+    assert b"regional-sort-link" in csa_response.content
+    assert b"regional-page-link" in csa_response.content
+
+    mso_response = client.get(
+        "/regional-operations/components/mso/",
+        {"source": "facility", "mso_sort": "error", "mso_dir": "asc"},
+        follow=True,
+    )
+    assert mso_response.status_code == 200
+    assert b"id=\"msoSourceSelect\"" in mso_response.content
+    assert b"value=\"facility\" selected" in mso_response.content
+    assert b"regional-sort-link" in mso_response.content
+    assert b"regional-page-link" in mso_response.content
+
+
+def test_regional_operations_mso_populated_when_events_unlinked(user: User):
+    client = Client()
+    client.force_login(user=user)
+
+    VerbalAutopsyFactory.create(
+        Id10010="MSO Alpha",
+        Id10012="2024-02-01",
+        Id10011="09:00:00",
+        Id10481="2024-02-01 10:00:00",
+    )
+    VerbalAutopsyFactory.create(
+        Id10010="MSO Alpha",
+        Id10012="2024-02-02",
+        Id10011="09:00:00",
+        Id10481="2024-02-02 09:20:00",
+    )
+
+    # Unlinked events: no VA and no Death link.
+    Event.objects.create(
+        event_type=Event.EventType.DEATH,
+        event_status=Event.EventStatus.VA_INTERVIEW_SCHEDULED,
+        va_interview_status=Event.VAInterviewStatus.SCHEDULED,
+        interview_scheduled_date=date(2024, 2, 3),
+        province="Lusaka",
+        district="Lusaka",
+        ward="Ward 1",
+        ea="EA 1",
+        supervisor="Unlinked Supervisor",
+    )
+    Event.objects.create(
+        event_type=Event.EventType.DEATH,
+        va_interview_status=Event.VAInterviewStatus.SCHEDULED,
+        interview_complete_date=None,
+        province="Lusaka",
+        district="Lusaka",
+        ward="Ward 1",
+        ea="EA 1",
+        supervisor="Unlinked Supervisor",
+    )
+
+    response = client.get("/regional-operations/components/mso/", follow=True)
+    assert response.status_code == 200
+
+    mso_stats = response.context["mso_stats"]
+    assert len(mso_stats) > 0
+    assert any(row.get("va_total", 0) > 0 for row in mso_stats)
+
+
+def test_mso_uses_only_va_base_names_and_fuzzy_maps_event_aggregates(user: User):
+    client = Client()
+    client.force_login(user=user)
+
+    # In-scope VA base row.
+    in_scope_va = VerbalAutopsyFactory.create(
+        Id10010="Jane Doe",
+        Id10012="2024-02-02",
+        province="Lusaka",
+    )
+    # Out-of-scope VA for base (outside manual date range), but linked events fall in range.
+    out_of_scope_va = VerbalAutopsyFactory.create(
+        Id10010="Jane-Doe",
+        Id10012="2023-01-01",
+        province="Lusaka",
+    )
+
+    death = Death.objects.create(
+        DE_06="2024-02-03",
+        province="Lusaka",
+        enumerator="CSA_One_101",
+    )
+    Event.objects.create(
+        va=out_of_scope_va,
+        death=death,
+        event_type=Event.EventType.DEATH,
+        event_status=Event.EventStatus.VA_INTERVIEW_SCHEDULED,
+        va_interview_status=Event.VAInterviewStatus.SCHEDULED,
+        interview_scheduled_date=date(2024, 2, 4),
+        interview_complete_date=date(2024, 2, 5),
+        province="Lusaka",
+        district="Lusaka",
+        ward="Ward 1",
+        ea="EA 1",
+        supervisor="CSA Supervisor",
+        enumerator="CSA Enumerator",
+    )
+
+    response = client.get(
+        "/regional-operations/components/mso/",
+        {
+            "start_date": "2024-02-01",
+            "end_date": "2024-02-10",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+    mso_stats = response.context["mso_stats"]
+    assert mso_stats
+
+    names = [row["name"] for row in mso_stats]
+    assert "Jane Doe" in names
+    assert "CSA Supervisor" not in names
+    assert "CSA Enumerator" not in names
+    assert "CSA_One_101" not in names
+
+    jane_row = next(row for row in mso_stats if row["name"] == "Jane Doe")
+    assert jane_row["death_events"] > 0
+    assert jane_row["va_scheduled"] > 0
 
 
 # Get the about page and make sure it returns successfully

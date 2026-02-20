@@ -4,8 +4,9 @@ import pytest
 from va_explorer.users.models import User
 from va_explorer.users.tests.user_test_utils import get_fake_user_data, setup_test_db
 from va_explorer.users.utils.user_form_backend import (
-    create_users_from_file,
     fill_user_form_data,
+    parse_users_from_file,
+    save_users_from_data,
 )
 from va_explorer.users.validators import validate_user_form, validate_user_object
 
@@ -36,13 +37,13 @@ def test_create_users_from_file():
     # fill all other NAs with empty strings
     user_df = user_df.fillna("")
 
-    res = create_users_from_file(user_file)
+    valid_users_raw, _, invalid_users = parse_users_from_file(user_file)
+    users = save_users_from_data(valid_users_raw)
 
-    assert res["user_ct"] == user_df.shape[0]
-    assert res["error_ct"] == 0
-    assert len(res["users"]) == user_df.shape[0]
+    assert len(users) == user_df.shape[0]
+    assert len(invalid_users) == 0
 
-    user_emails = {u.email for u in res["users"]}
+    user_emails = {u.email for u in users}
     raw_emails = set(user_df["email"].tolist())
 
     assert (
@@ -54,7 +55,7 @@ def test_create_users_from_file():
             iter(
                 filter(
                     lambda x, user_data=user_data: x.email == user_data["email"],
-                    res["users"],
+                    users,
                 )
             )
         )

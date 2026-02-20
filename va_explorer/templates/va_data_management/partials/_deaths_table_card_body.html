@@ -1,0 +1,4 @@
+{% include "partials/_death_table.html" with object_list=object_list %}
+{% if not object_list %}
+  {% include "partials/empty_state.html" with message="No death records found for the selected filters." %}
+{% endif %}

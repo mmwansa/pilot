@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}Pregnancy Events Dashboard{% endblock %}
+{% block heading %}Pregnancy Events Dashboard{% endblock %}
+
+{% block css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/outcomes_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/pregnancy_events_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="row mt-4 dashboard-shell" data-shell="outcomes">
+    <div class="col">
+      <ul class="nav nav-tabs" id="outcomesTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link active"
+            id="pregnancies-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#pregnancies-pane"
+            type="button"
+            role="tab"
+            aria-controls="pregnancies-pane"
+            aria-selected="true"
+          >
+            Pregnancies
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content mt-4" id="outcomesTabsContent">
+        <div
+          class="tab-pane dashboard-tab-panel fade show active"
+          id="pregnancies-pane"
+          role="tabpanel"
+          aria-labelledby="pregnancies-tab"
+        >
+          <main
+            id="pregnancyEventsDashboardApp"
+            class="outcomes-dashboard-root"
+            data-summary-endpoint="{% url 'va_analytics:preg-events-summary-api' %}"
+            data-trend-endpoint="{% url 'va_analytics:preg-events-trend-api' %}"
+            data-birth-outcomes-endpoint="{% url 'va_analytics:preg-events-birth-outcomes-api' %}"
+            data-gestational-age-endpoint="{% url 'va_analytics:preg-events-gestational-age-api' %}"
+            data-anc-visits-endpoint="{% url 'va_analytics:preg-events-anc-visits-api' %}"
+            data-kpis-endpoint="{% url 'va_analytics:preg-events-kpis-api' %}"
+            data-place-of-birth-endpoint="{% url 'va_analytics:preg-events-place-of-birth-api' %}"
+            data-map-endpoint="{% url 'va_analytics:preg-events-map-api' %}"
+          >
+            <section class="sectionContainer panelView" id="poPanelSection">
+              {% include "va_analytics/partials/_pe_summary_cards.html" %}
+              {% include "va_analytics/partials/_pe_filters.html" %}
+            </section>
+
+            {% include "va_analytics/partials/_pe_map.html" %}
+            {% include "va_analytics/partials/_pe_birth_outcomes.html" %}
+            {% include "va_analytics/partials/_pe_trend.html" %}
+            {% include "va_analytics/partials/_pe_gestational_age.html" %}
+            {% include "va_analytics/partials/_pe_anc_visits.html" %}
+            {% include "va_analytics/partials/_pe_place_of_birth.html" %}
+            {% include "va_analytics/partials/_pe_kpis.html" %}
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block page_scripts %}
+  <script type="text/javascript" src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/pregnancy_events_dashboard.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% if perms.users.add_user %}
+  <div class="btn-group">
+    <a href="{% url 'users:create' %}" class="btn btn-success" role="button">Create User</a>
+    <a href="{% url 'users:import' %}" class="btn btn-secondary" role="button">Import Users</a>
+  </div>
+{% endif %}

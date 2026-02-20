@@ -1,0 +1,13 @@
+<h2>Mortality by Age Group and Sex</h2>
+<div class="chart-mode-toggle">
+  <input id="deathsAgeSexModeCount" type="radio" value="count" name="deaths_age_sex_mode" checked>
+  <label for="deathsAgeSexModeCount">Count</label>
+  <input id="deathsAgeSexModePercentage" type="radio" value="percentage" name="deaths_age_sex_mode">
+  <label for="deathsAgeSexModePercentage">Percentage</label>
+</div>
+<div class="chartsContainer">
+  <div class="chart-canvas-wrap">
+    <canvas id="deathsAgeSexChart" data-component="age-sex-chart"></canvas>
+  </div>
+</div>
+<p id="deathsAgeSexEmpty" class="po-empty-state" hidden>No age-sex mortality data available for the selected filters.</p>

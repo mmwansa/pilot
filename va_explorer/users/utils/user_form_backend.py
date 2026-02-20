@@ -6,7 +6,9 @@ from django.db.models import F
 from django.db.models.query import QuerySet
 from django.forms import BooleanField
 from django.forms.models import ModelMultipleChoiceField as MMCField
+from django.utils.crypto import get_random_string
 from pandas.core.frame import DataFrame
+from django.contrib.auth.models import Group
 
 from va_explorer.users.forms import ExtendedUserCreationForm
 from va_explorer.users.management.commands.initialize_groups import GROUPS_PERMISSIONS
@@ -82,36 +84,100 @@ def get_anonymized_user_info(user_list_file=None):
     return user_df
 
 
-# function to create a list of users from a csv file. Hooks up to front-end user
-# form to validate fields upon creation.
-def create_users_from_file(user_list_file, email_confirmation=False, debug=False):
-    user_df = pd.read_csv(user_list_file).fillna("")
-    user_ct = error_ct = 0
-    new_users = []
+def parse_users_from_file(user_list_file, default_group=None, debug=False):
+    """
+    Parses a CSV file of users, validates them using the user creation form logic,
+    and returns lists of valid and invalid user data.
+    """
+    try:
+        user_df = pd.read_csv(user_list_file).fillna("")
+    except Exception as e:
+        return [], [{"row": 0, "email": "N/A", "name": "N/A", "errors": {"file": [f"Failed to read CSV: {str(e)}"]}}]
 
-    # fill out user forms one-by-one
-    for i, user_data in user_df.iterrows():
-        if debug:
-            print(i, user_data["name"])
-        user_form = fill_user_form_data(user_data, debug=debug)
+    valid_users_raw = []
+    valid_users_display = []
+    invalid_users = []
 
-        if user_form.is_valid():
-            user_form.save(email_confirmation=email_confirmation)
-            new_users.append(User.objects.filter(email=user_data["email"]).first())
-            user_ct += 1
-        else:
-            error_ct += 1
-            print(
-                f"WARNING: user form for {user_data.get('email', 'Unknown email')} \
-                  had following errors: {user_form.errors}"
-            )
+    for i, row in user_df.iterrows():
+        user_data = row.to_dict()
 
-    if user_ct > 0:
-        print(f"Successfully created {user_ct} users ({error_ct} issues)")
-    else:
-        print("WARNING: Failed to create any users.")
+        # Apply default group override if provided
+        if default_group:
+            if hasattr(default_group, 'name'):
+                user_data["group"] = default_group.name
+            else:
+                user_data["group"] = str(default_group)
 
-    return {"user_ct": user_ct, "error_ct": error_ct, "users": new_users}
+        # Generate random password if missing
+        if not user_data.get("password"):
+            user_data["password"] = get_random_string(12)
+
+        try:
+            user_form = fill_user_form_data(user_data, debug=debug)
+
+            if user_form.is_valid():
+                # Store raw data for saving (contains IDs)
+                valid_users_raw.append(user_form.data.copy())
+
+                # Create display version of the data
+                display_data = {}
+                for field in ExtendedUserCreationForm.Meta.fields:
+                    if field == "password":
+                        continue
+
+                    label = user_form.fields[field].label
+                    if not label:
+                        label = field.replace("_", " ").title()
+
+                    val = user_form.cleaned_data.get(field)
+
+                    if field == "group" and val:
+                        display_data[label] = val.name
+                    elif field in ["location_restrictions", "facility_restrictions"]:
+                        display_data[label] = "; ".join([str(l) for l in val]) if val else ""
+                    elif isinstance(val, bool):
+                        display_data[label] = "Yes" if val else "No"
+                    elif val is None:
+                        display_data[label] = ""
+                    else:
+                        display_data[label] = val
+
+                valid_users_display.append(display_data)
+
+            else:
+                invalid_users.append({
+                    "row": i + 2,  # +2 because 0-indexed and header row
+                    "email": user_data.get("email", "Unknown"),
+                    "name": user_data.get("name", "Unknown"),
+                    "errors": user_form.errors
+                })
+        except Exception as e:
+            invalid_users.append({
+                "row": i + 2,
+                "email": user_data.get("email", "Unknown"),
+                "name": user_data.get("name", "Unknown"),
+                "errors": {"exception": [str(e)]}
+            })
+
+    return valid_users_raw, valid_users_display, invalid_users
+
+
+def save_users_from_data(valid_users_data, email_confirmation=False):
+    """
+    Takes a list of valid user data dictionaries (output from parse_users_from_file),
+    creates the forms, and saves the users.
+    """
+    created_users = []
+    for data in valid_users_data:
+        # Remove 'group_name' key before creating the form if it exists
+        # as it's not a field on the ExtendedUserCreationForm.
+        data_copy = data.copy()
+        data_copy.pop('group_name', None)
+        form = ExtendedUserCreationForm(data_copy)
+        if form.is_valid():
+            user = form.save(email_confirmation=email_confirmation)
+            created_users.append(user)
+    return created_users
 
 
 def fill_user_form_data(user_data, debug=False):
@@ -155,14 +221,16 @@ def fill_user_form_data(user_data, debug=False):
                 try:
                     match = qs.filter(name__iexact=value)
                     if not match.exists():
-                        match_name = fuzzy_match(
-                            value,
-                            None,
-                            options=qs.values_list("name", flat=True),
-                            threshold=95,
-                        )
-                        if match_name:
-                            match = qs.filter(name__iexact=match_name)
+                        options = list(qs.values_list("name", flat=True))
+                        if value and options:
+                            match_name = fuzzy_match(
+                                str(value),
+                                None,
+                                options=options,
+                                threshold=95,
+                            )
+                            if match_name:
+                                match = qs.filter(name__iexact=match_name)
                 except Exception as err:
                     print(
                         f"WARN: Unable to match due to error: {err}\n \
@@ -245,7 +313,7 @@ def prep_form_data(user_data, debug=False, default_group="data viewer"):
 
     # Parse and clean group name. Default to default_group if no match found
     group_name = default_group
-    if type(user_data["group"]) is QuerySet:
+    if isinstance(user_data["group"], QuerySet):
         # queryset provided (i.e. match found). If non-empty, parse group's name field.
         if len(user_data["group"]) > 0:
             group_name = user_data["group"].first().name
@@ -272,7 +340,11 @@ def prep_form_data(user_data, debug=False, default_group="data viewer"):
         user_data["group"] = group_name
 
     # field worker logic
-    if group_name.lower().startswith("field worker"):
+    # Note: the Field Worker role may not be used in VACMS; for now we
+    # just ensure that the Field Worker role is treated the same as
+    # other roles when considering location restrictions by disabling
+    # the Field Workers conditional block
+    if False and group_name.lower().startswith("field worker"):
         geo_access = "location-specific"
         # if no facility restriction, check for group restriction. Otherwise,
         # drop location restriction
@@ -299,7 +371,7 @@ def prep_form_data(user_data, debug=False, default_group="data viewer"):
 
     # convert all queryset objects to primary keys of first match
     for field, data in user_data.items():
-        if type(data) is QuerySet and len(data) > 0:
+        if isinstance(data, QuerySet) and len(data) > 0:
             user_data[field] = (
                 data.first().pk if field == "group" else [data.first().pk]
             )

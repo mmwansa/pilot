@@ -1,10 +1,23 @@
 import json
+import subprocess
+import sys
 from django.contrib import messages
 from django.shortcuts import redirect, render
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import (
+    HttpResponse,
+    HttpResponseForbidden,
+    JsonResponse,
+    StreamingHttpResponse,
+)
 from django.urls import reverse
 from django.utils import timezone
 from django import forms
+from django.conf import settings
+from pathlib import Path
+from django.views import View
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.views.generic import (
     ListView,
     DetailView,
@@ -21,6 +34,13 @@ from va_explorer.vacms.notifications import (
     ensure_va_schedule_message,
     remove_va_schedule_message,
 )
+from va_explorer.vacms.admin_panel import (
+    ALLOWLIST,
+    ADMINS_GROUP_NAME,
+    STANDARD_FILENAME_PLACEHOLDERS,
+    grouped_command_specs,
+    resolve_data_file,
+)
 from va_explorer.va_data_management.models import Death
 
 
@@ -33,6 +53,16 @@ def user_can_manage_va_schedule(user):
         and (
             user.is_superuser
             or user.groups.filter(name__in=ALLOWED_VA_SCHEDULER_GROUPS).exists()
+        )
+    )
+
+
+def user_can_access_admin_panel(user):
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and (
+            user.is_superuser
+            or user.groups.filter(name=ADMINS_GROUP_NAME).exists()
         )
     )
 
@@ -321,6 +351,116 @@ class EventScheduleDataCollectionView(UpdateView):
         response = super().form_valid(form)
 
         return response
+
+
+@method_decorator(login_required, name="dispatch")
+class VACMSAdminPanelView(View):
+    template_name = "va_cms/admin_panel.html"
+
+    def get(self, request):
+        if not user_can_access_admin_panel(request.user):
+            return HttpResponseForbidden("You are not allowed to access this page.")
+
+        command_groups = grouped_command_specs()
+        context = {
+            "command_groups": command_groups,
+            "filename_placeholders": STANDARD_FILENAME_PLACEHOLDERS,
+        }
+        return render(request, self.template_name, context)
+
+
+def _build_command_arguments(command_name, inputs):
+    spec = ALLOWLIST[command_name]
+    args = []
+
+    for field in spec.inputs:
+        raw_value = inputs.get(field.name)
+
+        if field.type == "bool":
+            if raw_value in (True, "true", "1", 1, "on") and field.flag:
+                args.append(field.flag)
+            continue
+
+        if field.required and not raw_value:
+            raise ValueError(f"Missing required input: {field.name}")
+
+        if not raw_value:
+            continue
+
+        value = str(raw_value).strip()
+        if field.choices and value not in field.choices:
+            raise ValueError(f"Invalid value for {field.name}: {value}")
+
+        if field.type == "file":
+            resolved_file = resolve_data_file(value)
+            if not resolved_file.exists():
+                raise ValueError(
+                    f"File not found in static/data: {value}"
+                )
+            value = str(resolved_file)
+
+        if field.flag:
+            args.extend([field.flag, value])
+        else:
+            args.append(value)
+    return args
+
+
+@login_required
+@require_POST
+def vacms_admin_command_stream(request):
+    if not user_can_access_admin_panel(request.user):
+        return HttpResponseForbidden("You are not allowed to run admin commands.")
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+
+    command_name = str(payload.get("command", "")).strip()
+    inputs = payload.get("inputs", {}) or {}
+    if not isinstance(inputs, dict):
+        return JsonResponse({"error": "inputs must be a JSON object."}, status=400)
+
+    if command_name not in ALLOWLIST:
+        return JsonResponse({"error": "Command is not allowlisted."}, status=400)
+
+    try:
+        cmd_args = _build_command_arguments(command_name, inputs)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+
+    python_exec = sys.executable
+    base_dir = Path(settings.BASE_DIR)
+    manage_py = str(base_dir / "manage.py")
+    spec = ALLOWLIST[command_name]
+    cmd = [python_exec, manage_py, spec.management_command, *cmd_args]
+
+    def stream_output():
+        yield f"$ {' '.join(cmd)}\n"
+        yield "-" * 80 + "\n"
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=str(base_dir),
+            bufsize=1,
+        )
+
+        try:
+            assert process.stdout is not None
+            for line in process.stdout:
+                yield line
+        finally:
+            process.wait()
+            yield "-" * 80 + "\n"
+            yield f"[exit_code={process.returncode}] {spec.management_command}\n"
+
+    response = StreamingHttpResponse(stream_output(), content_type="text/plain; charset=utf-8")
+    response["X-Accel-Buffering"] = "no"
+    return response
 
 
 class EventScheduleVAInterviewView(UpdateView):

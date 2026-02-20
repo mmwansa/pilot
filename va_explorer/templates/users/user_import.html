@@ -8,17 +8,20 @@
   <div class="row mt-4">
     <h2>Import Users</h2>
   </div>
-  <p>To import users, You need to select the role and provide a CSV file</p>
+  <p>Upload a CSV file with user data. You can optionally force all users into a specific group (overriding the file) by selecting a group below.</p>
   <h4>Expected columns</h4>
-  <ol>
-    <li>No</li>
-    <li>Name</li>
-    <li>Email</li>
-    <li>Pasword</li>
-    <li>Mobile1</li>
-    <li>Mobile2</li>
-    <li>Address</li>
-  </ol>
+  <ul>
+    <li><code>email</code> (Required)</li>
+    <li><code>name</code> (Required)</li>
+    <li><code>group</code> (Optional - defaults to Data Viewers)</li>
+    <li><code>password</code> (Optional - random if omitted)</li>
+    <li><code>view_pii</code> (Optional yes or no)</li>
+    <li><code>download_data</code> (Optional yes or no)</li>
+    <li><code>mobile1</code> (Optional)</li>
+    <li><code>mobile2</code> (Optional)</li>
+    <li><code>address</code> (Optional)</li>
+  </ul>
+  <p>Note that user geographic or facility scoping can be applied to individual users after the bulk upload completes.</p>
   <div class="row">
     <div class="col-md-6">
       <form method="post" id="user-import-form" action="" enctype="multipart/form-data">
@@ -27,7 +30,7 @@
 
         <div class="control-group">
           <div class="controls">
-            <button type="submit" class="btn btn-primary">Import</button>
+            <button type="submit" class="btn btn-primary">Preview Import</button>
             <a href="{% url 'users:index' %}" class="btn btn-link">Cancel</a>
           </div>
         </div>

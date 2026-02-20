@@ -41,6 +41,12 @@ GROUPS_PERMISSIONS = {
         VerbalAutopsy: ["view_verbalautopsy"],
         DataCleanup: [],
     },
+    "Senior Management": {
+        Dashboard: ["view_dashboard"],
+        User: [],
+        VerbalAutopsy: [],
+        DataCleanup: [],
+    },
     "Field Workers": {
         Dashboard: ["view_dashboard"],
         User: [],

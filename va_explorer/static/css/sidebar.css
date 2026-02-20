@@ -14,7 +14,11 @@
 .collapse-caret {
   margin-left: 8px;
   font-size: 13px;
-  transition: transform 0.2s;
+  transition: transform 0.2s, opacity 0.18s ease;
+}
+
+.section-title {
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .collapsible-header[aria-expanded="true"] .collapse-caret {
@@ -32,30 +36,97 @@
   padding: 0;
 }
 
+.collapse-section {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: block;
+}
+
 /* --- Sidebar transitions & mobile behavior --- */
 .sidebar-container {
   transition: width 0.25s ease, transform 0.25s ease;
   will-change: transform, width;
+  overflow-x: visible;
+  overflow-y: auto;
 }
 
 /* Smooth label fade when collapsing */
 .sidebar-container .nav-label {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease, width 0.18s ease;
   white-space: nowrap;
 }
 
 /* Icon-only collapsed look (desktop) */
 .sidebar-container.collapsed {
-  width: 60px !important;
-  min-width: 60px !important;
+  width: var(--sidebar-collapsed-width) !important;
+  min-width: var(--sidebar-collapsed-width) !important;
 }
 .sidebar-container.collapsed .nav-label,
-.sidebar-container.collapsed .section-title,
+.sidebar-container.collapsed .section-title {
+  opacity: 0;
+  transform: translateX(-8px);
+  width: 0;
+  pointer-events: none;
+}
+
 .sidebar-container.collapsed .collapse-caret {
-  display: none !important;
+  opacity: 1;
+  transform: none;
+  width: auto;
+  pointer-events: auto;
+}
+
+.sidebar-container.collapsed .collapsible-header {
+  position: relative;
+}
+
+.sidebar-container.collapsed .collapsible-header:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: var(--sidebar-collapsed-width);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1001;
 }
 .sidebar-container.collapsed .sidebar-toggle {
   text-align: center;
+}
+
+/* Supervision pop-out (hover) */
+.supervision-item {
+  position: relative;
+}
+
+.supervision-popout {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translate(-8px, -50%);
+  opacity: 0;
+  background: #0f1115;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  z-index: 1500;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+  transition: opacity 0.2s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.supervision-item:hover .supervision-popout,
+.supervision-item:focus-within .supervision-popout {
+  opacity: 1;
+  transform: translate(12px, -50%);
 }
 
 /* Rotate caret when expanded */
@@ -72,7 +143,9 @@
     left: 0;
     top: 0;
     height: 100vh;
-    width: 250px;
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
     transform: translateX(-100%);
     background-color: var(--sidebar-bg, #f0f1f6);
     z-index: 2000;
@@ -86,8 +159,17 @@
 
   /* Keep collapsed width from applying on mobile (we use open/close) */
   .sidebar-container.collapsed {
-    width: 250px !important;
-    min-width: 250px !important;
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
+  }
+
+  .sidebar-container.collapsed .nav-label,
+  .sidebar-container.collapsed .section-title,
+  .sidebar-container.collapsed .collapse-caret {
+    opacity: 1;
+    transform: none;
+    width: auto;
+    pointer-events: auto;
   }
 
   /* Make the toggle button always reachable on mobile */

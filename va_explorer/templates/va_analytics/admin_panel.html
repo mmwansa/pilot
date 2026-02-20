@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="row mt-4" id="vacmsAdminPanelRoot">
+  <div class="col">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h4 class="mb-0">Admin Panel</h4>
+      <span class="badge badge-secondary">Admin Only</span>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Output Console</strong>
+        <div class="btn-group btn-group-sm">
+          <button type="button" class="btn btn-outline-secondary" id="vacmsConsoleCopyBtn">Copy Output</button>
+          <button type="button" class="btn btn-outline-secondary" id="vacmsConsoleClearBtn">Clear</button>
+        </div>
+      </div>
+      <div class="card-body border-bottom py-2">
+        <div class="d-flex flex-wrap align-items-center small text-muted" id="vacmsConsoleStatusLine">
+          <span class="mr-3">Last command: <strong id="vacmsStatusCommand">N/A</strong></span>
+          <span class="mr-3">Last run: <strong id="vacmsStatusRunAt">N/A</strong></span>
+          <span class="mr-3">Duration: <strong id="vacmsStatusDuration">N/A</strong></span>
+          <span id="vacmsStatusBadge" class="badge badge-light border">No runs</span>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <pre id="vacmsCommandConsole" class="mb-0 p-3" style="max-height: 320px; overflow-y: auto; background: #0f172a; color: #e2e8f0; font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 0.85rem;"></pre>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+      <div class="input-group mb-2 mb-md-0" style="max-width: 480px;">
+        <div class="input-group-prepend">
+          <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+        <input id="vacmsCommandSearch" type="text" class="form-control" placeholder="Search commands by name or description">
+      </div>
+      <div class="btn-toolbar">
+        <a class="btn btn-outline-secondary btn-sm mr-2" href="{% url 'va_admin:logs' %}">Open Logs</a>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="vacmsRefreshCommandsBtn">Refresh List</button>
+      </div>
+    </div>
+
+    <div class="alert alert-light border mb-4">
+      <div class="font-weight-bold mb-2">Standardized filename placeholders</div>
+      <div class="small text-muted mb-2">Files must be placed in <code>va_explorer/static/data/</code>. You can fill placeholders later.</div>
+      <div class="d-flex flex-wrap">
+        {% for key, value in filename_placeholders.items %}
+        <span class="badge badge-light border mr-2 mb-2">{{ key }}{% if value %}: {{ value }}{% endif %}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs" id="vacmsCommandTabs" role="tablist">
+      {% for group in command_categories %}
+      <li class="nav-item" role="presentation">
+        <a class="nav-link {% if forloop.first %}active{% endif %}" id="tab-{{ forloop.counter }}-tab" data-toggle="tab" href="#tab-{{ forloop.counter }}" role="tab">
+          {{ group.category }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <div class="tab-content border border-top-0 p-3" id="vacmsCommandTabsContent">
+      {% for group in command_categories %}
+      <section class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="tab-{{ forloop.counter }}" role="tabpanel">
+        <div class="row">
+          {% for spec in group.normal %}
+          <div class="col-lg-6 mb-3 vacms-command-card-wrap" data-search="{{ spec.key|lower }} {{ spec.description|lower }}">
+            <div class="card h-100 vacms-command-card">
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <h6 class="card-title mb-0"><code>{{ spec.key }}</code></h6>
+                  {% if spec.safety == "mutating" %}
+                  <span class="badge badge-warning">Mutating</span>
+                  {% else %}
+                  <span class="badge badge-success">Read-only</span>
+                  {% endif %}
+                </div>
+                <p class="text-muted small mb-2">{{ spec.description }}</p>
+                {% if spec.timeout_hint %}
+                <p class="small text-muted mb-2">Timeout hint: {{ spec.timeout_hint }}s</p>
+                {% endif %}
+                <p class="small mb-3">
+                  {% if spec.inputs %}
+                  Inputs:
+                  {% for input in spec.inputs %}
+                  <span class="badge badge-light border mr-1">{{ input.name }} ({{ input.type }}){% if input.required %}*{% endif %}</span>
+                  {% endfor %}
+                  {% else %}
+                  No inputs required.
+                  {% endif %}
+                </p>
+                <button type="button" class="btn btn-sm btn-primary vacms-run-command-btn" data-command-id="{{ spec.key }}">Run</button>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if group.danger %}
+        <div class="mt-2 mb-2 p-2 border border-danger rounded bg-light">
+          <div class="font-weight-bold text-danger mb-2">Danger Zone</div>
+          <div class="row">
+        {% for spec in group.danger %}
+            <div class="col-lg-6 mb-3 vacms-command-card-wrap" data-search="{{ spec.key|lower }} {{ spec.description|lower }} danger">
+              <div class="card h-100 border-danger vacms-command-card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-1">
+                    <h6 class="card-title mb-0"><code>{{ spec.key }}</code></h6>
+                    <span class="badge badge-danger">Dangerous</span>
+                  </div>
+                  <p class="text-muted small mb-2">{{ spec.description }}</p>
+                  {% if spec.inputs %}
+                  <p class="small mb-3">
+                    {% for input in spec.inputs %}
+                    <span class="badge badge-light border mr-1">{{ input.name }} ({{ input.type }}){% if input.required %}*{% endif %}</span>
+                    {% endfor %}
+                  </p>
+                  {% endif %}
+                  <button type="button" class="btn btn-sm btn-danger vacms-run-command-btn" data-command-id="{{ spec.key }}">Run</button>
+                </div>
+              </div>
+            </div>
+        {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </section>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="vacmsRunModal" tabindex="-1" role="dialog" aria-labelledby="vacmsRunModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="vacmsRunModalLabel">Run Command</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="small text-muted mb-3">Files must be in <code>va_explorer/static/data/</code>. Enter filename only.</div>
+        <form id="vacmsRunCommandForm">
+          {% csrf_token %}
+          <div id="vacmsRunModalInputs"></div>
+          <div id="vacmsDangerConfirmWrap" class="form-group d-none">
+            <label class="small font-weight-bold text-danger">Type RUN to confirm destructive command</label>
+            <input id="vacmsDangerConfirmInput" type="text" class="form-control form-control-sm" autocomplete="off">
+          </div>
+          <div id="vacmsRunModalError" class="alert alert-danger d-none mb-0"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <span id="vacmsModalSpinner" class="d-none small text-muted mr-2"><i class="fas fa-spinner fa-spin"></i> Running...</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="vacmsRunModalSubmitBtn">Run</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ command_groups_json|json_script:"vacmsCommandRegistryData" }}
+{% endblock %}
+
+{% block page_scripts %}
+  <script>
+    window.VACMS_ADMIN_PANEL = {
+      runUrl: "{% url 'va_admin:run' %}",
+      uploadFileUrl: "{% url 'va_admin:upload-file' %}",
+      validateFileUrl: "{% url 'va_admin:validate-file' %}",
+      logsUrl: "{% url 'va_admin:logs' %}"
+    };
+  </script>
+  <script src="{% static 'js/vacms_admin_panel.js' %}?v=20260219a"></script>
+{% endblock %}

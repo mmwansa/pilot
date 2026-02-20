@@ -148,6 +148,7 @@ LOCAL_APPS = [
     "va_explorer.va_export.apps.VaExportConfig",
     "va_explorer.va_data_cleanup.apps.VaDataCleanupConfig",
     "va_explorer.vacms.apps.VacmsConfig",
+    "va_explorer.va_admin.apps.VaAdminConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -199,6 +200,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Track which user makes VA data edits
     "simple_history.middleware.HistoryRequestMiddleware",
+    # Lightweight profiling for dashboard request/DB/render timings.
+    "va_explorer.utils.middleware.DashboardProfilingMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
@@ -241,6 +244,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
+                "django.template.context_processors.csrf",
                 "django.contrib.auth.context_processors.auth",
                 "django.template.context_processors.i18n",
                 "django.template.context_processors.media",
@@ -258,6 +262,22 @@ TEMPLATES = [
             },
         },
     }
+]
+
+DEBUG_TOOLBAR_PANELS = [
+    "debug_toolbar.panels.versions.VersionsPanel",
+    "debug_toolbar.panels.timer.TimerPanel",
+    "debug_toolbar.panels.settings.SettingsPanel",
+    #Disable SQL panel to prevent large-query parsing crash
+    #"debug_toolbar.panels.sql.SQLPanel",
+    "debug_toolbar.panels.headers.HeadersPanel",
+    "debug_toolbar.panels.request.RequestPanel",
+    "debug_toolbar.panels.staticfiles.StaticFilesPanel",
+    "debug_toolbar.panels.templates.TemplatesPanel",
+    "debug_toolbar.panels.cache.CachePanel",
+    "debug_toolbar.panels.signals.SignalsPanel",
+    "debug_toolbar.panels.logging.LoggingPanel",
+    "debug_toolbar.panels.redirects.RedirectsPanel",
 ]
 
 FORM_RENDERER = "django.forms.renderers.TemplatesSetting"

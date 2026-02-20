@@ -17,7 +17,10 @@ from va_explorer.va_data_management.utils.location_access import (
 
 class DeathAccessMixin(SingleObjectMixin):
     def get_queryset(self):
-        return Death.objects.all()
+        return restrict_queryset_to_user_locations(
+            Death.objects.all(),
+            self.request.user,
+        )
 
 
 class Deaths(CustomAuthMixin, PermissionRequiredMixin, ListView):
@@ -31,9 +34,6 @@ class Deaths(CustomAuthMixin, PermissionRequiredMixin, ListView):
         queryset = restrict_queryset_to_user_locations(
             queryset,
             self.request.user,
-            {
-                "province": "province",
-            },
         ).order_by("DE_06", "-id")
         self.filter = DeathFilter(self.request.GET, queryset=queryset)
         return self.filter.qs
@@ -77,6 +77,12 @@ class DeathDelete(CustomAuthMixin, PermissionRequiredMixin, DeleteView):
     success_url = reverse_lazy("va_data_management:deaths")
     template_name = "va_data_management/death_confirm_delete.html"
     success_message = "Death record %(id)s was deleted successfully."
+
+    def get_queryset(self):
+        return restrict_queryset_to_user_locations(
+            Death.objects.all(),
+            self.request.user,
+        )
 
     def form_valid(self, form):
         messages.success(self.request, self.success_message % self.get_object().__dict__)

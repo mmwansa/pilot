@@ -1,0 +1,17 @@
+<section class="sectionContainer topCausesView" id="poBirthOutcomesSection" data-component="birth-outcomes">
+  <h2>Birth Outcomes</h2>
+  <div class="chart-mode-toggle">
+    <input id="poBirthModeCount" type="radio" value="count" name="po_birth_mode" checked>
+    <label for="poBirthModeCount">Count</label>
+    <input id="poBirthModePercentage" type="radio" value="percentage" name="po_birth_mode">
+    <label for="poBirthModePercentage">Percentage</label>
+  </div>
+  <div class="chartsContainer">
+    <div class="topCausesContainer">
+      <div class="chart-canvas-wrap">
+        <canvas id="poBirthOutcomesChart" data-component="birth-outcomes-chart"></canvas>
+      </div>
+    </div>
+  </div>
+  <p id="poBirthOutcomesEmpty" class="po-empty-state" hidden>No birth outcomes data available for the selected filters.</p>
+</section>

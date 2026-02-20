@@ -3,23 +3,24 @@
 {% load crispy_forms_tags %}
 
 {% block title %}Edit User{% endblock %}
+{% block heading %}Edit User{% endblock %}
 
 {% block content %}
-  <div class="row mt-4">
-    <h2>Edit User</h2>
-  </div>
-  <div class="row mt-3">
-    <form class="form-horizontal" method="post" action="{% url 'users:update' pk=user.pk %}">
-      {% csrf_token %}
-      {{ form|crispy }}
-      <div class="control-group">
-        <div class="controls">
+  <section class="ou-card ou-mb-3">
+    <div class="ou-card-header">
+      <h2 class="ou-card-title">Edit User</h2>
+    </div>
+    <div class="ou-card-body">
+      <form class="form-horizontal" method="post" action="{% url 'users:update' pk=user.pk %}">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <div class="ou-form-actions">
           <button type="submit" class="btn btn-primary">Update</button>
           <a href="{% url 'users:index' %}" class="btn btn-link">Cancel</a>
         </div>
-      </div>
-    </form>
-  </div>
+      </form>
+    </div>
+  </section>
 {% endblock %}
 
 <!-- Needs to be outside content block so JS in base template loads first -->

@@ -11,6 +11,7 @@ from va_explorer.va_data_management.models import (
     DhisStatus,
     Location,
     VerbalAutopsy,
+    SRSClusterLocation,
 )
 
 User = get_user_model()
@@ -61,6 +62,18 @@ class LocationFacilityFactory(DjangoModelFactory):
     depth = 1
     numchild = 0
     location_type = "facility"
+    path = "0001"
+
+
+class SRSClusterLocationFactory(DjangoModelFactory):
+    class Meta:
+        model = SRSClusterLocation
+
+    # Create a root node by default
+    name = Faker("city")
+    depth = 1
+    numchild = 0
+    location_type = "cluster"
     path = "0001"
 
 

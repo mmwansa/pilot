@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Review User Import{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Review User Import</h2>
+    <p>Please review the users below before confirming the import.</p>
+
+    {% if valid_users %}
+    <div class="alert alert-success">
+        <strong>{{ total_valid }}</strong> user(s) are valid and ready to be imported.
+    </div>
+    <div class="table-responsive mb-4">
+        <h4>Valid Users</h4>
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    {% for header in headers %}
+                    <th>{{ header }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in valid_users %}
+                <tr>
+                    {% for value in user.values %}
+                    <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if invalid_users %}
+    <div class="alert alert-danger">
+        <strong>{{ total_invalid }}</strong> user(s) have errors and will NOT be imported.
+    </div>
+    <div class="table-responsive mb-4">
+        <h4>Invalid Users</h4>
+        <table class="table table-striped table-sm table-bordered">
+            <thead>
+                <tr>
+                    <th>Row</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Errors</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for error in invalid_users %}
+                <tr>
+                    <td>{{ error.row }}</td>
+                    <td>{{ error.email }}</td>
+                    <td>{{ error.name }}</td>
+                    <td>{{ error.errors }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="actions mt-4">
+        {% if valid_users %}
+        <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="confirm_import" value="1">
+            <button type="submit" class="btn btn-success">Confirm and Import {{ total_valid }} User(s)</button>
+        </form>
+        {% endif %}
+        <a href="{% url 'users:import' %}" class="btn btn-secondary">Back / Upload New File</a>
+        <a href="{% url 'users:index' %}" class="btn btn-link">Cancel</a>
+    </div>
+</div>
+{% endblock %}

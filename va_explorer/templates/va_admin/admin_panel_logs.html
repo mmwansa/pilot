@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}Admin Panel Logs{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+  <div class="col">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h4 class="mb-0">Admin Panel Logs</h4>
+      <a href="{% url 'va_admin:index' %}" class="btn btn-sm btn-outline-secondary">Back to Admin Panel</a>
+    </div>
+
+    <div class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>User</th>
+                <th>Command</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Filenames</th>
+                <th>Output</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for run in runs %}
+              <tr>
+                <td>{{ run.created_at|date:"Y-m-d H:i:s" }}</td>
+                <td>{% if run.user %}{{ run.user.email }}{% else %}N/A{% endif %}</td>
+                <td><code>{{ run.command_id }}</code></td>
+                <td>{{ run.duration_ms }} ms</td>
+                <td>
+                  {% if run.ok %}
+                  <span class="badge badge-success">OK</span>
+                  {% else %}
+                  <span class="badge badge-danger">Fail</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% for name in run.filenames %}
+                    <span class="badge badge-light border">{{ name }}</span>
+                  {% empty %}
+                    <span class="text-muted">N/A</span>
+                  {% endfor %}
+                </td>
+                <td>
+                  <details>
+                    <summary class="small">Show</summary>
+                    <div class="mt-2">
+                      <button type="button" class="btn btn-outline-secondary btn-sm mb-2 copy-log-output-btn" data-target-id="run-output-{{ run.id }}">Copy output</button>
+                      <pre id="run-output-{{ run.id }}" class="small p-2 border" style="max-height: 220px; overflow-y: auto; white-space: pre-wrap;">{{ run.output_excerpt|escape }}</pre>
+                    </div>
+                  </details>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">No command runs yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+document.querySelectorAll(".copy-log-output-btn").forEach(function (btn) {
+  btn.addEventListener("click", async function () {
+    const target = document.getElementById(btn.getAttribute("data-target-id"));
+    if (!target) return;
+    try {
+      await navigator.clipboard.writeText(target.textContent || "");
+    } catch (_error) {
+      // no-op
+    }
+  });
+});
+</script>
+{% endblock %}

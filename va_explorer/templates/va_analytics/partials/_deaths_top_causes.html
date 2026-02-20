@@ -1,0 +1,13 @@
+<h2 class="section-title-spaced">Top 10 Causes of Death</h2>
+<div class="chart-mode-toggle">
+  <input id="deathsTopCauseModeCount" type="radio" value="count" name="deaths_top_cause_mode" checked>
+  <label for="deathsTopCauseModeCount">Count</label>
+  <input id="deathsTopCauseModePercentage" type="radio" value="percentage" name="deaths_top_cause_mode">
+  <label for="deathsTopCauseModePercentage">Percentage</label>
+</div>
+<div class="chartsContainer">
+  <div class="chart-canvas-wrap">
+    <canvas id="deathsTopCausesChart" data-component="top-causes-chart"></canvas>
+  </div>
+</div>
+<p id="deathsTopCausesEmpty" class="po-empty-state" hidden>No coded cause data available for the selected filters.</p>

@@ -1,0 +1,4 @@
+{% include "partials/_pregnancy_table.html" with pregnancy_list=object_list %}
+{% if not object_list %}
+  {% include "partials/empty_state.html" with message="No pregnancy records found for the selected filters." %}
+{% endif %}

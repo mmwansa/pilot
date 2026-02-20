@@ -13,9 +13,6 @@
   <nav class="sidebar-nav" id="sidebarNav">
     <ul class="nav flex-column">
       <!-- Core Navigation (not collapsible) -->
-      <li class="nav-section-header">
-        <span class="section-title">Main</span>
-      </li>
       <li class="nav-item">
         <a
           class="nav-link {% if request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'home' %}active{% endif %}"
@@ -26,131 +23,99 @@
           <span class="nav-label">Home</span>
         </a>
       </li>
-
-      {% if not request.user|has_group:"Mortality Surveillance Officer" %}
-        <!-- Personnel Management Section -->
-        <li
-          class="nav-section-header collapsible-header"
-          tabindex="0"
-          data-target="personnel-section"
-          aria-expanded="false"
-        >
-          <span class="section-title">Personnel Management</span>
-          <i class="fas fa-chevron-down collapse-caret"></i>
+      {% if perms.va_analytics.view_dashboard %}
+        <li class="nav-item">
+          <a
+            class="nav-link {% if request.resolver_match.url_name == 'outcomes-dashboard' %}active{% endif %}"
+            href="{% url 'va_analytics:outcomes-dashboard' %}?tab=pregnancies"
+            data-tooltip="Outcomes Dashboards"
+          >
+            <i class="fas fa-chart-line nav-icon"></i>
+            <span class="nav-label outcomes-dashboard-label">Outcomes Dashboards</span>
+          </a>
         </li>
-        <ul class="collapse-section" id="personnel-section" style="display: none">
+      {% endif %}
+
+      {% if request.user.is_superuser or request.user|has_group:"Admins" or request.user|has_group:"Data Managers" %}
+        <ul
+          class="collapse-section"
+          id="case-section"
+        >
           <li class="nav-item">
             <a
-              class="nav-link {% if 'users' in request.resolver_match.namespace %}active{% endif %}"
-              href="{% url 'users:index' %}"
-              data-tooltip="Users"
+              class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' or request.resolver_match.url_name == 'cms-event-detail' %}active{% endif %}"
+              href="{% url 'cms-event-list' %}"
+              data-tooltip="Events"
             >
-              <i class="fas fa-users nav-icon"></i>
-              <span class="nav-label">Users</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {% if request.resolver_match.url_name == 'supervision' %}active{% endif %}"
-              href="{% url 'va_analytics:supervision' %}"
-              data-tooltip="Supervision"
-            >
-              <i class="fas fa-eye nav-icon"></i>
-              <span class="nav-label">Supervision</span>
+              <i class="fas fa-calendar nav-icon"></i>
+              <span class="nav-label">Scheduled VAs</span>
             </a>
           </li>
         </ul>
       {% endif %}
 
-      <!-- Schedule Management Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="case-section"
-        aria-expanded="{% if '/case-management' in request.path %}true{% else %}false{% endif %}"
-      >
-        <span class="section-title">Schedule Management</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
-      <ul
-        class="collapse-section"
-        id="case-section"
-        style="{% if '/case-management' in request.path %}display:block{% else %}display:none{% endif %}"
-      >
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'cms-event-list' or request.resolver_match.url_name == 'cms-event-detail' %}active{% endif %}"
-            href="{% url 'cms-event-list' %}"
-            data-tooltip="Events"
-          >
-            <i class="fas fa-calendar nav-icon"></i>
-            <span class="nav-label">Scheduled VAs</span>
-          </a>
-        </li>
-      </ul>
-
-      <!-- Data Management Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="data-section"
-        aria-expanded="false"
-      >
-        <span class="section-title">Data Management</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
-      <ul class="collapse-section" id="data-section" style="display: none">
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'households' or request.resolver_match.url_name == 'household_detail' %}active{% endif %}"
-            href="{% url 'va_data_management:households' %}"
-            data-tooltip="Households"
-          >
-            <i class="fas fa-home nav-icon"></i>
-            <span class="nav-label">Households</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'pregnancies' or request.resolver_match.url_name == 'pregnancy_detail' %}active{% endif %}"
-            href="{% url 'va_data_management:pregnancies' %}"
-            data-tooltip="Pregnancies"
-          >
-            <i class="fas fa-female nav-icon"></i>
-            <span class="nav-label">Pregnancies</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'pregnancy_outcomes' or request.resolver_match.url_name == 'pregnancy_outcome_detail' %}active{% endif %}"
-            href="{% url 'va_data_management:pregnancy_outcomes' %}"
-            data-tooltip="Pregnancy Outcomes"
-          >
-            <i class="fas fa-baby nav-icon"></i>
-            <span class="nav-label">Pregnancy Outcomes</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'deaths' or request.resolver_match.url_name == 'death_detail' %}active{% endif %}"
-            href="{% url 'va_data_management:deaths' %}"
-            data-tooltip="Deaths"
-          >
-            <i class="fas fa-skull-crossbones nav-icon"></i>
-            <span class="nav-label">Deaths</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'show' or request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'va_data_management' %}active{% endif %}"
-            href="{% url 'va_data_management:index' %}"
-            data-tooltip="Data Management"
-          >
-            <i class="fas fa-cog nav-icon"></i>
-            <span class="nav-label">Verbal Autopsies</span>
-          </a>
-        </li>
-        {% if not request.user|has_group:"Mortality Surveillance Officer" %}
+      <ul class="collapse-section" id="data-section">
+        {% if perms.va_data_management.view_household %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.resolver_match.url_name == 'households' or request.resolver_match.url_name == 'household_detail' %}active{% endif %}"
+              href="{% url 'va_data_management:households' %}"
+              data-tooltip="Households"
+            >
+              <i class="fas fa-home nav-icon"></i>
+              <span class="nav-label">Households</span>
+            </a>
+          </li>
+        {% endif %}
+        {% if perms.va_data_management.view_pregnancy %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.resolver_match.url_name == 'pregnancies' or request.resolver_match.url_name == 'pregnancy_detail' %}active{% endif %}"
+              href="{% url 'va_data_management:pregnancies' %}"
+              data-tooltip="Pregnancies"
+            >
+              <i class="fas fa-female nav-icon"></i>
+              <span class="nav-label">Pregnancies</span>
+            </a>
+          </li>
+        {% endif %}
+        {% if perms.va_data_management.view_pregnancyoutcome %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.resolver_match.url_name == 'pregnancy_outcomes' or request.resolver_match.url_name == 'pregnancy_outcome_detail' %}active{% endif %}"
+              href="{% url 'va_data_management:pregnancy_outcomes' %}"
+              data-tooltip="Pregnancy Outcomes"
+            >
+              <i class="fas fa-baby nav-icon"></i>
+              <span class="nav-label">Pregnancy<br>Outcomes</span>
+            </a>
+          </li>
+        {% endif %}
+        {% if perms.va_data_management.view_death %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.resolver_match.url_name == 'deaths' or request.resolver_match.url_name == 'death_detail' %}active{% endif %}"
+              href="{% url 'va_data_management:deaths' %}"
+              data-tooltip="Deaths"
+            >
+              <i class="fas fa-skull-crossbones nav-icon"></i>
+              <span class="nav-label">Deaths</span>
+            </a>
+          </li>
+        {% endif %}
+        {% if perms.va_data_management.view_verbalautopsy %}
+          <li class="nav-item">
+            <a
+              class="nav-link {% if request.resolver_match.url_name == 'show' or request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'va_data_management' %}active{% endif %}"
+              href="{% url 'va_data_management:index' %}"
+              data-tooltip="Data Management"
+            >
+              <i class="fas fa-notes-medical nav-icon"></i>
+              <span class="nav-label">Verbal<br>Autopsies</span>
+            </a>
+          </li>
+        {% endif %}
+        {% if not request.user|has_group:"Mortality Surveillance Officer" and perms.va_data_cleanup.view_datacleanup %}
           <li class="nav-item">
             <a
               class="nav-link {% if 'va_data_cleanup' in request.resolver_match.namespace %}active{% endif %}"
@@ -161,6 +126,8 @@
               <span class="nav-label">Data Cleanup</span>
             </a>
           </li>
+        {% endif %}
+        {% if not request.user|has_group:"Mortality Surveillance Officer" and perms.va_analytics.download_data %}
           <li class="nav-item">
             <a
               class="nav-link {% if 'va_export' in request.resolver_match.namespace %}active{% endif %}"
@@ -174,33 +141,6 @@
         {% endif %}
       </ul>
 
-      <!-- Analytics Section -->
-      <li
-        class="nav-section-header collapsible-header"
-        tabindex="0"
-        data-target="analytics-section"
-        aria-expanded="false"
-      >
-        <span class="section-title">Analytics</span>
-        <i class="fas fa-chevron-down collapse-caret"></i>
-      </li>
-      <ul class="collapse-section" id="analytics-section" style="display: none">
-        <li class="nav-item">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-            href="{% url 'va_analytics:dashboard' %}"
-            data-tooltip="Dashboard"
-          >
-            <i class="fas fa-chart-line nav-icon"></i>
-            <span class="nav-label">Dashboard</span>
-          </a>
-        </li>
-      </ul>
-
-      <!-- Info Section -->
-      <li class="nav-section-header">
-        <span class="section-title">Info</span>
-      </li>
       <li class="nav-item">
         <a
           class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}"
@@ -220,10 +160,12 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const body = document.body;
   const sidebar = document.getElementById("sidebar");
   const sidebarToggle = document.getElementById("sidebarToggle");
   const sidebarOverlay = document.getElementById("sidebarOverlay");
   const headers = document.querySelectorAll(".collapsible-header");
+  const desktopBreakpoint = 995;
 
   // --- Initialize collapsible sections with saved state ---
   headers.forEach(header => {
@@ -254,9 +196,26 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // --- Restore sidebar collapsed state on desktop ---
-  if (localStorage.getItem("sa_sidebarCollapsed") === "true") {
-    sidebar.classList.add("collapsed");
+  function isDesktop() {
+    return window.innerWidth > desktopBreakpoint;
+  }
+
+  function setCollapsed(isCollapsed) {
+    sidebar.classList.toggle("collapsed", isCollapsed);
+    const width = isCollapsed
+      ? "var(--sidebar-collapsed-width)"
+      : "var(--sidebar-width)";
+    document.documentElement.style.setProperty("--sidebar-current-width", width);
+  }
+
+  function applyDesktopState() {
+    setCollapsed(false);
+  }
+
+  function applyMobileState() {
+    sidebar.classList.remove("open");
+    sidebar.classList.remove("collapsed");
+    sidebarOverlay.classList.remove("active");
   }
 
   // Helper to update the toggle icon (fa-bars <-> fa-times)
@@ -264,7 +223,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const icon = sidebarToggle.querySelector("i");
     if (!icon) return;
 
-    if (window.innerWidth <= 995) {
+    if (!isDesktop()) {
       // mobile: show X when open, bars when closed
       if (sidebar.classList.contains("open")) {
         icon.classList.remove("fa-bars");
@@ -287,36 +246,56 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- Toggle behavior ---
   sidebarToggle.addEventListener("click", function () {
-    if (window.innerWidth <= 995) {
+    if (!isDesktop()) {
       // Mobile: open/close the off-canvas sidebar (don't change collapsed state)
       const isNowOpen = sidebar.classList.toggle("open");
       sidebarOverlay.classList.toggle("active", isNowOpen);
     } else {
       // Desktop: collapse/expand (icon-only)
       const isCollapsed = sidebar.classList.toggle("collapsed");
-      localStorage.setItem("sa_sidebarCollapsed", isCollapsed.toString());
     }
     updateToggleIcon();
   });
 
-  // Clicking overlay closes the mobile sidebar
+  // Clicking overlay closes the sidebar
   sidebarOverlay.addEventListener("click", function () {
-    sidebar.classList.remove("open");
-    this.classList.remove("active");
+    if (!isDesktop()) {
+      sidebar.classList.remove("open");
+      this.classList.remove("active");
+    }
     updateToggleIcon();
   });
 
-  // Update icon on resize (keeps visual state consistent)
-  window.addEventListener("resize", function () {
-    // If resizing to desktop, ensure overlay/open classes are cleared
-    if (window.innerWidth > 995) {
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    if (!isDesktop() && sidebar.classList.contains("open")) {
       sidebar.classList.remove("open");
       sidebarOverlay.classList.remove("active");
+      updateToggleIcon();
+      return;
+    }
+    if (isDesktop()) {
+      updateToggleIcon();
+    }
+  });
+
+  // Update state on resize
+  window.addEventListener("resize", function () {
+    if (isDesktop()) {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.remove("active");
+      applyDesktopState();
+    } else {
+      applyMobileState();
     }
     updateToggleIcon();
   });
 
-  // initial icon set
+  if (isDesktop()) {
+    applyDesktopState();
+  } else {
+    applyMobileState();
+  }
   updateToggleIcon();
 });
 </script>

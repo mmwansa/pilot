@@ -1,0 +1,59 @@
+<div class="highlightsContainer deaths-summary-cards" id="deathsSummaryCards" data-component="summary">
+  <div class="highlight"><h3>Last Data Update</h3><p id="deathsCardLastDataUpdate">{{ death_card_last_data_update }}</p></div>
+  <div class="highlight"><h3>Total Death Events</h3><p id="deathsCardTotalEvents">{{ death_card_total_events }}</p></div>
+  <div class="highlight"><h3>Mean Age of Deceased</h3><p id="deathsCardMeanAge">{{ death_card_mean_age }}</p></div>
+  <div class="highlight"><h3>% Under-5 Deaths</h3><p id="deathsCardUnder5Pct">{{ death_card_under_5_pct }}%</p></div>
+  <div class="highlight"><h3>Median Delay (days)</h3><p id="deathsCardMedianDelayDays">{{ death_card_median_delay_days }}</p></div>
+</div>
+<div class="highlightsContainer deaths-summary-cards deaths-summary-cards-secondary">
+  <div class="highlight deaths-signal-card"><h3>All Deaths: 7d vs prev 7d</h3><p id="signalAll7d">Diff: -- | Change: --</p></div>
+  <div class="highlight deaths-signal-card"><h3>Under-5: 7d vs prev 7d</h3><p id="signalU57d">Diff: -- | Change: --</p></div>
+  <div class="highlight deaths-signal-card deaths-signal-card-30d"><h3>All Deaths: 30d vs prev 30d</h3><p id="signalAll30d">Diff: -- | Change: --</p></div>
+  <div class="highlight deaths-signal-card deaths-signal-card-30d"><h3>Under-5: 30d vs prev 30d</h3><p id="signalU530d">Diff: -- | Change: --</p></div>
+</div>
+<form id="deathsFiltersForm" class="controls" method="get" action="" data-component="filters">
+  <small class="dashboard-note">Filters update mortality trend and map.</small>
+  <div class="filtersRow">
+    <div class="mainFiltersContainer">
+      <label for="deathsMapViewSelect">Map:</label>
+      <select id="deathsMapViewSelect" class="select" name="map_view">
+        <option value="Province" {% if filter_map_view == "Province" %}selected{% endif %}>Province</option>
+        <option value="District" {% if filter_map_view == "District" %}selected{% endif %}>District</option>
+      </select>
+
+      <label for="deathsFilterTimePreset">Date of Death:</label>
+      <select id="deathsFilterTimePreset" class="select" name="time_preset">
+        <option value="all_time">All time</option>
+        <option value="last_30_days">Last 30 days</option>
+        <option value="last_7_days">Last 7 days</option>
+        <option value="last_24_hours">Last 24 hours</option>
+        <option value="custom">Custom</option>
+      </select>
+
+      <label for="deathsFilterSex">Sex:</label>
+      <select id="deathsFilterSex" class="select" name="sex">
+        <option value="">All</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+
+      <label for="deathsFilterAgeGroup">Age Group:</label>
+      <select id="deathsFilterAgeGroup" class="select" name="age_group">
+        <option value="">All</option>
+        <option value="neonate">Neonate</option>
+        <option value="child">Child</option>
+        <option value="adult">Adult</option>
+      </select>
+
+      <label for="deathsFilterCodedOnly">Coded only:</label>
+      <input id="deathsFilterCodedOnly" type="checkbox" name="coded_only" value="1">
+    </div>
+    <div class="betweenDatesContainer">
+      <span>Between</span>
+      <input id="deathsFilterStartDatetime" class="input" type="date" name="start_datetime">
+      <span>and</span>
+      <input id="deathsFilterEndDatetime" class="input" type="date" name="end_datetime">
+      <button id="deathsFiltersReset" type="button" class="button resetBtn">Reset</button>
+    </div>
+  </div>
+</form>

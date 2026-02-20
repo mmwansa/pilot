@@ -5,23 +5,24 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-  <form method="get">
-    <div class="form-row align-items-end">
-      {% crispy filterset.form %}
-      <div class="form-group">
-        <button class="form-control btn btn-primary filter-button" type="submit">Go</button>
-      </div>
-      {% if filterset.is_valid %}
-        <div class="form-group">
-          <a class="btn btn-secondary form-control filter-button" href="{% url 'va_analytics:supervision' %}">Reset</a>
-        </div>
-      {% endif %}
+  <section class="ou-card ou-mb-3">
+    <div class="ou-card-header">
+      <h2 class="ou-card-title">Supervision Filters</h2>
     </div>
-  </form>
+    <div class="ou-card-body">
+      <form method="get" class="ou-filter-row">
+        {% crispy filterset.form %}
+        <div class="ou-form-actions">
+          <button class="btn btn-primary filter-button" type="submit">Go</button>
+          {% if filterset.is_valid %}
+            <a class="btn btn-secondary filter-button" href="{% url 'va_analytics:supervision' %}">Reset</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </section>
 
-  <div class="row mt-4">
-    {% include 'partials/_generic_table.html' with table_data=supervision_stats %}
-  </div>
+  {% include "partials/card.html" with title="Supervision Summary" body_template="va_analytics/partials/_supervision_table_card_body.html" class_name="ou-mb-3" body_class="p-0" %}
 {% endblock %}
 
 <!-- Needs to be outside content block so JS in base template loads first -->

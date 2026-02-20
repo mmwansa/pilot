@@ -64,9 +64,84 @@ $(document).ready(function() {
 
   const locationRestrictionsClass = 'location-restrictions-select';
   const facilityRestrictionsClass = 'facility-restrictions-select';
+  const datasetID = 'div_id_dataset';
+  const causesID = 'div_id_causes';
+  const warningBoxID = '#exportValidationWarning';
 
   updateFormForActionSelected();
+  updateFormForDatasetSelected();
   disableDescendantsForSelectedLocations();
+
+  function showValidationWarning(message) {
+    $(warningBoxID).text(message).removeClass('d-none');
+  }
+
+  function clearValidationWarning() {
+    $(warningBoxID).addClass('d-none').text('');
+  }
+
+  function setFieldInvalid(fieldId, isInvalid) {
+    const $field = $(`#${fieldId}`);
+    $field.toggleClass('is-invalid', Boolean(isInvalid));
+    $field.attr('aria-invalid', Boolean(isInvalid));
+  }
+
+  function clearDateFieldValidation() {
+    setFieldInvalid('id_start_date', false);
+    setFieldInvalid('id_end_date', false);
+  }
+
+  function markInvalidDateFields(fieldNames) {
+    const invalid = new Set(fieldNames || []);
+    setFieldInvalid('id_start_date', invalid.has('start_date'));
+    setFieldInvalid('id_end_date', invalid.has('end_date'));
+  }
+
+  function isValidIsoDate(value) {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00`);
+    return !Number.isNaN(date.getTime());
+  }
+
+  function validateDateRangeInputs() {
+    const startDate = String($('#id_start_date').val() || '').trim();
+    const endDate = String($('#id_end_date').val() || '').trim();
+    clearDateFieldValidation();
+
+    if (!startDate && !endDate) {
+      markInvalidDateFields(['start_date', 'end_date']);
+      showValidationWarning('Earliest Date and Latest Date are required before downloading.');
+      return false;
+    }
+
+    if (!startDate) {
+      markInvalidDateFields(['start_date']);
+      showValidationWarning('Earliest Date is required before downloading.');
+      return false;
+    }
+
+    if (!endDate) {
+      markInvalidDateFields(['end_date']);
+      showValidationWarning('Latest Date is required before downloading.');
+      return false;
+    }
+
+    if (!isValidIsoDate(startDate) || !isValidIsoDate(endDate)) {
+      markInvalidDateFields(['start_date', 'end_date']);
+      showValidationWarning('Select valid Earliest Date and Latest Date before downloading.');
+      return false;
+    }
+
+    if (new Date(`${startDate}T00:00:00`) > new Date(`${endDate}T00:00:00`)) {
+      markInvalidDateFields(['start_date', 'end_date']);
+      showValidationWarning('Earliest Date must be on or before Latest Date.');
+      return false;
+    }
+
+    clearDateFieldValidation();
+    clearValidationWarning();
+    return true;
+  }
 
   /**
    * Summary. Applies the relevant CSS style to the location in the select2 dropdown menu, based on depth
@@ -194,6 +269,20 @@ $(document).ready(function() {
     }
   }
 
+  function updateFormForDatasetSelected() {
+    const selectedDataset = ($('#id_dataset').val() || 'verbalautopsy').toLowerCase();
+    if (selectedDataset === 'verbalautopsy') {
+      $('#' + causesID).show();
+      $('#id_format').prop('disabled', false);
+      return;
+    }
+    // Non-VA exports are CSV-only and do not use CoD filter.
+    $('#' + causesID).hide();
+    $('#id_causes').val(null).trigger('change');
+    $('#id_format').val('csv');
+    $('#id_format').prop('disabled', true);
+  }
+
   /**
    * Summary. Event handler that listens for the change of export action
    */
@@ -204,11 +293,25 @@ $(document).ready(function() {
     updateSubmitText();
   });
 
+  $('#id_dataset').change(function() {
+    updateFormForDatasetSelected();
+    clearDateFieldValidation();
+    clearValidationWarning();
+  });
+
+  $('#id_start_date, #id_end_date').on('change input', function() {
+    clearDateFieldValidation();
+    clearValidationWarning();
+  });
+
   /**
    * Summary. Event handler for form submit
    */
   $('#export-form').on('submit', function(event){
    event.preventDefault();
+   if (!validateDateRangeInputs()) {
+    return;
+   }
    create_export();
   });
 
@@ -256,9 +359,23 @@ $(document).ready(function() {
         }
       }
       else {
-        // Show the downloadFailed modal if we don't receive a status code of 200
-        // TODO: Write to error log
-        $('#downloadFailedModal').modal('show');
+        let handledValidationError = false;
+        try {
+          const decoded = new TextDecoder("utf-8").decode(new Uint8Array(this.response || []));
+          const payload = JSON.parse(decoded);
+          if (payload && payload.error) {
+            markInvalidDateFields(payload.invalid_fields || []);
+            showValidationWarning(payload.error);
+            handledValidationError = true;
+          }
+        } catch (_err) {
+          // no-op
+        }
+        if (!handledValidationError) {
+          // Show the downloadFailed modal if we don't receive a status code of 200
+          // TODO: Write to error log
+          $('#downloadFailedModal').modal('show');
+        }
       }
     };
     request.send(data);

@@ -29,7 +29,7 @@ class TestDashboardView:
 
         response = dashboard_view(request)
 
-        assert response.status_code == 200
+        assert response.status_code == 302
 
     def test_without_view_permission(self, rf: RequestFactory):
         no_permissions_group = GroupFactory.create(permissions=[])

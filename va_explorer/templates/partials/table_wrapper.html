@@ -1,0 +1,10 @@
+<div class="ou-table-wrap {% if class_name %}{{ class_name }}{% endif %}">
+  <div class="table-responsive vacms-table-responsive">
+    {% if table_template %}
+      {% include table_template %}
+    {% endif %}
+  </div>
+  {% if is_empty and empty_message %}
+    {% include "partials/empty_state.html" with message=empty_message %}
+  {% endif %}
+</div>

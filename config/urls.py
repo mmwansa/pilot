@@ -20,6 +20,10 @@ urlpatterns = [
         include("va_explorer.va_analytics.urls", namespace="va_analytics"),
     ),
     path(
+        "admin-panel/",
+        include("va_explorer.va_admin.urls", namespace="va_admin"),
+    ),
+    path(
         "va_data_management/",
         include("va_explorer.va_data_management.urls", namespace="va_data_management"),
     ),

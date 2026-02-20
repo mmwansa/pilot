@@ -1,0 +1,66 @@
+{% include 'partials/_va_update_stats.html' %}
+{% if not user.is_fieldworker %}
+  {% if last_update or last_interview %}
+    <h2 class="mb-4">VA Collection Overview for {{ locations }}</h2>
+  {% else %}
+    <h2 class="mb-4">No VAs found for {{ locations }}</h2>
+  {% endif %}
+{% else %}
+  <h2 class="mb-4">Your VA Trends</h2>
+{% endif %}
+
+<div class="home-panel home-panel-table mb-4">
+  <table class="table home-page-statistics va-stats-table-modern mb-0" data-component="va-statistics-table">
+    <thead>
+      <tr>
+        <th scope="col">VAs</th>
+        <th scope="col">24 hours</th>
+        <th scope="col">1 week</th>
+        <th scope="col">1 month</th>
+        <th scope="col">Overall</th>
+        <th scope="col">Interview Trends</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Interviewed</th>
+        <td id="interviewed-past-24-hours"></td>
+        <td id="interviewed-past-week"></td>
+        <td id="interviewed-past-month"></td>
+        <td id="interviewed-overall"></td>
+        <td><canvas id="interviewedChart" data-component="interviewed-trend-chart"></canvas></td>
+      </tr>
+      <tr>
+        <th scope="row">Coded</th>
+        <td id="coded-past-24-hours"></td>
+        <td id="coded-past-week"></td>
+        <td id="coded-past-month"></td>
+        <td id="coded-overall"></td>
+        <td><canvas id="codedChart" data-component="coded-trend-chart"></canvas></td>
+      </tr>
+      <tr>
+        <th scope="row">Not Yet Coded</th>
+        <td id="uncoded-past-24-hours"></td>
+        <td id="uncoded-past-week"></td>
+        <td id="uncoded-past-month"></td>
+        <td id="uncoded-overall"></td>
+        <td><canvas id="notYetCodedChart" data-component="uncoded-trend-chart"></canvas></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+{% if perms.va_data_management.change_verbalautopsy %}
+  <div class="row mt-4">
+    <div class="col">
+      <h2 class="mb-4">Verbal Autopsy Actions</h2>
+      <form method="post" action="{% url 'data_management:run_coding_algorithms' %}">
+        {% csrf_token %}
+        <button class="btn btn-primary" type="submit">
+          <i class="fas fa-file-prescription"></i>
+          &nbsp;Run Coding Algorithms
+        </button>
+      </form>
+    </div>
+  </div>
+{% endif %}

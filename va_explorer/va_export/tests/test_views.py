@@ -16,7 +16,11 @@ from va_explorer.users.models import User
 from va_explorer.va_data_management.constants import REDACTED_STRING
 from va_explorer.va_data_management.models import (
     CauseOfDeath,
+    Death,
+    Household,
     Location,
+    Pregnancy,
+    PregnancyOutcome,
     SRSClusterLocation,
     VerbalAutopsy,
 )
@@ -112,6 +116,90 @@ def build_test_db():
 
 
 class TestAPIView:
+    def test_household_csv_download(self, user: User):
+        build_test_db()
+        Household.objects.create(key="hh-export-1", today="2026-01-01", province="Central")
+
+        c = Client()
+        c.force_login(user=user)
+
+        response = c.post(POST_URL, data={"dataset": "household", "format": "csv"})
+        assert response.status_code == 200
+        assert response.headers["content-type"] == FILE_CONTENT_TYPE
+        assert response.headers["content-disposition"] == "attachment; filename=household.csv.zip"
+
+        try:
+            f = io.BytesIO(response.content)
+            zipped_file = zipfile.ZipFile(f, "r")
+            assert "household_download.csv" in zipped_file.namelist()
+            assert len(zipped_file.open("household_download.csv").readlines()) >= 2
+        finally:
+            zipped_file.close()
+            f.close()
+
+    def test_pregnancy_csv_download(self, user: User):
+        build_test_db()
+        Pregnancy.objects.create(key="preg-export-1", today="2026-01-02", PE_06="Jane Doe")
+
+        c = Client()
+        c.force_login(user=user)
+
+        response = c.post(POST_URL, data={"dataset": "pregnancy", "format": "csv"})
+        assert response.status_code == 200
+        assert response.headers["content-type"] == FILE_CONTENT_TYPE
+        assert response.headers["content-disposition"] == "attachment; filename=pregnancy.csv.zip"
+
+        try:
+            f = io.BytesIO(response.content)
+            zipped_file = zipfile.ZipFile(f, "r")
+            assert "pregnancy_download.csv" in zipped_file.namelist()
+            assert len(zipped_file.open("pregnancy_download.csv").readlines()) >= 2
+        finally:
+            zipped_file.close()
+            f.close()
+
+    def test_pregnancy_outcome_csv_download(self, user: User):
+        build_test_db()
+        PregnancyOutcome.objects.create(key="po-export-1", today="2026-01-03", PO_04="Mother")
+
+        c = Client()
+        c.force_login(user=user)
+
+        response = c.post(POST_URL, data={"dataset": "pregnancy_outcome", "format": "csv"})
+        assert response.status_code == 200
+        assert response.headers["content-type"] == FILE_CONTENT_TYPE
+        assert response.headers["content-disposition"] == "attachment; filename=pregnancy_outcome.csv.zip"
+
+        try:
+            f = io.BytesIO(response.content)
+            zipped_file = zipfile.ZipFile(f, "r")
+            assert "pregnancy_outcome_download.csv" in zipped_file.namelist()
+            assert len(zipped_file.open("pregnancy_outcome_download.csv").readlines()) >= 2
+        finally:
+            zipped_file.close()
+            f.close()
+
+    def test_death_csv_download(self, user: User):
+        build_test_db()
+        Death.objects.create(key="death-export-1", today="2026-01-04", DE_03="Decedent")
+
+        c = Client()
+        c.force_login(user=user)
+
+        response = c.post(POST_URL, data={"dataset": "death", "format": "csv"})
+        assert response.status_code == 200
+        assert response.headers["content-type"] == FILE_CONTENT_TYPE
+        assert response.headers["content-disposition"] == "attachment; filename=death.csv.zip"
+
+        try:
+            f = io.BytesIO(response.content)
+            zipped_file = zipfile.ZipFile(f, "r")
+            assert "death_download.csv" in zipped_file.namelist()
+            assert len(zipped_file.open("death_download.csv").readlines()) >= 2
+        finally:
+            zipped_file.close()
+            f.close()
+
     def test_csv_download(self, user: User):
         build_test_db()
 

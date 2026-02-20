@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}Outcomes Dashboard{% endblock %}
+{% block container-type %}container outcomes-container{% endblock %}
+
+{% block css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/outcomes_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/vuesalize-0.2.0/vuesalize.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/leaflet-1.9.2/leaflet.css' %}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
+  <style>
+    .breadcrumb-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      flex-wrap: wrap;
+    }
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .breadcrumb-item:not(:last-child)::after {
+      content: none !important;
+    }
+    .breadcrumb-text {
+      color: #333;
+      font-weight: 500;
+    }
+    #map {
+      width: 100%;
+      height: calc(100vh - 360px);
+      max-height: calc(100vh - 200px);
+      min-height: 360px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 10px 0;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="row dashboard-shell" data-shell="outcomes">
+    <div class="col">
+      <h4 class="mb-4">Outcomes Dashboard</h4>
+      <ul class="nav nav-tabs" id="outcomesTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <a
+            class="nav-link {% if active_tab == 'pregnancies' %}active{% endif %}"
+            id="pregnancies-tab"
+            data-tab="pregnancies"
+            href="{% url 'va_analytics:outcomes-dashboard' %}?tab=pregnancies"
+            role="tab"
+            aria-controls="pregnancies-pane"
+            aria-selected="{% if active_tab == 'pregnancies' %}true{% else %}false{% endif %}"
+          >
+            Pregnancies
+          </a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a
+            class="nav-link {% if active_tab == 'pregnancy_outcomes' %}active{% endif %}"
+            id="pregnancy-outcomes-tab"
+            data-tab="pregnancy_outcomes"
+            href="{% url 'va_analytics:outcomes-dashboard' %}?tab=pregnancy_outcomes"
+            role="tab"
+            aria-controls="pregnancy-outcomes-pane"
+            aria-selected="{% if active_tab == 'pregnancy_outcomes' %}true{% else %}false{% endif %}"
+          >
+            Pregnancy Outcomes
+          </a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a
+            class="nav-link {% if active_tab == 'deaths' %}active{% endif %}"
+            id="deaths-tab"
+            data-tab="deaths"
+            href="{% url 'va_analytics:outcomes-dashboard' %}?tab=deaths"
+            role="tab"
+            aria-controls="deaths-pane"
+            aria-selected="{% if active_tab == 'deaths' %}true{% else %}false{% endif %}"
+          >
+            Deaths
+          </a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a
+            class="nav-link {% if active_tab == 'verbal_autopsies' %}active{% endif %}"
+            id="verbal-autopsies-tab"
+            data-tab="verbal_autopsies"
+            href="{% url 'va_analytics:outcomes-dashboard' %}?tab=verbal_autopsies"
+            role="tab"
+            aria-controls="verbal-autopsies-pane"
+            aria-selected="{% if active_tab == 'verbal_autopsies' %}true{% else %}false{% endif %}"
+          >
+            Verbal Autopsies
+          </a>
+        </li>
+      </ul>
+
+      <div class="tab-content mt-4" id="outcomesTabsContent">
+        <div
+          class="tab-pane dashboard-tab-panel fade {% if active_tab == 'pregnancies' %}show active{% endif %}"
+          id="pregnancies-pane"
+          data-tab-panel="pregnancies"
+          role="tabpanel"
+          aria-labelledby="pregnancies-tab"
+        >
+          {% include "va_analytics/partials/_pregnancies_dashboard.html" %}
+        </div>
+        <div
+          class="tab-pane dashboard-tab-panel fade {% if active_tab == 'pregnancy_outcomes' %}show active{% endif %}"
+          id="pregnancy-outcomes-pane"
+          data-tab-panel="pregnancy_outcomes"
+          role="tabpanel"
+          aria-labelledby="pregnancy-outcomes-tab"
+        >
+          {% include "va_analytics/partials/_pregnancy_outcomes_dashboard.html" %}
+        </div>
+        <div
+          class="tab-pane dashboard-tab-panel fade {% if active_tab == 'deaths' %}show active{% endif %}"
+          id="deaths-pane"
+          data-tab-panel="deaths"
+          role="tabpanel"
+          aria-labelledby="deaths-tab"
+        >
+          {% include "va_analytics/partials/_deaths_dashboard.html" %}
+        </div>
+        <div
+          class="tab-pane dashboard-tab-panel fade {% if active_tab == 'verbal_autopsies' %}show active{% endif %}"
+          id="verbal-autopsies-pane"
+          data-tab-panel="verbal_autopsies"
+          role="tabpanel"
+          aria-labelledby="verbal-autopsies-tab"
+        >
+          {% include "va_analytics/partials/_verbal_autopsies_dashboard.html" %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block page_scripts %}
+  <script type="text/javascript" src="{% static 'js/dashboard_tabs.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/vue-2.7.13/vue.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/vuesalize-0.2.0/vuesalize.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/d3-array-3.2.0/d3-array.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
+  <script type="text/javascript" src="{% static 'vendor/leaflet-fullscreen/Control.FullScreen.umd.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/hierarchical_dashboard_map.js' %}?v=20260220c"></script>
+  <script type="text/javascript" src="{% static 'js/map_performance_wrapper.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/outcomes_dashboard.js' %}?v=20260220b"></script>
+  <script type="text/javascript" src="{% static 'js/pregnancy_dashboard.js' %}?v=20260220b"></script>
+  <script type="text/javascript" src="{% static 'js/deaths_dashboard.js' %}?v=20260220c"></script>
+  <script type="text/javascript" src="{% static 'js/dashboard_map.js' %}?v=20260220g"></script>
+{% endblock %}

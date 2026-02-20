@@ -1,5 +1,6 @@
 import logging
 import random
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -49,6 +50,83 @@ def normalize_value(val):
         return normalize_string(s)
     except Exception:
         return normalize_string(val)
+
+
+def _has_meaningful_value(value):
+    if pd.isnull(value):
+        return False
+    normalized = normalize_string(value).lower()
+    return normalized not in {"", "nan", "none", "null"}
+
+
+def normalize_community_va_value(value, *, hospital=None, ward=None):
+    """
+    community_va rules:
+    - completed hospital => "no"
+    - completed ward => "yes"
+    - explicit community_va "no" variants => "no"
+    - otherwise => "yes"
+    """
+    if _has_meaningful_value(hospital):
+        return "no"
+    if _has_meaningful_value(ward):
+        return "yes"
+
+    if pd.isnull(value):
+        return "yes"
+    normalized = normalize_string(value).lower()
+    if normalized in {"", "nan", "none", "null"}:
+        return "yes"
+    if normalized in {"no", "n", "false", "0"}:
+        return "no"
+    return "yes"
+
+
+def _normalized_geo_token(value):
+    return normalize_string(value).strip().lower()
+
+
+def build_srs_location_maps():
+    """
+    Build lightweight lookup maps for SRSClusterLocation by level and token.
+    Token uses normalized name and normalized code.
+    """
+    maps = {
+        "ea": {},
+        "ward": {},
+        "constituency": {},
+        "district": {},
+        "province": {},
+    }
+    for loc in SRSClusterLocation.objects.only("id", "name", "code", "location_type").iterator():
+        level = _normalized_geo_token(loc.location_type)
+        if level not in maps:
+            continue
+        name_token = _normalized_geo_token(loc.name)
+        if name_token:
+            maps[level][name_token] = loc
+        code_token = _normalized_geo_token(loc.code)
+        if code_token:
+            maps[level][code_token] = loc
+    return maps
+
+
+def resolve_srs_cluster_from_row(row, srs_maps):
+    # deepest-to-broadest precedence
+    for field_name, level in (
+        ("ea", "ea"),
+        ("ward", "ward"),
+        ("constituency", "constituency"),
+        ("district", "district"),
+        ("province", "province"),
+    ):
+        token = _normalized_geo_token(row.get(field_name))
+        if not token:
+            continue
+        match = srs_maps.get(level, {}).get(token)
+        if match:
+            return match
+    return None
 
 def normalize_dataframe_columns(df, model):
     """
@@ -251,6 +329,19 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
     # (e.x. Id10010_other, Id10010)
     record_df = deduplicate_columns(record_df)
 
+    # Normalize community_va before dropping non-model columns so we can use
+    # transient import fields such as ward.
+    if "community_va" not in record_df.columns:
+        record_df["community_va"] = None
+    record_df["community_va"] = record_df.apply(
+        lambda row: normalize_community_va_value(
+            row.get("community_va"),
+            hospital=row.get("hospital"),
+            ward=row.get("ward"),
+        ),
+        axis=1,
+    )
+
     csv_field_names = record_df.columns
     common_field_names = csv_field_names.intersection(model_field_names)
 
@@ -280,6 +371,7 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
             .only("name", "key")
             .values_list("key", "name")
         }
+    srs_maps = build_srs_location_maps()
 
     # if random locations, assign random locations via a random field worker.
     if random_locations:
@@ -365,7 +457,10 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
             user = random.choice(field_workers)
             va.location = user.location_restrictions.first()
         else:
-            assign_va_location(va, location_map)
+            if va.community_va_normalized == "yes":
+                va.cluster = resolve_srs_cluster_from_row(row, srs_maps)
+            else:
+                assign_va_location(va, location_map)
             if "hospital" in row and logger:
                 logger.info(
                     "va_id: %s - Matched hospital %s to %s location in DB",
@@ -449,22 +544,43 @@ def deduplicate_columns(record_df, drop_duplicates=True):
     return record_df
 
 
-def get_va_summary_stats(vas, filter_fields=False):
+def get_va_summary_stats(vas, filter_fields=False, cache_key="va_summary_stats"):
     # if vas.count() > 0 code is the slowest SQL query
 
     # if filter_fields=True, filter down to only relevant fields
     if filter_fields:
-        vas = vas.only("created", "id", "location", "Id10023")
+        vas = vas.only("created", "id", "location", "Id10023", "submissiondate", "Id10012")
+
+    def _max_parsed_date(values):
+        latest = None
+        for value in values:
+            parsed = parse_date(value)
+            if not parsed or parsed in {"dk", "nan", "none", "null"}:
+                continue
+            try:
+                current = datetime.strptime(parsed, "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if latest is None or current > latest:
+                latest = current
+        return latest
 
     # check cache for va summary stats and set it if not already there
-    stats = cache.get("va_summary_stats")
+    stats = cache.get(cache_key) if cache_key else None
     if not stats:
-        stats = vas.aggregate(
-            last_update=Max("created"),
+        agg = vas.aggregate(
+            last_created=Max("created"),
             last_interview=Max("Id10012"),
             total_vas=Count("id"),
         )
-        cache.set("va_summary_stats", stats, timeout=60 * 60)
+        latest_submission = _max_parsed_date(vas.values_list("submissiondate", flat=True))
+        stats = {
+            "last_update": latest_submission or agg.get("last_created"),
+            "last_interview": agg.get("last_interview"),
+            "total_vas": agg.get("total_vas"),
+        }
+        if cache_key:
+            cache.set(cache_key, stats, timeout=60 * 60)
 
     stats["ineligible_vas"] = vas.filter(
         Q(Id10023__in=["DK", "dk"]) | Q(Id10023__isnull=True) | Q(location__isnull=True)

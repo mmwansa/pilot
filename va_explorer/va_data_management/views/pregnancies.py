@@ -43,9 +43,6 @@ class Pregnancies(CustomAuthMixin, PermissionRequiredMixin, FilterView):
         queryset = restrict_queryset_to_user_locations(
             queryset,
             self.request.user,
-            {
-                "province": "province",
-            },
         ).order_by("-created", "-id")
 
         if self.request.GET.get("id"):
@@ -70,8 +67,10 @@ class Pregnancies(CustomAuthMixin, PermissionRequiredMixin, FilterView):
 
 class PregnancyAccessMixin(SingleObjectMixin):
     def get_queryset(self):
-        # Restrict as needed (custom logic)
-        return Pregnancy.objects.all()
+        return restrict_queryset_to_user_locations(
+            Pregnancy.objects.all(),
+            self.request.user,
+        )
 
 
 class PregnancyDetail(
@@ -121,6 +120,12 @@ class PregnancyDelete(CustomAuthMixin, PermissionRequiredMixin, DeleteView):
     error_message = (
         "Pregnancy %(id)s could not be deleted. This record doesn't exist or you don't have access."
     )
+
+    def get_queryset(self):
+        return restrict_queryset_to_user_locations(
+            Pregnancy.objects.all(),
+            self.request.user,
+        )
 
     def form_valid(self, form):
         obj = self.get_object()

@@ -1,0 +1,4 @@
+{% include "partials/table_wrapper.html" with table_template="va_cms/partials/_event_list_table.html" %}
+{% if not object_list %}
+  {% include "partials/empty_state.html" with message="No scheduled events found for the selected filters." %}
+{% endif %}

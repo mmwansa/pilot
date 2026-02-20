@@ -1,11 +1,23 @@
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from va_explorer.tests.factories import LocationFactory, VerbalAutopsyFactory
+from va_explorer.tests.factories import (
+    LocationFactory,
+    SRSClusterLocationFactory,
+    VerbalAutopsyFactory,
+)
 from va_explorer.users.management.commands.initialize_groups import GROUPS_PERMISSIONS
 
 
 def setup_test_db(with_vas=True):
+    # Create SRSClusterLocations for location_restrictions (used by User forms)
+    province_cluster = SRSClusterLocationFactory.create(
+        name="Province1", location_type="province"
+    )
+    province_cluster.add_child(name="DistrictX", location_type="district")
+    province_cluster.add_child(name="DistrictY", location_type="district")
+
+    # Create standard Locations for facility_restrictions and VAs
     province = LocationFactory.create(name="Province1")
     district_x = province.add_child(name="DistrictX", location_type="district")
     facility1 = district_x.add_child(name="Facility1", location_type="facility")
@@ -48,6 +60,7 @@ def get_fake_user_data():
         "u1": {
             "name": "user1",
             "email": "user1@example.com",
+            "password": "TestPassword123!",
             "location_restrictions": "DistrictX",
             "group": "Data Viewer",
             "view_pii": False,
@@ -58,6 +71,7 @@ def get_fake_user_data():
         "u2": {
             "name": "user2",
             "email": "user2@example.com",
+            "password": "TestPassword123!",
             "location_restrictions": "DistrictY",
             "group": "Data Manager",
             "view_pii": True,
@@ -68,6 +82,7 @@ def get_fake_user_data():
         "u3": {
             "name": "user3",
             "email": "user3@example.com",
+            "password": "TestPassword123!",
             "group": "Data Viewer",
             "view_pii": True,
             "download_data": False,
