@@ -251,6 +251,299 @@ def _apply_text_geography_filter(queryset, model, level, value):
     return queryset.filter(**{f"{level}__iexact": value})
 
 
+def _normalize_geo_value(value):
+    normalized = " ".join(str(value or "").split()).strip()
+    if not normalized:
+        return ""
+    if normalized.lower() in {"nan", "none", "null", "na", "n/a"}:
+        return ""
+    return normalized
+
+
+def _serialize_geo_counter(counter, output_key):
+    return [
+        {output_key: name, "count": count}
+        for name, count in sorted(counter.items(), key=lambda item: item[0].lower())
+    ]
+
+
+def _serialize_geo_counter_with_breakdown(counter, output_key, breakdown_counters):
+    rows = []
+    for name, count in sorted(counter.items(), key=lambda item: item[0].lower()):
+        row = {output_key: name, "count": count}
+        for field_name, field_counter in breakdown_counters.items():
+            row[field_name] = int(field_counter.get(name, 0))
+        rows.append(row)
+    return rows
+
+
+def _parse_home_map_filters(request):
+    time_preset = (request.GET.get("time_preset") or "all_time").strip().lower()
+    start_raw = (request.GET.get("start_datetime") or "").strip()
+    end_raw = (request.GET.get("end_datetime") or "").strip()
+    map_view = (request.GET.get("map_view") or "Province").strip() or "Province"
+    geography_level = (request.GET.get("geography_level") or "").strip().lower()
+    geography_value = (request.GET.get("geography_value") or "").strip()
+
+    now = timezone.localtime(timezone.now())
+    start_dt = None
+    end_dt = now
+
+    if time_preset == "last_30_days":
+        start_dt = now - timedelta(days=30)
+    elif time_preset == "last_7_days":
+        start_dt = now - timedelta(days=7)
+    elif time_preset == "last_24_hours":
+        start_dt = now - timedelta(hours=24)
+
+    parsed_start = django_parse_datetime(start_raw) if start_raw else None
+    parsed_end = django_parse_datetime(end_raw) if end_raw else None
+    if parsed_start is None and start_raw:
+        parsed_date = django_parse_date(start_raw)
+        if parsed_date:
+            parsed_start = datetime.combine(parsed_date, time.min)
+    if parsed_end is None and end_raw:
+        parsed_date = django_parse_date(end_raw)
+        if parsed_date:
+            parsed_end = datetime.combine(parsed_date, time.max)
+
+    if parsed_start is not None:
+        if timezone.is_naive(parsed_start):
+            parsed_start = timezone.make_aware(parsed_start, timezone.get_current_timezone())
+        start_dt = timezone.localtime(parsed_start)
+    if parsed_end is not None:
+        if timezone.is_naive(parsed_end):
+            parsed_end = timezone.make_aware(parsed_end, timezone.get_current_timezone())
+        end_dt = timezone.localtime(parsed_end)
+
+    if start_dt and end_dt and start_dt > end_dt:
+        start_dt, end_dt = end_dt, start_dt
+
+    allowed_levels = {"province", "district", "constituency", "ward", "ea"}
+    if geography_level not in allowed_levels:
+        geography_level = ""
+        geography_value = ""
+
+    return {
+        "time_preset": time_preset,
+        "start_dt": start_dt,
+        "end_dt": end_dt,
+        "map_view": map_view,
+        "geography_level": geography_level,
+        "geography_value": geography_value,
+    }
+
+
+def _latest_geo_by_identifier(queryset, key_field, date_fields, start_dt, end_dt):
+    geo_fields = ("province", "district", "constituency", "ward", "ea")
+    latest = {}
+    rows = (
+        queryset.exclude(**{f"{key_field}__isnull": True})
+        .exclude(**{key_field: ""})
+        .values(key_field, *date_fields, *geo_fields)
+    )
+    for row in rows.iterator():
+        identifier = row.get(key_field)
+        if not identifier:
+            continue
+
+        timestamp = None
+        for field_name in date_fields:
+            timestamp = _parse_submission_timestamp(row.get(field_name))
+            if timestamp is not None:
+                break
+        if timestamp is None:
+            continue
+        if start_dt and timestamp < start_dt:
+            continue
+        if end_dt and timestamp > end_dt:
+            continue
+
+        existing = latest.get(identifier)
+        if existing is not None and timestamp <= existing[0]:
+            continue
+        latest[identifier] = (
+            timestamp,
+            {
+                "province": _normalize_geo_value(row.get("province")),
+                "district": _normalize_geo_value(row.get("district")),
+                "constituency": _normalize_geo_value(row.get("constituency")),
+                "ward": _normalize_geo_value(row.get("ward")),
+                "ea": _normalize_geo_value(row.get("ea")),
+            },
+        )
+    return latest
+
+
+def _build_home_combined_map_payload(request):
+    filters = _parse_home_map_filters(request)
+    geography_level = filters["geography_level"]
+    geography_value = filters["geography_value"]
+    start_dt = filters["start_dt"]
+    end_dt = filters["end_dt"]
+
+    with timed_block("home.map.qs.build", request=request):
+        pregnancies_qs = _apply_text_geography_filter(
+            restrict_queryset_to_user_locations(Pregnancy.objects.all(), getattr(request, "user", None)),
+            Pregnancy,
+            geography_level or "national",
+            geography_value,
+        )
+        outcomes_qs = _apply_text_geography_filter(
+            restrict_queryset_to_user_locations(PregnancyOutcome.objects.all(), getattr(request, "user", None)),
+            PregnancyOutcome,
+            geography_level or "national",
+            geography_value,
+        )
+        deaths_qs = _apply_text_geography_filter(
+            restrict_queryset_to_user_locations(Death.objects.all(), getattr(request, "user", None)),
+            Death,
+            geography_level or "national",
+            geography_value,
+        )
+        if request and getattr(request, "user", None):
+            vas_qs = request.user.verbal_autopsies().filter(deleted_at__isnull=True, duplicate=False)
+        else:
+            vas_qs = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
+        vas_qs = _apply_text_geography_filter(
+            vas_qs,
+            VerbalAutopsy,
+            geography_level or "national",
+            geography_value,
+        )
+
+    with timed_block("home.map.aggregate", request=request):
+        model_sets = (
+            (
+                "pregnancies_count",
+                _latest_geo_by_identifier(
+                    pregnancies_qs,
+                    "key",
+                    ("submissiondate", "start", "today"),
+                    start_dt,
+                    end_dt,
+                ),
+            ),
+            (
+                "pregnancy_outcomes_count",
+                _latest_geo_by_identifier(
+                    outcomes_qs,
+                    "key",
+                    ("submissiondate", "start", "today"),
+                    start_dt,
+                    end_dt,
+                ),
+            ),
+            (
+                "deaths_count",
+                _latest_geo_by_identifier(
+                    deaths_qs,
+                    "key",
+                    ("submissiondate", "start", "today"),
+                    start_dt,
+                    end_dt,
+                ),
+            ),
+            (
+                "verbal_autopsies_count",
+                _latest_geo_by_identifier(
+                    vas_qs,
+                    "instanceid",
+                    ("submissiondate", "Id10012", "created"),
+                    start_dt,
+                    end_dt,
+                ),
+            ),
+        )
+
+        province_counts = Counter()
+        district_counts = Counter()
+        constituency_counts = Counter()
+        ward_counts = Counter()
+        ea_counts = Counter()
+
+        province_type_counts = defaultdict(Counter)
+        district_type_counts = defaultdict(Counter)
+        constituency_type_counts = defaultdict(Counter)
+        ward_type_counts = defaultdict(Counter)
+        ea_type_counts = defaultdict(Counter)
+        total_events = 0
+
+        for type_key, latest_map in model_sets:
+            total_events += len(latest_map)
+            for _identifier, (_timestamp, geo) in latest_map.items():
+                if geo.get("province"):
+                    province_name = geo["province"]
+                    province_counts[province_name] += 1
+                    province_type_counts[type_key][province_name] += 1
+                if geo.get("district"):
+                    district_name = geo["district"]
+                    district_counts[district_name] += 1
+                    district_type_counts[type_key][district_name] += 1
+                if geo.get("constituency"):
+                    constituency_name = geo["constituency"]
+                    constituency_counts[constituency_name] += 1
+                    constituency_type_counts[type_key][constituency_name] += 1
+                if geo.get("ward"):
+                    ward_name = geo["ward"]
+                    ward_counts[ward_name] += 1
+                    ward_type_counts[type_key][ward_name] += 1
+                if geo.get("ea"):
+                    ea_name = geo["ea"]
+                    ea_counts[ea_name] += 1
+                    ea_type_counts[type_key][ea_name] += 1
+
+    province_sums = _serialize_geo_counter_with_breakdown(
+        province_counts,
+        "province_name",
+        province_type_counts,
+    )
+    district_sums = _serialize_geo_counter_with_breakdown(
+        district_counts,
+        "district_name",
+        district_type_counts,
+    )
+    constituency_sums = _serialize_geo_counter_with_breakdown(
+        constituency_counts,
+        "constituency_name",
+        constituency_type_counts,
+    )
+    ward_sums = _serialize_geo_counter_with_breakdown(
+        ward_counts,
+        "ward_name",
+        ward_type_counts,
+    )
+    ea_sums = _serialize_geo_counter_with_breakdown(
+        ea_counts,
+        "ea_name",
+        ea_type_counts,
+    )
+
+    counts_by_view = {
+        "Province": [{"name": row["province_name"], "count": row["count"]} for row in province_sums],
+        "District": [{"name": row["district_name"], "count": row["count"]} for row in district_sums],
+        "Constituency": [{"name": row["constituency_name"], "count": row["count"]} for row in constituency_sums],
+        "Ward": [{"name": row["ward_name"], "count": row["count"]} for row in ward_sums],
+        "EA": [{"name": row["ea_name"], "count": row["count"]} for row in ea_sums],
+    }
+
+    return {
+        "map_view": filters["map_view"],
+        "counts": counts_by_view.get(filters["map_view"], counts_by_view["Province"]),
+        "province_counts": counts_by_view["Province"],
+        "district_counts": counts_by_view["District"],
+        "constituency_counts": counts_by_view["Constituency"],
+        "ward_counts": counts_by_view["Ward"],
+        "ea_counts": counts_by_view["EA"],
+        "map_total_events": total_events,
+        "map_province_sums": province_sums,
+        "map_district_sums": district_sums,
+        "map_constituency_sums": constituency_sums,
+        "map_ward_sums": ward_sums,
+        "map_ea_sums": ea_sums,
+    }
+
+
 def _scope_fingerprint(user):
     parts = [
         f"user:{user.pk}",
@@ -660,6 +953,23 @@ class NationalOperationalFilterData(CustomAuthMixin, View):
 
 
 national_operational_filter_data_view = NationalOperationalFilterData.as_view()
+
+
+class HomeOverviewMapData(CustomAuthMixin, View):
+    def get(self, request, *args, **kwargs):
+        cache_key = _fastpath_cache_key(
+            "home_overview_map_data",
+            request,
+            extra={"component": "overview_map", "schema_version": 2},
+        )
+        payload = cache.get(cache_key)
+        if payload is None:
+            payload = _build_home_combined_map_payload(request)
+            cache.set(cache_key, payload, timeout=HOME_FASTPATH_CACHE_TTL_SECONDS)
+        return JsonResponse(payload)
+
+
+home_overview_map_data_view = HomeOverviewMapData.as_view()
 
 
 class HomeDashboardKpisAPIView(CustomAuthMixin, PermissionRequiredMixin, View):

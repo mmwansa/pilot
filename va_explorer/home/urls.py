@@ -40,6 +40,11 @@ urlpatterns = [
         name="national_operational_filter_data",
     ),
     path(
+        "national-operational/map-data/",
+        views.home_overview_map_data_view,
+        name="home_overview_map_data",
+    ),
+    path(
         "components/overview/events/",
         views.home_overview_events_component_view,
         name="home_overview_events_component",

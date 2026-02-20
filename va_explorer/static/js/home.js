@@ -389,12 +389,14 @@ const requestNationalOperationalFilterData = (options = {}) => {
   }
 
   const mapPanel = document.getElementById("homeOverviewMapPanel");
-  if (!mapPanel || typeof window.createHierarchicalDashboardMap !== "function") return;
+  const createMapFactory =
+    window.createHomeHierarchicalDashboardMap || window.createHierarchicalDashboardMap;
+  if (!mapPanel || typeof createMapFactory !== "function") return;
 
   if (!homeOverviewMapController) {
     const endpoint = mapPanel.dataset.mapEndpoint || "";
     if (!endpoint) return;
-    homeOverviewMapController = window.createHierarchicalDashboardMap({
+    homeOverviewMapController = createMapFactory({
       containerId: "homeOverviewMapContainer",
       legendId: "homeOverviewMapLegend",
       breadcrumbId: "homeOverviewMapBreadcrumb",
