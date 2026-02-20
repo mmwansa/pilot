@@ -16,7 +16,7 @@
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(280px, 3fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 #national-operational-view .events-chart-container,
@@ -30,6 +30,36 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
+}
+
+#national-operational-view .nov-overview-left-container,
+#national-operational-view .nov-overview-right-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  min-height: 100%;
+}
+
+#national-operational-view .nov-overview-left-container {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+}
+
+#national-operational-view .home-overview-left-top-row,
+#national-operational-view .home-overview-left-bottom-row {
+  min-width: 0;
+}
+
+#national-operational-view .home-overview-left-bottom-row {
+  display: flex;
+}
+
+#national-operational-view .home-overview-left-bottom-row #homeOverviewMapPanel {
+  width: 100%;
 }
 
 #national-operational-view .nov-overview-left-col {
@@ -48,12 +78,14 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
 }
 
 #national-operational-view #novKpiCardsContainer .nov-kpi-cards {
   flex: 1 1 auto;
   min-height: 0;
   grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 18px;
 }
 
 #national-operational-view #novKpiCardsContainer .nov-kpi-card {
@@ -156,6 +188,72 @@
   width: 100% !important;
   height: 100% !important;
   display: block;
+}
+
+#homeOverviewMapPanel {
+  padding: 12px;
+}
+
+#homeOverviewMapContainer {
+  height: 420px;
+  min-height: 320px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+#homeOverviewMapContainer .leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.home-map-breadcrumbs {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 8px 0 10px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.home-map-breadcrumbs .map-breadcrumb-label {
+  color: #475569;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.home-map-breadcrumbs .map-breadcrumb-item {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.home-map-breadcrumbs .map-breadcrumb-item.is-active {
+  color: #111827;
+  text-decoration: none;
+  cursor: default;
+}
+
+.home-map-breadcrumbs .map-breadcrumb-sep {
+  color: #64748b;
+}
+
+#homeOverviewMapContainer .legend {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 #national-operational-view .nov-kpi-cards {

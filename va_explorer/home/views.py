@@ -19,7 +19,6 @@ from django.utils.dateparse import parse_datetime as django_parse_datetime
 from django.views.generic import TemplateView, View
 
 from va_explorer.home.cache_utils import get_home_dashboard_fastpath_version
-from va_explorer.home.dashboard_metrics import get_homepage_metrics
 from va_explorer.home.model_trends import get_model_trends_data
 from va_explorer.home.va_trends import get_trends_data
 from va_explorer.utils.profiling import timed_block
@@ -378,10 +377,10 @@ def _latest_household_timestamps(queryset):
 def _get_national_operational_view_data(
     start_dt=None,
     end_dt=None,
-    use_legacy_metrics=False,
     request=None,
     location_level="national",
     location_value="",
+    include_chart_series=True,
 ):
     if end_dt is None:
         end_dt = timezone.localtime(timezone.now())
@@ -499,15 +498,18 @@ def _get_national_operational_view_data(
             else 0
         )
 
-    with timed_block("home.nov.chart_series", request=request):
-        chart_data = _build_chart_series(
-            list(pregnancies_by_key.values()),
-            list(pregnancy_outcomes_by_key.values()),
-            list(deaths_by_key.values()),
-            list(vas_by_key.values()),
-            start_dt,
-            end_dt,
-        )
+    if include_chart_series:
+        with timed_block("home.nov.chart_series", request=request):
+            chart_data = _build_chart_series(
+                list(pregnancies_by_key.values()),
+                list(pregnancy_outcomes_by_key.values()),
+                list(deaths_by_key.values()),
+                list(vas_by_key.values()),
+                start_dt,
+                end_dt,
+            )
+    else:
+        chart_data = {"labels": [], "pregnancy": [], "pregnancy_outcome": [], "death": [], "va": []}
 
     kpis = {
         "eas": eas_totals,
@@ -518,47 +520,6 @@ def _get_national_operational_view_data(
         "deaths": deaths_totals,
         "vas": vas_totals,
     }
-
-    if use_legacy_metrics and start_dt is None:
-        with timed_block("home.nov.legacy_metrics", request=request):
-            metrics = get_homepage_metrics(request.user if request else None)
-        kpis = {
-            "eas": {
-                "today": metrics.get("today_eas", 0),
-                "week": metrics.get("week_eas", 0),
-                "total": metrics.get("total_eas", 0),
-            },
-            "households": {
-                "today": metrics.get("today_households", 0),
-                "week": metrics.get("week_households", 0),
-                "total": metrics.get("total_households", 0),
-            },
-            "people": {
-                "today": metrics.get("today_people", 0),
-                "week": metrics.get("week_people", 0),
-                "total": metrics.get("total_people", 0),
-            },
-            "pregnancies": {
-                "today": metrics.get("today_pregnancies", 0),
-                "week": metrics.get("week_pregnancies", 0),
-                "total": metrics.get("total_pregnancies", 0),
-            },
-            "preg_outcomes": {
-                "today": metrics.get("today_preg_outcomes", 0),
-                "week": metrics.get("week_preg_outcomes", 0),
-                "total": metrics.get("total_preg_outcomes", 0),
-            },
-            "deaths": {
-                "today": metrics.get("today_deaths", 0),
-                "week": metrics.get("week_deaths", 0),
-                "total": metrics.get("total_deaths", 0),
-            },
-            "vas": {
-                "today": metrics.get("today_vas", 0),
-                "week": metrics.get("week_vas", 0),
-                "total": metrics.get("total_vas", 0),
-            },
-        }
 
     return {
         "chart_labels": chart_data["labels"],
@@ -590,10 +551,10 @@ def _get_cached_nov_payload(request):
     payload = _get_national_operational_view_data(
         start_dt=start_dt,
         end_dt=end_dt,
-        use_legacy_metrics=(preset == "all" and not has_custom_range),
         request=request,
         location_level=location_level,
         location_value=location_value,
+        include_chart_series=True,
     )
     cache.set(cache_key, payload, timeout=HOME_FASTPATH_CACHE_TTL_SECONDS)
     return payload
@@ -606,7 +567,16 @@ def _get_cached_home_kpis(request):
     if cached_payload is not None:
         return cached_payload
 
-    payload = _get_cached_nov_payload(request).get("kpis", {})
+    _preset, start_dt, end_dt, _has_custom_range = _parse_filter_range(request)
+    location_level, location_value = _parse_location_filter(request)
+    payload = _get_national_operational_view_data(
+        start_dt=start_dt,
+        end_dt=end_dt,
+        request=request,
+        location_level=location_level,
+        location_value=location_value,
+        include_chart_series=False,
+    ).get("kpis", {})
     cache.set(cache_key, payload, timeout=HOME_FASTPATH_CACHE_TTL_SECONDS)
     return payload
 
@@ -680,6 +650,10 @@ trends_endpoint_view = Trends.as_view()
 
 class NationalOperationalFilterData(CustomAuthMixin, View):
     def get(self, request, *args, **kwargs):
+        if str(request.GET.get("kpis_only", "")).strip() in {"1", "true", "True"}:
+            with timed_block("home.nov.filter_payload.kpis_only", request=request):
+                payload = {"kpis": _get_cached_home_kpis(request)}
+            return JsonResponse(payload)
         with timed_block("home.nov.filter_payload", request=request):
             payload = _get_cached_nov_payload(request)
         return JsonResponse(payload)

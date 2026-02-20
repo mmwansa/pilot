@@ -6,11 +6,7 @@ GRAPH_OPTIONS = {
 
 BORDER_COLOR = "#037BFE"
 const chartInstances = new WeakMap();
-let novEventsChartInstance = null;
 let novFiltersBound = false;
-let novFilterRequestId = 0;
-let novChartHeightSynced = false;
-let novFilterXhr = null;
 let overviewInitialized = false;
 let vaStatsInitialized = false;
 let trendsInitialized = false;
@@ -18,6 +14,8 @@ let homeDataPromise = null;
 let homeDataCache = null;
 let firstRenderMeasured = false;
 const tabWarmCache = new Set();
+let homeOverviewMapController = null;
+let novFilterRequestId = 0;
 
 const perfNow = () => (
   window.performance && typeof window.performance.now === "function"
@@ -213,233 +211,6 @@ const setVACharts = (graphData) => {
   setVAChart(graphData.uncoded.x, graphData.uncoded.y, notYetCodedCanvas);
 }
 
-const buildNovVADataset = (values) => ({
-  label: "Verbal Autopsies",
-  data: values || [],
-  yAxisID: "yVA",
-  borderColor: "#7c3aed",
-  backgroundColor: "#7c3aed",
-  borderWidth: 3,
-  pointBackgroundColor: "#7c3aed",
-  pointBorderColor: "#ffffff",
-  pointBorderWidth: 1,
-  tension: 0.25,
-  pointRadius: 4,
-  pointHoverRadius: 5,
-  hidden: false,
-  fill: false,
-});
-
-const initNationalOperationalEventsChart = () => {
-  const canvas = document.getElementById("novEventsChart");
-  if (!canvas || typeof Chart === "undefined") return;
-
-  const parseJsonScript = (id) => {
-    const node = document.getElementById(id);
-    if (!node) return [];
-    try {
-      const parsed = JSON.parse(node.textContent);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error(`Failed to parse chart data from ${id}`, error);
-      return [];
-    }
-  };
-
-  const labels = parseJsonScript("nov-chart-labels");
-  const pregnancyValues = parseJsonScript("nov-pregnancy-values");
-  const pregnancyOutcomeValues = parseJsonScript("nov-pregnancy-outcome-values");
-  const deathValues = parseJsonScript("nov-death-values");
-  const vaValues = parseJsonScript("nov-va-values");
-
-  if (novEventsChartInstance) {
-    novEventsChartInstance.destroy();
-  }
-
-  novEventsChartInstance = new Chart(canvas.getContext("2d"), {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Pregnancy",
-          data: pregnancyValues,
-          borderColor: "#2d6cdf",
-          backgroundColor: "#2d6cdf",
-          tension: 0.25,
-          pointRadius: 2,
-          fill: false,
-        },
-        {
-          label: "Pregnancy Outcome",
-          data: pregnancyOutcomeValues,
-          borderColor: "#f5c542",
-          backgroundColor: "#f5c542",
-          tension: 0.25,
-          pointRadius: 2,
-          fill: false,
-        },
-        {
-          label: "Death",
-          data: deathValues,
-          borderColor: "#dc3545",
-          backgroundColor: "#dc3545",
-          tension: 0.25,
-          pointRadius: 2,
-          fill: false,
-        },
-        buildNovVADataset(vaValues),
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: "index",
-        intersect: false,
-      },
-      plugins: {
-        legend: { display: true, position: "top" },
-        tooltip: { enabled: true },
-      },
-      scales: {
-        x: {
-          title: { display: true, text: "Date" },
-          grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
-        },
-        y: {
-          position: "left",
-          beginAtZero: true,
-          title: { display: true, text: "Event count" },
-          grid: { display: true, color: "rgba(148, 163, 184, 0.35)" },
-          ticks: { precision: 0 },
-        },
-        yVA: {
-          position: "right",
-          beginAtZero: true,
-          title: { display: true, text: "VA count" },
-          grid: { drawOnChartArea: false },
-          ticks: { precision: 0 },
-        },
-      },
-    },
-  });
-  syncNovChartHeightToKpiCards();
-}
-
-const updateNationalOperationalEventsChart = (
-  labels,
-  pregnancyValues,
-  pregnancyOutcomeValues,
-  deathValues,
-  vaValues
-) => {
-  const started = perfNow();
-  const canvas = document.getElementById("novEventsChart");
-  if (!canvas || typeof Chart === "undefined") return;
-
-  if (!novEventsChartInstance) {
-    initNationalOperationalEventsChart();
-  }
-  if (!novEventsChartInstance) return;
-
-  if (!novEventsChartInstance.data.datasets[3]) {
-    novEventsChartInstance.data.datasets.push(buildNovVADataset([]));
-  }
-
-  novEventsChartInstance.data.labels = labels || [];
-  novEventsChartInstance.data.datasets[0].data = pregnancyValues || [];
-  novEventsChartInstance.data.datasets[1].data = pregnancyOutcomeValues || [];
-  novEventsChartInstance.data.datasets[2].data = deathValues || [];
-  novEventsChartInstance.data.datasets[3].data = vaValues || [];
-  novEventsChartInstance.data.datasets[3].hidden = false;
-  novEventsChartInstance.update();
-  perfLog("render.overview.chart", started, { labels: (labels || []).length });
-}
-
-const syncNovChartHeightToKpiCards = () => {
-  const chartWrap = document.querySelector("#novEventsChartContainer .events-chart-canvas-wrap");
-  const kpiCards = document.querySelectorAll("#novKpiCardsContainer .nov-kpi-card");
-  const kpiCardsGrid = document.querySelector("#novKpiCardsContainer .nov-kpi-cards");
-  if (!chartWrap || !kpiCardsGrid || kpiCards.length < 4) return;
-
-  // Only force this alignment when the two-column layout is active.
-  if (window.matchMedia("(max-width: 991.98px)").matches) {
-    chartWrap.style.height = "";
-    if (novEventsChartInstance) novEventsChartInstance.resize();
-    return;
-  }
-
-  const gap = parseFloat(window.getComputedStyle(kpiCardsGrid).rowGap || "0") || 0;
-  const totalHeight =
-    kpiCards[1].offsetHeight +
-    kpiCards[2].offsetHeight +
-    kpiCards[3].offsetHeight +
-    (gap * 2);
-
-  if (totalHeight > 0) {
-    chartWrap.style.height = `${Math.round(totalHeight)}px`;
-    if (novEventsChartInstance) novEventsChartInstance.resize();
-  }
-}
-
-const setElementTextById = (id, value) => {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value ?? 0;
-}
-
-const updateNationalOperationalKpis = (kpis) => {
-  const started = perfNow();
-  if (!kpis) return;
-  const eas = kpis.eas || {};
-  const households = kpis.households || {};
-  const people = kpis.people || {};
-  const pregnancies = kpis.pregnancies || {};
-  const pregOutcomes = kpis.preg_outcomes || {};
-  const deaths = kpis.deaths || {};
-  const vas = kpis.vas || {};
-
-  setElementTextById("nov-kpi-today-eas", eas.today);
-  setElementTextById("nov-kpi-week-eas", eas.week);
-  setElementTextById("nov-kpi-total-eas", eas.total);
-
-  setElementTextById("nov-kpi-today-households", households.today);
-  setElementTextById("nov-kpi-week-households", households.week);
-  setElementTextById("nov-kpi-total-households", households.total);
-
-  setElementTextById("nov-kpi-today-people", people.today);
-  setElementTextById("nov-kpi-week-people", people.week);
-  setElementTextById("nov-kpi-total-people", people.total);
-
-  setElementTextById("nov-kpi-today-pregnancies", pregnancies.today);
-  setElementTextById("nov-kpi-week-pregnancies", pregnancies.week);
-  setElementTextById("nov-kpi-total-pregnancies", pregnancies.total);
-
-  setElementTextById("nov-kpi-today-preg-outcomes", pregOutcomes.today);
-  setElementTextById("nov-kpi-week-preg-outcomes", pregOutcomes.week);
-  setElementTextById("nov-kpi-total-preg-outcomes", pregOutcomes.total);
-
-  setElementTextById("nov-kpi-today-deaths", deaths.today);
-  setElementTextById("nov-kpi-week-deaths", deaths.week);
-  setElementTextById("nov-kpi-total-deaths", deaths.total);
-
-  setElementTextById("nov-kpi-today-vas", vas.today);
-  setElementTextById("nov-kpi-week-vas", vas.week);
-  setElementTextById("nov-kpi-total-vas", vas.total);
-  syncNovChartHeightToKpiCards();
-  perfLog("render.overview.kpis", started);
-}
-
-const toggleNovLoadingState = (isLoading) => {
-  const chartContainer = document.getElementById("novEventsChartContainer");
-  const kpiContainer = document.getElementById("novKpiCardsContainer");
-  [chartContainer, kpiContainer].forEach((container) => {
-    if (!container) return;
-    container.style.opacity = isLoading ? "0.6" : "1";
-    container.style.pointerEvents = isLoading ? "none" : "auto";
-  });
-}
-
 const selectedNovPreset = () => {
   if (document.getElementById("novTime30")?.checked) return "30";
   if (document.getElementById("novTime7")?.checked) return "7";
@@ -528,34 +299,78 @@ const updateNovLocationValueOptions = () => {
   });
 }
 
+const setElementTextById = (id, value) => {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value ?? 0;
+}
+
+const updateNationalOperationalKpis = (kpis) => {
+  if (!kpis) return;
+  const eas = kpis.eas || {};
+  const households = kpis.households || {};
+  const people = kpis.people || {};
+  const pregnancies = kpis.pregnancies || {};
+  const pregOutcomes = kpis.preg_outcomes || {};
+  const deaths = kpis.deaths || {};
+  const vas = kpis.vas || {};
+
+  setElementTextById("nov-kpi-today-eas", eas.today);
+  setElementTextById("nov-kpi-week-eas", eas.week);
+  setElementTextById("nov-kpi-total-eas", eas.total);
+
+  setElementTextById("nov-kpi-today-households", households.today);
+  setElementTextById("nov-kpi-week-households", households.week);
+  setElementTextById("nov-kpi-total-households", households.total);
+
+  setElementTextById("nov-kpi-today-people", people.today);
+  setElementTextById("nov-kpi-week-people", people.week);
+  setElementTextById("nov-kpi-total-people", people.total);
+
+  setElementTextById("nov-kpi-today-pregnancies", pregnancies.today);
+  setElementTextById("nov-kpi-week-pregnancies", pregnancies.week);
+  setElementTextById("nov-kpi-total-pregnancies", pregnancies.total);
+
+  setElementTextById("nov-kpi-today-preg-outcomes", pregOutcomes.today);
+  setElementTextById("nov-kpi-week-preg-outcomes", pregOutcomes.week);
+  setElementTextById("nov-kpi-total-preg-outcomes", pregOutcomes.total);
+
+  setElementTextById("nov-kpi-today-deaths", deaths.today);
+  setElementTextById("nov-kpi-week-deaths", deaths.week);
+  setElementTextById("nov-kpi-total-deaths", deaths.total);
+
+  setElementTextById("nov-kpi-today-vas", vas.today);
+  setElementTextById("nov-kpi-week-vas", vas.week);
+  setElementTextById("nov-kpi-total-vas", vas.total);
+}
+
 const requestNationalOperationalFilterData = (options = {}) => {
   const started = perfNow();
   const shouldInvalidate = Boolean(options.invalidateScope);
   if (shouldInvalidate) {
     invalidateScope("overview-data");
   }
+
   const root = document.getElementById("national-operational-view");
   if (!root) return;
-  const endpoint = root.dataset.filterUrl;
-  if (!endpoint) return;
 
-  const startInput = document.getElementById("novStartDatetime");
-  const endInput = document.getElementById("novEndDatetime");
   const requestId = ++novFilterRequestId;
+  const selectedPreset = selectedNovPreset();
+  const locationLevel = (document.getElementById("novLocationLevel")?.value || "national").toLowerCase();
+  const locationValue = (document.getElementById("novLocationValue")?.value || "").trim();
+  const startDatetime = document.getElementById("novStartDatetime")?.value || "";
+  const endDatetime = document.getElementById("novEndDatetime")?.value || "";
 
-  if (novFilterXhr && typeof novFilterXhr.abort === "function") {
-    novFilterXhr.abort();
-  }
-  toggleNovLoadingState(true);
-  if (!hasJqueryAjax()) {
+  const kpiEndpoint = root.dataset.filterUrl || "";
+  if (kpiEndpoint) {
     const params = new URLSearchParams({
-      preset: selectedNovPreset(),
-      start: startInput?.value || "",
-      end: endInput?.value || "",
-      location_level: document.getElementById("novLocationLevel")?.value || "national",
-      location_value: document.getElementById("novLocationValue")?.value || "",
+      kpis_only: "1",
+      preset: selectedPreset,
+      start: startDatetime,
+      end: endDatetime,
+      location_level: locationLevel || "national",
+      location_value: locationValue,
     });
-    fetch(`${endpoint}?${params.toString()}`, {
+    fetch(`${kpiEndpoint}?${params.toString()}`, {
       method: "GET",
       headers: { "X-Requested-With": "XMLHttpRequest" },
       credentials: "same-origin",
@@ -566,58 +381,77 @@ const requestNationalOperationalFilterData = (options = {}) => {
       })
       .then((jsonResponse) => {
         if (requestId !== novFilterRequestId) return;
-        updateNationalOperationalEventsChart(
-          jsonResponse.chart_labels || [],
-          jsonResponse.pregnancy_values || [],
-          jsonResponse.pregnancy_outcome_values || [],
-          jsonResponse.death_values || [],
-          jsonResponse.va_values || jsonResponse.verbal_autopsy_values || []
-        );
         updateNationalOperationalKpis(jsonResponse.kpis || {});
-        perfLog("fetch.overview.filter_data", started, { requestId, transport: "fetch" });
       })
       .catch((error) => {
-        console.error("[home] failed to fetch National Operational View filter data", error);
-      })
-      .finally(() => {
-        if (requestId === novFilterRequestId) {
-          toggleNovLoadingState(false);
-        }
+        console.error("[home] failed to fetch National Operational KPIs", error);
       });
-    return;
   }
 
-  novFilterXhr = $.ajax({
-    url: endpoint,
-    type: "GET",
-    dataType: "json",
-    data: {
-      preset: selectedNovPreset(),
-      start: startInput?.value || "",
-      end: endInput?.value || "",
-      location_level: document.getElementById("novLocationLevel")?.value || "national",
-      location_value: document.getElementById("novLocationValue")?.value || "",
-    },
-    success: (jsonResponse) => {
-      if (requestId !== novFilterRequestId) return;
-      updateNationalOperationalEventsChart(
-        jsonResponse.chart_labels || [],
-        jsonResponse.pregnancy_values || [],
-        jsonResponse.pregnancy_outcome_values || [],
-        jsonResponse.death_values || [],
-        jsonResponse.va_values || jsonResponse.verbal_autopsy_values || []
-      );
-      updateNationalOperationalKpis(jsonResponse.kpis || {});
-      perfLog("fetch.overview.filter_data", started, { requestId });
-    },
-    complete: () => {
-      if (requestId === novFilterRequestId) {
-        novFilterXhr = null;
-        toggleNovLoadingState(false);
-      }
-    },
-    error: () => console.log("Failed to fetch National Operational View filter data"),
-  });
+  const mapPanel = document.getElementById("homeOverviewMapPanel");
+  if (!mapPanel || typeof window.createHierarchicalDashboardMap !== "function") return;
+
+  if (!homeOverviewMapController) {
+    const endpoint = mapPanel.dataset.mapEndpoint || "";
+    if (!endpoint) return;
+    homeOverviewMapController = window.createHierarchicalDashboardMap({
+      containerId: "homeOverviewMapContainer",
+      legendId: "homeOverviewMapLegend",
+      breadcrumbId: "homeOverviewMapBreadcrumb",
+      emptyStateId: "homeOverviewMapEmpty",
+      endpoint,
+      buildParams: (filters = {}) => {
+        const params = new URLSearchParams();
+        if (filters.time_preset) params.set("time_preset", filters.time_preset);
+        if (filters.start_datetime) params.set("start_datetime", filters.start_datetime);
+        if (filters.end_datetime) params.set("end_datetime", filters.end_datetime);
+        if (filters.map_view) params.set("map_view", filters.map_view);
+        if (filters.geography_level && filters.geography_value) {
+          params.set("geography_level", filters.geography_level);
+          params.set("geography_value", filters.geography_value);
+        }
+        return params;
+      },
+      initialView: "Province",
+      fitToDataBounds: true,
+      styleVariant: "va",
+      noDataMessage: "No geographic pregnancy data available for the selected filters.",
+    });
+  }
+
+  const mapViewByLocationLevel = {
+    province: "Province",
+    district: "District",
+    constituency: "Constituency",
+    ward: "Ward",
+  };
+
+  const filters = {
+    time_preset: selectedPreset === "30"
+      ? "last_30_days"
+      : selectedPreset === "7"
+        ? "last_7_days"
+        : selectedPreset === "24"
+          ? "last_24_hours"
+          : "all_time",
+    start_datetime: startDatetime,
+    end_datetime: endDatetime,
+    map_view: mapViewByLocationLevel[locationLevel] || "Province",
+  };
+
+  if (locationLevel !== "national" && locationValue) {
+    filters.geography_level = locationLevel;
+    filters.geography_value = locationValue;
+  }
+
+  if (selectedPreset === "all" && (filters.start_datetime || filters.end_datetime)) {
+    filters.time_preset = "custom";
+  }
+
+  homeOverviewMapController
+    .refresh(filters)
+    .then(() => perfLog("render.overview.map", started, { mapView: filters.map_view }))
+    .catch((error) => console.error("[home] failed to refresh overview map", error));
 }
 
 const initNationalOperationalFilters = () => {
@@ -663,15 +497,6 @@ const initNationalOperationalFilters = () => {
       requestNationalOperationalFilterData({ invalidateScope: true });
     });
   });
-}
-
-const initNovChartHeightSync = () => {
-  if (novChartHeightSynced) return;
-  novChartHeightSynced = true;
-
-  const runSync = () => syncNovChartHeightToKpiCards();
-  window.addEventListener("resize", runSync);
-  runSync();
 }
 
 const setSingleMetricTrendsTableData = (prefix, trendTable) => {
@@ -812,7 +637,6 @@ const fetchHomeTrendsPayload = () => {
 
 const resizeChartsForTab = (tab) => {
   const mapByTab = {
-    overview: ["novEventsChart"],
     trends: ["householdsChart", "pregnanciesChart", "pregnancyOutcomesChart", "deathsChart"],
     va_statistics: ["interviewedChart", "codedChart", "notYetCodedChart"],
   };
@@ -822,24 +646,23 @@ const resizeChartsForTab = (tab) => {
     const chart = chartInstances.get(canvas);
     if (chart) chart.resize();
   });
-  if (tab === "overview" && novEventsChartInstance) novEventsChartInstance.resize();
+  if (tab === "overview" && homeOverviewMapController && typeof homeOverviewMapController.resize === "function") {
+    homeOverviewMapController.resize();
+  }
 }
 
 const initOverviewTab = async () => {
   await Promise.allSettled([
-    loadSlotOnce("novEventsComponentSlot"),
     loadSlotOnce("novKpisComponentSlot"),
   ]);
 
   if (overviewInitialized) {
-    syncNovChartHeightToKpiCards();
+    requestNationalOperationalFilterData();
     resizeChartsForTab("overview");
     return;
   }
   overviewInitialized = true;
-  initNationalOperationalEventsChart();
   initNationalOperationalFilters();
-  initNovChartHeightSync();
   requestNationalOperationalFilterData();
 }
 
@@ -939,7 +762,7 @@ document.addEventListener("click", (event) => {
     clearHomeTrendsCache();
     invalidateScope("trends-data");
   }
-  if (targetSelector === "#novEventsComponentSlot" || targetSelector === "#novKpisComponentSlot") {
+  if (targetSelector === "#novKpisComponentSlot") {
     invalidateScope("overview-data");
   }
 });
@@ -965,16 +788,6 @@ document.addEventListener("dashboard:component-loaded", (event) => {
         resizeChartsForTab("va_statistics");
       })
       .catch((error) => console.error(error));
-    return;
-  }
-
-  if (slot.id === "novEventsComponentSlot" && overviewInitialized) {
-    if (novEventsChartInstance) {
-      novEventsChartInstance.destroy();
-      novEventsChartInstance = null;
-    }
-    initNationalOperationalEventsChart();
-    requestNationalOperationalFilterData();
     return;
   }
 

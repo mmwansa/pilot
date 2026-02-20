@@ -90,13 +90,59 @@
             </div>
             <div class="national-operational-grid">
               <div class="nov-overview-left-col">
-                <div id="novEventsComponentSlot" data-component-slot data-component="events-chart-container" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_events_component' %}" data-cache-key="home:overview:events">
-                  <div class="home-panel home-panel-placeholder">Loading overview trend...</div>
+                <div class="nov-overview-left-container">
+                  <div class="home-overview-left-top-row">
+                    <div class="nov-kpi-cards nov-kpi-cards-inline mb-0" id="homeOverviewTopKpiCards">
+                      <article class="nov-kpi-card">
+                        <h6>Number of Clusters Visited</h6>
+                        <div class="nov-kpi-metrics">
+                          <div><span>Today</span><strong id="nov-kpi-today-eas">0</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-eas">0</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-eas">0</strong></div>
+                        </div>
+                      </article>
+                      <article class="nov-kpi-card">
+                        <h6>Number of households</h6>
+                        <div class="nov-kpi-metrics">
+                          <div><span>Today</span><strong id="nov-kpi-today-households">0</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-households">0</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-households">0</strong></div>
+                        </div>
+                      </article>
+                      <article class="nov-kpi-card">
+                        <h6>Number of people counted</h6>
+                        <div class="nov-kpi-metrics">
+                          <div><span>Today</span><strong id="nov-kpi-today-people">0</strong></div>
+                          <div><span>This week</span><strong id="nov-kpi-week-people">0</strong></div>
+                          <div><span>Cummulative Total</span><strong id="nov-kpi-total-people">0</strong></div>
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                  <div class="home-overview-left-bottom-row">
+                    <section
+                      id="homeOverviewMapPanel"
+                      class="home-panel home-overview-map-panel"
+                      data-component="overview-map"
+                      data-map-endpoint="{% url 'va_analytics:pregnancy-map-api' %}"
+                    >
+                      <h5 class="mb-2">Pregnancy Geographic Distribution</h5>
+                      <div id="homeOverviewMapBreadcrumb" class="home-map-breadcrumbs"></div>
+                      <div id="homeOverviewMapContainer">
+                        <div id="homeOverviewMapLegend" class="legend"></div>
+                      </div>
+                      <p id="homeOverviewMapEmpty" class="po-empty-state" hidden>
+                        No geographic pregnancy data available for the selected filters.
+                      </p>
+                    </section>
+                  </div>
                 </div>
               </div>
               <div class="nov-overview-right-col">
-                <div id="novKpisComponentSlot" data-component-slot data-component="kpi-cards" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_kpis_component' %}" data-cache-key="home:overview:kpis">
-                  <div class="home-panel home-panel-placeholder">Loading overview KPIs...</div>
+                <div class="nov-overview-right-container">
+                  <div id="novKpisComponentSlot" data-component-slot data-component="kpi-cards" data-scope="overview,overview-data" data-endpoint="{% url 'home:home_overview_kpis_component' %}" data-cache-key="home:overview:kpis">
+                    <div class="home-panel home-panel-placeholder">Loading overview KPIs...</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -174,9 +220,10 @@
   <script src="{% static 'js/dashboard_loader.js' %}"></script>
   <script src="{% static 'js/dashboard_tabs.js' %}"></script>
   <script src="{% static 'vendor/leaflet-1.9.2/leaflet.js' %}"></script>
+  <script src="{% static 'js/hierarchical_dashboard_map.js' %}?v=20260220c"></script>
   <script src="{% static 'js/regional_operations.js' %}"></script>
   <script src="{% static 'vendor/chartjs-3.7.1/chart.min.js' %}"></script>
-  <script src="{% static 'js/home.js' %}?v=20260220e"></script>
+  <script src="{% static 'js/home.js' %}?v=20260220j"></script>
 
   <script>
     // Count up animation for dashboard numbers
