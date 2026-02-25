@@ -1600,8 +1600,8 @@ const dashboard = new Vue({
                 {
                     label: "Female",
                     data: femaleValues,
-                    backgroundColor: "#440154FF",
-                    borderColor: "#440154FF",
+                    backgroundColor: "#f46d43",
+                    borderColor: "#f46d43",
                     borderWidth: 1,
                 },
             ];

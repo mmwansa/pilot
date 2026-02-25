@@ -39,6 +39,32 @@
   let mapSelection = { geography_level: "", geography_value: "" };
 
   const getEl = (id) => document.getElementById(id);
+  const syncPoMapSectionHeight = () => {
+    const mapSection = getEl("poMapSection");
+    if (!mapSection) return;
+
+    if (window.matchMedia("(max-width: 992px)").matches) {
+      mapSection.style.removeProperty("height");
+      return;
+    }
+
+    const leftCol = app.querySelector(".po-dashboard-column--left");
+    const rightCol = app.querySelector(".po-dashboard-column--right");
+    const panel = getEl("poPanelSection");
+    if (!leftCol || !rightCol || !panel) return;
+
+    const rightHeight = rightCol.getBoundingClientRect().height;
+    const panelHeight = panel.getBoundingClientRect().height;
+    const computedLeft = window.getComputedStyle(leftCol);
+    const gap = parseFloat(computedLeft.rowGap || computedLeft.gap || "0") || 0;
+    const available = Math.floor(rightHeight - panelHeight - gap);
+
+    if (available > 0) {
+      mapSection.style.height = `${available}px`;
+    } else {
+      mapSection.style.removeProperty("height");
+    }
+  };
 
   const filterElements = {
     form: getEl("poFiltersForm"),
@@ -352,6 +378,8 @@
     syncUrl(filters);
     if (mapController) {
       await mapController.refresh(filters);
+      syncPoMapSectionHeight();
+      mapController.resize();
       perfLog("fetch.map_only", started, { mapView: filters.map_view });
       return;
     }
@@ -390,6 +418,8 @@
     const started = perfNow();
     await refreshDataOnly();
     await refreshMapOnly();
+    syncPoMapSectionHeight();
+    if (mapController) mapController.resize();
     perfLog("fetch.refresh_all", started);
   };
 
@@ -465,10 +495,15 @@
     setupDateInputs([filterElements.start, filterElements.end]);
     bindEvents();
     await refreshAll();
+    requestAnimationFrame(() => {
+      syncPoMapSectionHeight();
+      if (mapController) mapController.resize();
+    });
     perfLog("initial.page_bootstrap", started);
   };
 
   const resizeVisuals = () => {
+    syncPoMapSectionHeight();
     if (chartState.trend) chartState.trend.resize();
     if (chartState.birthOutcomes) chartState.birthOutcomes.resize();
     if (chartState.gestationalAge) chartState.gestationalAge.resize();
