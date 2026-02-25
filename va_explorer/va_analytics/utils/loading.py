@@ -2,7 +2,7 @@ import csv
 import json
 import itertools
 import os
-from datetime import datetime
+from datetime import date, datetime
 from functools import lru_cache
 from operator import itemgetter
 from pathlib import Path
@@ -27,6 +27,8 @@ from va_explorer.va_data_management.models import (
     questions_to_autodetect_duplicates,
 )
 from va_explorer.va_data_management.utils.loading import get_va_summary_stats
+
+COD_TREND_START_MONTH = date(2024, 12, 1)
 
 
 def load_cod_groupings(cause_of_death: str):
@@ -395,22 +397,41 @@ def _collapse_top_n_with_other(rows, label_key, value_key="count", top_n=10):
     return collapsed
 
 
+def _month_starts_between(start_month, end_month):
+    if start_month > end_month:
+        return []
+    months = []
+    current = date(start_month.year, start_month.month, 1)
+    boundary = date(end_month.year, end_month.month, 1)
+    while current <= boundary:
+        months.append(current)
+        if current.month == 12:
+            current = date(current.year + 1, 1, 1)
+        else:
+            current = date(current.year, current.month + 1, 1)
+    return months
+
+
 def _build_va_cause_trend_payload(filtered_qs, top_causes):
     rows = (
         filtered_qs.exclude(final_cause__isnull=True)
         .exclude(final_cause="")
         .annotate(month=TruncMonth(Cast("Id10023", output_field=DateField())))
+        .exclude(month__lt=COD_TREND_START_MONTH)
         .exclude(month__isnull=True)
         .values("month", cause=F("final_cause"))
         .annotate(count=Count("pk"))
         .order_by("month")
     )
 
-    month_keys = sorted({row["month"].strftime("%Y-%m") for row in rows if row.get("month")})
-    periods = [
-        row_month.strftime("%b %Y")
-        for row_month in sorted({row["month"] for row in rows if row.get("month")})
-    ]
+    row_months = sorted({row["month"] for row in rows if row.get("month")})
+    if row_months:
+        month_range = _month_starts_between(COD_TREND_START_MONTH, row_months[-1])
+    else:
+        month_range = []
+
+    month_keys = [m.strftime("%Y-%m") for m in month_range]
+    periods = [m.strftime("%b %Y") for m in month_range]
     if not month_keys:
         return {
             "has_coded": False,
@@ -593,18 +614,13 @@ def _apply_source_filter(queryset, source):
         return queryset
 
     source_key = _compact_spaces(source).lower()
-    hospital_has_value_q = _meaningful_text_q("hospital")
-    ward_or_area_has_value_q = _meaningful_text_q("ward") | _meaningful_text_q("area")
-
-    is_facility_q = hospital_has_value_q | (
-        ~ward_or_area_has_value_q & Q(community_va__iexact="no")
-    )
-    is_community_q = ~is_facility_q
+    if source_key in {"all", "any", "*"}:
+        return queryset
 
     if source_key in {"community", "community_va", "community va", "yes", "y", "1", "true"}:
-        return queryset.filter(is_community_q)
+        return queryset.filter(community_va__iexact="yes")
     if source_key in {"facility", "facility_va", "facility va", "no", "n", "0", "false"}:
-        return queryset.filter(is_facility_q)
+        return queryset.filter(community_va__iexact="no")
     return queryset
 
 
@@ -829,6 +845,7 @@ def load_va_data(
         user_vas_filtered.annotate(
             month=TruncMonth(Cast("Id10023", output_field=DateField()))
         )
+        .exclude(month__lt=COD_TREND_START_MONTH)
         .filter(causes__isnull=False)
         .values("month")
         .annotate(count=Count("pk"))

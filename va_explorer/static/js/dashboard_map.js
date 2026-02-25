@@ -77,6 +77,7 @@ const dashboard = new Vue({
             causeSelected: "",
             ageSelected: "",
             sexSelected: "",
+            sourceSelected: "all",
 
             colorScale: [
                 "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf",
@@ -102,6 +103,8 @@ const dashboard = new Vue({
             featureHitInTick: false,
             vaCauseTrendChart: null,
             vaRegionalCauseChart: null,
+            vaSexAgePyramidChart: null,
+            vaTabActivationHandler: null,
             // Fallback for environments where native dblclick can be unreliable in tab panes.
             featureClickState: { id: null, at: 0 },
             drillInFlight: false,
@@ -155,13 +158,50 @@ const dashboard = new Vue({
         },
         causeOfDeathData() {
             if (!this.COD_grouping) return [];
-            if (this.causeOfDeathValue === "count") return this.COD_grouping;
+            if (this.causeOfDeathValue === "count") {
+                // Keep only a single plotted metric to avoid rendering the
+                // auxiliary "total" series.
+                return this.COD_grouping.map((item) => ({
+                    cause: item.cause,
+                    count: Number(item.count || 0),
+                }));
+            }
             const totalCount = this.COD_grouping?.[0]?.total || d3.sum(this.COD_grouping.map(item => item.count));
-            return JSON.parse(JSON.stringify(this.COD_grouping)).map(d => {
-                d.percentage = totalCount > 0 ? Math.round(d.count * 1000 / totalCount) / 10 : 0;
-                delete d.count;
-                return d;
-            })
+            return this.COD_grouping.map((item) => {
+                const rawPct = totalCount > 0 ? Math.round((Number(item.count || 0) * 1000) / totalCount) / 10 : 0;
+                return {
+                    cause: item.cause,
+                    percentage: Math.min(100, rawPct),
+                };
+            });
+        },
+        sexAgePyramidData() {
+            const groups = [
+                { key: "neonate", label: "Neonate" },
+                { key: "child", label: "Child" },
+                { key: "adult", label: "Adult" },
+            ];
+            const normalizedRows = (this.demographics || []).map((row) => {
+                const raw = String(row?.age_group || "").toLowerCase();
+                let ageKey = "";
+                if (raw.includes("neonate")) ageKey = "neonate";
+                else if (raw.includes("child")) ageKey = "child";
+                else if (raw.includes("adult")) ageKey = "adult";
+                return {
+                    ageKey,
+                    male: Number(row?.male || 0),
+                    female: Number(row?.female || 0),
+                };
+            });
+
+            return groups.map((group) => {
+                const match = normalizedRows.find((row) => row.ageKey === group.key) || {};
+                return {
+                    age_group: group.label,
+                    male: Number(match.male || 0),
+                    female: Number(match.female || 0),
+                };
+            });
         },
     },
     async created() {
@@ -195,13 +235,46 @@ const dashboard = new Vue({
             });
             await this.mapController.refresh({});
         }
-        await this.refreshVACauseTrendChart();
-        this.renderRegionalCauseComparisonChart();
+        // Ensure trend + comparison are hydrated and rendered on first load
+        // without requiring user interaction.
+        await this.runRegionalComparison();
+
+        // Charts can initialize while their tab pane is hidden, resulting in a
+        // zero-width canvas. Reflow both charts when the VA tab is activated.
+        this.vaTabActivationHandler = () => {
+            setTimeout(() => {
+                this.resizeCharts();
+                if (this.vaCauseTrendChart) {
+                    this.vaCauseTrendChart.resize();
+                    this.vaCauseTrendChart.update();
+                }
+                if (this.vaRegionalCauseChart) {
+                    this.vaRegionalCauseChart.resize();
+                    this.vaRegionalCauseChart.update();
+                }
+                if (this.vaSexAgePyramidChart) {
+                    this.vaSexAgePyramidChart.resize();
+                    this.vaSexAgePyramidChart.update();
+                }
+            }, 80);
+        };
+        const vaTab = document.getElementById("verbal-autopsies-tab");
+        if (vaTab && this.vaTabActivationHandler) {
+            vaTab.addEventListener("click", this.vaTabActivationHandler);
+        }
         await this.$nextTick();
         this.resizeCharts();
     },
     beforeDestroy() {
         window.removeEventListener('resize', this.resizeCharts);
+        const vaTab = document.getElementById("verbal-autopsies-tab");
+        if (vaTab && this.vaTabActivationHandler) {
+            vaTab.removeEventListener("click", this.vaTabActivationHandler);
+        }
+        if (this.vaSexAgePyramidChart) {
+            this.vaSexAgePyramidChart.destroy();
+            this.vaSexAgePyramidChart = null;
+        }
     },
     methods: {
         normalizeMapKey(value) {
@@ -554,27 +627,31 @@ const dashboard = new Vue({
         },
         async getData() {
             this.loading = true;
+            try {
+                const csrfField = document.querySelector('[name=csrfmiddlewaretoken]');
+                this.csrftoken = csrfField ? csrfField.value : "";
 
-            const csrfField = document.querySelector('[name=csrfmiddlewaretoken]');
-            this.csrftoken = csrfField ? csrfField.value : "";
+                const data_url = `${window.location.origin}/va_analytics/api/dashboard?`;
+                const headers = {'Content-Type': 'application/json'};
+                if (this.csrftoken) headers['X-CSRFToken'] = this.csrftoken;
 
-            const data_url = `${window.location.origin}/va_analytics/api/dashboard?`;
-            const headers = {'Content-Type': 'application/json'};
-            if (this.csrftoken) headers['X-CSRFToken'] = this.csrftoken;
+                const dataReq = await fetch(data_url + this.buildDashboardQueryParams(true), {
+                    method: 'GET',
+                    headers,
+                    mode: 'same-origin'
+                });
+                if (!dataReq.ok) {
+                    throw new Error(`VA dashboard API request failed with status ${dataReq.status}`);
+                }
 
-            const dataReq = await fetch(data_url + this.buildDashboardQueryParams(true), {
-                method: 'GET',
-                headers,
-                mode: 'same-origin'
-            });
-
-            const jsonRes = await dataReq.json();
-            this.COD_grouping = jsonRes.COD_grouping;
-            this.COD_trend = jsonRes.COD_trend;
-            this.place_of_death = (jsonRes.place_of_death || []).map(d => {
-                d.place = d.place.replace(/_/g, " ");
-                return d;
-            });
+                const jsonRes = await dataReq.json();
+                this.COD_grouping = jsonRes.COD_grouping;
+                this.COD_trend = jsonRes.COD_trend;
+                this.place_of_death = (jsonRes.place_of_death || []).map(d => {
+                    const placeValue = String(d?.place || "");
+                    d.place = placeValue.replace(/_/g, " ");
+                    return d;
+                });
             this.demographics = jsonRes.demographics || [];
             this.vaCauseTrendPayload = jsonRes.va_cause_trend || { has_coded: false, periods: [], series: [] };
             this.regionalCauseComparison = jsonRes.regional_cod_comparison || {
@@ -625,6 +702,25 @@ const dashboard = new Vue({
             }
 
             this.refreshVAEmptyStates();
+            } catch (error) {
+                console.error("Failed to load VA dashboard data:", error);
+                this.COD_grouping = [];
+                this.COD_trend = [];
+                this.place_of_death = [];
+                this.demographics = [];
+                this.vaCauseTrendPayload = { has_coded: false, periods: [], series: [] };
+                this.regionalCauseComparison = {
+                    compare_by: this.regionalCompareBy,
+                    groups: [],
+                    cod_categories: [],
+                    matrix_percent: [],
+                };
+                this.geographic_level_sums = {};
+                this.uncoded_vas = 0;
+                this.update_stats = { last_update: "-", last_interview: "-" };
+                this.listOfCausesDropdownOptions = [];
+                this.refreshVAEmptyStates();
+            }
             this.loading = false;
         },
         getAggregatesForLevel(jsonRes) {
@@ -1225,6 +1321,7 @@ const dashboard = new Vue({
                 compare_by: this.regionalCompareBy,
                 age,
                 sex,
+                source: this.sourceSelected || "all",
             });
 
             if (includeRegion) {
@@ -1285,6 +1382,9 @@ const dashboard = new Vue({
             const codTotal = (this.COD_grouping || [])
                 .reduce((acc, row) => acc + Number(row?.count || 0), 0);
             this.setVAEmpty("vaCodEmpty", codTotal === 0);
+            const sexAgeTotal = (this.sexAgePyramidData || [])
+                .reduce((acc, row) => acc + Number(row?.male || 0) + Number(row?.female || 0), 0);
+            this.setVAEmpty("vaSexAgePyramidEmpty", sexAgeTotal === 0);
         },
         buildVACauseTrendFilters() {
             const { age, sex } = this.getAgeAndSex();
@@ -1422,6 +1522,70 @@ const dashboard = new Vue({
                 .reduce((acc, value) => acc + Number(value || 0), 0);
             this.setVAEmpty("vaRegionalComparisonEmpty", labels.length === 0 || total === 0);
         },
+        renderVASexAgePyramidChart() {
+            const canvas = document.getElementById("vaSexAgePyramidChart");
+            if (!canvas || typeof Chart === "undefined") return;
+
+            const rows = this.sexAgePyramidData || [];
+            const labels = rows.map((row) => row.age_group);
+            const maleValues = rows.map((row) => -Number(row.male || 0));
+            const femaleValues = rows.map((row) => Number(row.female || 0));
+            const maxAbs = Math.max(
+                1,
+                ...maleValues.map((value) => Math.abs(value)),
+                ...femaleValues.map((value) => Math.abs(value)),
+            );
+
+            if (!this.vaSexAgePyramidChart) {
+                this.vaSexAgePyramidChart = new Chart(canvas.getContext("2d"), {
+                    type: "bar",
+                    data: { labels: [], datasets: [] },
+                    options: {
+                        indexAxis: "y",
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: "top" } },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                min: -1,
+                                max: 1,
+                                ticks: {
+                                    precision: 0,
+                                    callback: (value) => Math.abs(value),
+                                },
+                                title: { display: true, text: "VA Count" },
+                            },
+                            y: {
+                                stacked: true,
+                                title: { display: false },
+                            },
+                        },
+                    },
+                });
+            }
+
+            this.vaSexAgePyramidChart.options.scales.x.min = -maxAbs;
+            this.vaSexAgePyramidChart.options.scales.x.max = maxAbs;
+            this.vaSexAgePyramidChart.data.labels = labels;
+            this.vaSexAgePyramidChart.data.datasets = [
+                {
+                    label: "Male",
+                    data: maleValues,
+                    backgroundColor: "#404788FF",
+                    borderColor: "#404788FF",
+                    borderWidth: 1,
+                },
+                {
+                    label: "Female",
+                    data: femaleValues,
+                    backgroundColor: "#440154FF",
+                    borderColor: "#440154FF",
+                    borderWidth: 1,
+                },
+            ];
+            this.vaSexAgePyramidChart.update();
+        },
         async refreshMapOnly() {
             if (this.mapController && typeof this.mapController.refresh === "function") {
                 await this.mapController.refresh({});
@@ -1432,6 +1596,7 @@ const dashboard = new Vue({
             await this.refreshMapOnly();
             await this.refreshVACauseTrendChart();
             this.renderRegionalCauseComparisonChart();
+            this.renderVASexAgePyramidChart();
         },
         async runRegionalComparison() {
             await this.updateDataAndMap();
@@ -1452,6 +1617,7 @@ const dashboard = new Vue({
             this.deathDateSelected = "Any Time";
             this.ageSelected = "";
             this.sexSelected = "";
+            this.sourceSelected = "all";
             this.mapSelection = { geography_level: "", geography_value: "" };
             if (this.mapController && typeof this.mapController.resetDrill === "function") {
                 await this.mapController.resetDrill();
