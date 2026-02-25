@@ -93,6 +93,7 @@
       initialView = "Province",
       styleVariant = "default",
       fitToDataBounds = true,
+      includeSelectionInRequest = true,
     } = options;
 
     const state = {
@@ -114,6 +115,20 @@
       typeof normalizeGeoName === "function"
         ? normalizeGeoName
         : (value) => (value || "").toString().toLowerCase().replace(/\s+/g, " ").trim();
+
+    const canonicalEaToken = (value) => {
+      const raw = (value || "").toString().trim();
+      if (!raw) return "";
+      const digitsOnly = raw.replace(/\D+/g, "");
+      if (!digitsOnly) return "";
+      const withoutLeadingZeros = digitsOnly.replace(/^0+/, "");
+      return withoutLeadingZeros || "0";
+    };
+
+    const eaLookupKey = (value) => {
+      const token = canonicalEaToken(value);
+      return token ? `__ea__${token}` : "";
+    };
 
     const resolveStartLevel = (view) => {
       const normalized = (view || "").toString().trim().toLowerCase();
@@ -296,10 +311,26 @@
       (rows || []).forEach((row) => {
         const raw = rowNameForLevel(row, level);
         const key = normalize(raw);
-        if (!key) return;
-        map.set(key, Number(row?.count || 0));
+        const count = Number(row?.count || 0);
+        if (key) map.set(key, count);
+        if (level === 5) {
+          const canonicalKey = eaLookupKey(raw);
+          if (canonicalKey) map.set(canonicalKey, count);
+        }
       });
       return map;
+    };
+
+    const lookupCount = (lookup, level, feature) => {
+      const directName = normalize(feature?.properties?.area_name || "");
+      if (directName && lookup.has(directName)) return lookup.get(directName) || 0;
+      if (level === 5) {
+        const byId = eaLookupKey(feature?.properties?.area_id);
+        if (byId && lookup.has(byId)) return lookup.get(byId) || 0;
+        const byName = eaLookupKey(feature?.properties?.area_name);
+        if (byName && lookup.has(byName)) return lookup.get(byName) || 0;
+      }
+      return 0;
     };
 
     const fitLayerBounds = () => {
@@ -337,7 +368,7 @@
       filtered.features = filtered.features.filter((feature) => {
         if (state.path.length === 1 && level > 1) return true;
         if (level === 1) return feature?.properties?.parent_id == null;
-        return feature?.properties?.parent_id === parent.id;
+        return String(feature?.properties?.parent_id) === String(parent.id);
       });
 
       const rows = rowsForLevel(state.payload, level);
@@ -348,8 +379,7 @@
 
       state.layer = L.geoJson(filtered, {
         style: (feature) => {
-          const name = normalize(feature?.properties?.area_name || "");
-          const count = lookup.get(name) || 0;
+          const count = lookupCount(lookup, level, feature);
           const color = getColorForCount(count, bins);
           const isVAStyle = styleVariant === "va";
           return {
@@ -363,8 +393,7 @@
         },
         onEachFeature: (feature, layer) => {
           const areaName = feature?.properties?.area_name || "";
-          const name = normalize(areaName);
-          const count = lookup.get(name) || 0;
+          const count = lookupCount(lookup, level, feature);
           const levelLabel = toTitleCase(feature?.properties?.area_level_label || LEVEL_CONFIG[level]?.label || "");
           const canDrill = level < 5;
           layer.bindTooltip(
@@ -403,10 +432,9 @@
 
     const fetchPayload = async (filters) => {
       const params = buildParams(filters || {});
-      const last = state.path[state.path.length - 1];
-      if (last && last.levelIndex > 0 && last.name) {
-        params.set("geography_level", (last.levelLabel || "").toLowerCase());
-        params.set("geography_value", last.name);
+      if (!includeSelectionInRequest) {
+        params.delete("geography_level");
+        params.delete("geography_value");
       }
       const requestUrl = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
       const response = await fetch(requestUrl, {

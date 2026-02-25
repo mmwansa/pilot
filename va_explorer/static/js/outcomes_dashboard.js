@@ -128,6 +128,7 @@
             };
             refreshDataOnly().catch((err) => console.error(err));
           },
+          includeSelectionInRequest: false,
           styleVariant: "va",
           noDataMessage: "No mapped outcomes in current filter range.",
         })
