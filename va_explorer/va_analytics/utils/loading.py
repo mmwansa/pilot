@@ -2,7 +2,7 @@ import csv
 import json
 import itertools
 import os
-from datetime import datetime
+from datetime import date, datetime
 from functools import lru_cache
 from operator import itemgetter
 from pathlib import Path
@@ -27,6 +27,8 @@ from va_explorer.va_data_management.models import (
     questions_to_autodetect_duplicates,
 )
 from va_explorer.va_data_management.utils.loading import get_va_summary_stats
+
+COD_TREND_START_MONTH = date(2024, 12, 1)
 
 
 def load_cod_groupings(cause_of_death: str):
@@ -207,6 +209,38 @@ def _build_region_match_keys(region_name, region_level):
     return keys
 
 
+def _cluster_ancestor_value(cluster, location_type):
+    if not cluster:
+        return None
+    normalized_type = (location_type or "").strip().lower()
+    lineage = list(cluster.get_ancestors()) + [cluster]
+    for node in lineage:
+        if ((node.location_type or "").strip().lower()) == normalized_type:
+            return getattr(node, "name", None)
+    return None
+
+
+def _cluster_region_candidates(cluster, region_level):
+    if not cluster:
+        return []
+
+    if region_level == "Province":
+        return [_cluster_ancestor_value(cluster, "province")]
+    if region_level == "District":
+        return [_cluster_ancestor_value(cluster, "district")]
+    if region_level == "Constituency":
+        return [_cluster_ancestor_value(cluster, "constituency")]
+    if region_level == "Ward":
+        return [_cluster_ancestor_value(cluster, "ward")]
+    if region_level == "EA":
+        return [
+            _cluster_ancestor_value(cluster, "ea"),
+            getattr(cluster, "name", None),
+            getattr(cluster, "code", None),
+        ]
+    return []
+
+
 def _va_region_values(va, region_level):
     context = va.resolve_location_context()
     mode = context.get("mode")
@@ -214,18 +248,20 @@ def _va_region_values(va, region_level):
     if mode == "community":
         cluster = context.get("cluster")
         if region_level == "Province":
-            return [context.get("province")]
+            return [context.get("province"), *_cluster_region_candidates(cluster, "Province")]
         if region_level == "District":
-            return [context.get("district")]
+            return [context.get("district"), *_cluster_region_candidates(cluster, "District")]
         if region_level == "Constituency":
-            return [context.get("constituency")]
+            return [
+                context.get("constituency"),
+                *_cluster_region_candidates(cluster, "Constituency"),
+            ]
         if region_level == "Ward":
-            return [context.get("ward")]
+            return [context.get("ward"), *_cluster_region_candidates(cluster, "Ward")]
         if region_level == "EA":
             return [
                 context.get("ea"),
-                getattr(cluster, "name", None),
-                getattr(cluster, "code", None),
+                *_cluster_region_candidates(cluster, "EA"),
             ]
         return []
 
@@ -245,6 +281,92 @@ def _va_region_values(va, region_level):
     if region_level == "EA":
         return [va.ea]
     return []
+
+
+def _derive_va_geo_levels(va):
+    context = va.resolve_location_context()
+    cluster = context.get("cluster")
+
+    def _first_resolved(level, *candidates):
+        for candidate in candidates:
+            resolved = _resolve_geo_name(candidate, level)
+            if resolved:
+                return resolved
+        return ""
+
+    if context.get("mode") == "community":
+        province = _first_resolved(
+            "Province",
+            context.get("province"),
+            *_cluster_region_candidates(cluster, "Province"),
+            getattr(va, "province", None),
+            getattr(va, "province_name_from_location", None),
+        )
+        district = _first_resolved(
+            "District",
+            context.get("district"),
+            *_cluster_region_candidates(cluster, "District"),
+            context.get("area"),
+            getattr(va, "district_name_from_location", None),
+            va.district,
+        )
+        constituency = _first_resolved(
+            "Constituency",
+            context.get("constituency"),
+            *_cluster_region_candidates(cluster, "Constituency"),
+            va.constituency,
+        )
+        ward = _first_resolved(
+            "Ward",
+            context.get("ward"),
+            *_cluster_region_candidates(cluster, "Ward"),
+            va.ward,
+            context.get("area"),
+        )
+        ea = _first_resolved(
+            "EA",
+            context.get("ea"),
+            *_cluster_region_candidates(cluster, "EA"),
+            va.ea,
+        )
+    else:
+        province = _first_resolved(
+            "Province",
+            context.get("province"),
+            getattr(va, "province", None),
+            getattr(va, "province_name_from_location", None),
+        )
+        district = _first_resolved(
+            "District",
+            getattr(va, "district_name_from_location", None),
+            context.get("district"),
+            context.get("area"),
+            va.district,
+        )
+        constituency = _first_resolved(
+            "Constituency",
+            context.get("constituency"),
+            va.constituency,
+        )
+        ward = _first_resolved(
+            "Ward",
+            context.get("ward"),
+            va.ward,
+            context.get("area"),
+        )
+        ea = _first_resolved(
+            "EA",
+            context.get("ea"),
+            va.ea,
+        )
+
+    return {
+        "Province": province,
+        "District": district,
+        "Constituency": constituency,
+        "Ward": ward,
+        "EA": ea,
+    }
 
 
 def _normalize_region_level_from_filter(region_of_interest):
@@ -275,22 +397,41 @@ def _collapse_top_n_with_other(rows, label_key, value_key="count", top_n=10):
     return collapsed
 
 
+def _month_starts_between(start_month, end_month):
+    if start_month > end_month:
+        return []
+    months = []
+    current = date(start_month.year, start_month.month, 1)
+    boundary = date(end_month.year, end_month.month, 1)
+    while current <= boundary:
+        months.append(current)
+        if current.month == 12:
+            current = date(current.year + 1, 1, 1)
+        else:
+            current = date(current.year, current.month + 1, 1)
+    return months
+
+
 def _build_va_cause_trend_payload(filtered_qs, top_causes):
     rows = (
         filtered_qs.exclude(final_cause__isnull=True)
         .exclude(final_cause="")
         .annotate(month=TruncMonth(Cast("Id10023", output_field=DateField())))
+        .exclude(month__lt=COD_TREND_START_MONTH)
         .exclude(month__isnull=True)
         .values("month", cause=F("final_cause"))
         .annotate(count=Count("pk"))
         .order_by("month")
     )
 
-    month_keys = sorted({row["month"].strftime("%Y-%m") for row in rows if row.get("month")})
-    periods = [
-        row_month.strftime("%b %Y")
-        for row_month in sorted({row["month"] for row in rows if row.get("month")})
-    ]
+    row_months = sorted({row["month"] for row in rows if row.get("month")})
+    if row_months:
+        month_range = _month_starts_between(COD_TREND_START_MONTH, row_months[-1])
+    else:
+        month_range = []
+
+    month_keys = [m.strftime("%Y-%m") for m in month_range]
+    periods = [m.strftime("%b %Y") for m in month_range]
     if not month_keys:
         return {
             "has_coded": False,
@@ -473,18 +614,13 @@ def _apply_source_filter(queryset, source):
         return queryset
 
     source_key = _compact_spaces(source).lower()
-    hospital_has_value_q = _meaningful_text_q("hospital")
-    ward_or_area_has_value_q = _meaningful_text_q("ward") | _meaningful_text_q("area")
-
-    is_facility_q = hospital_has_value_q | (
-        ~ward_or_area_has_value_q & Q(community_va__iexact="no")
-    )
-    is_community_q = ~is_facility_q
+    if source_key in {"all", "any", "*"}:
+        return queryset
 
     if source_key in {"community", "community_va", "community va", "yes", "y", "1", "true"}:
-        return queryset.filter(is_community_q)
+        return queryset.filter(community_va__iexact="yes")
     if source_key in {"facility", "facility_va", "facility va", "no", "n", "0", "false"}:
-        return queryset.filter(is_facility_q)
+        return queryset.filter(community_va__iexact="no")
     return queryset
 
 
@@ -709,6 +845,7 @@ def load_va_data(
         user_vas_filtered.annotate(
             month=TruncMonth(Cast("Id10023", output_field=DateField()))
         )
+        .exclude(month__lt=COD_TREND_START_MONTH)
         .filter(causes__isnull=False)
         .values("month")
         .annotate(count=Count("pk"))
@@ -734,20 +871,6 @@ def load_va_data(
         .order_by("-count")
     )
 
-    geographic_province_sums = (
-        user_vas_filtered.filter(causes__isnull=False)
-        .select_related("location")
-        .values(province_name=F("province_name_from_location"))
-        .annotate(count=Count("pk"))
-    )
-
-    geographic_district_sums = (
-        user_vas_filtered.filter(causes__isnull=False)
-        .select_related("location")
-        .values(district_name=F("district_name_from_location"))
-        .annotate(count=Count("pk"))
-    )
-
     map_counts = {
         "Province": {},
         "District": {},
@@ -755,91 +878,37 @@ def load_va_data(
         "Ward": {},
         "EA": {},
     }
+    coded_geo_counts = {
+        "Province": {},
+        "District": {},
+    }
     total_map_vas = 0
     total_map_coded_vas = 0
     for va in user_vas_filtered.select_related("location", "cluster").iterator():
         total_map_vas += 1
-        if _compact_spaces(getattr(va, "final_cause", "")):
+        is_coded = bool(_compact_spaces(getattr(va, "final_cause", "")))
+        if is_coded:
             total_map_coded_vas += 1
-        context = va.resolve_location_context()
-        cluster = context.get("cluster")
 
-        def _first_resolved(level, *candidates):
-            for candidate in candidates:
-                resolved = _resolve_geo_name(candidate, level)
-                if resolved:
-                    return resolved
-            return ""
-
-        if context.get("mode") == "community":
-            province = _first_resolved(
-                "Province",
-                context.get("province"),
-                getattr(va, "province", None),
-                getattr(va, "province_name_from_location", None),
-            )
-            district = _first_resolved(
-                "District",
-                context.get("district"),
-                context.get("area"),
-                getattr(va, "district_name_from_location", None),
-                va.district,
-            )
-            constituency = _first_resolved(
-                "Constituency",
-                context.get("constituency"),
-                va.constituency,
-            )
-            ward = _first_resolved(
-                "Ward",
-                context.get("ward"),
-                va.ward,
-                context.get("area"),
-            )
-            ea = _first_resolved(
-                "EA",
-                context.get("ea"),
-                getattr(cluster, "name", None),
-                getattr(cluster, "code", None),
-                va.ea,
-            )
-        else:
-            province = _first_resolved(
-                "Province",
-                context.get("province"),
-                getattr(va, "province", None),
-                getattr(va, "province_name_from_location", None),
-            )
-            district = _first_resolved(
-                "District",
-                getattr(va, "district_name_from_location", None),
-                context.get("district"),
-                context.get("area"),
-                va.district,
-            )
-            constituency = _first_resolved(
-                "Constituency",
-                context.get("constituency"),
-                va.constituency,
-            )
-            ward = _first_resolved(
-                "Ward",
-                context.get("ward"),
-                va.ward,
-                context.get("area"),
-            )
-            ea = _first_resolved(
-                "EA",
-                context.get("ea"),
-                getattr(cluster, "name", None),
-                getattr(cluster, "code", None),
-                va.ea,
-            )
+        geo = _derive_va_geo_levels(va)
+        province = geo["Province"]
+        district = geo["District"]
+        constituency = geo["Constituency"]
+        ward = geo["Ward"]
+        ea = geo["EA"]
 
         if province:
             map_counts["Province"][province] = map_counts["Province"].get(province, 0) + 1
+            if is_coded:
+                coded_geo_counts["Province"][province] = (
+                    coded_geo_counts["Province"].get(province, 0) + 1
+                )
         if district:
             map_counts["District"][district] = map_counts["District"].get(district, 0) + 1
+            if is_coded:
+                coded_geo_counts["District"][district] = (
+                    coded_geo_counts["District"].get(district, 0) + 1
+                )
         if constituency:
             map_counts["Constituency"][constituency] = (
                 map_counts["Constituency"].get(constituency, 0) + 1
@@ -848,6 +917,13 @@ def load_va_data(
             map_counts["Ward"][ward] = map_counts["Ward"].get(ward, 0) + 1
         if ea:
             map_counts["EA"][ea] = map_counts["EA"].get(ea, 0) + 1
+
+    geographic_province_sums = _serialize_geo_counts(
+        coded_geo_counts["Province"], "province_name"
+    )
+    geographic_district_sums = _serialize_geo_counts(
+        coded_geo_counts["District"], "district_name"
+    )
 
     data = {
         "COD_grouping": COD_sums,

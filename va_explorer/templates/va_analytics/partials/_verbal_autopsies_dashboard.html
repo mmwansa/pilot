@@ -41,6 +41,13 @@
               <option>Ambiguous/Intersex</option>
             </select>
 
+            <label for="vaSource">VA Source:</label>
+            <select id="vaSource" class="select" v-model="sourceSelected" @change="updateDataAndMap">
+              <option value="all">All</option>
+              <option value="community">Community</option>
+              <option value="facility">Facility</option>
+            </select>
+
             <label for="deathDate">Death Date:</label>
             <select id="deathDate" class="select" v-model="deathDateSelected" @change="updateDataAndMap()">
               <option v-for="option in deathDateDropdownOptions" :key="option"><% option %></option>
@@ -66,6 +73,20 @@
           </div>
         </div>
       </form>
+    </div>
+  </section>
+
+  <section class="sectionContainer dashboard-card mb-4" id="vaDemographicSection" data-component="demographic-distribution">
+    <div class="dashboard-section-head">
+      <h2>Demographic Distribution</h2>
+    </div>
+    <div class="dashboard-card-body">
+      <div class="chartsContainer">
+        <div class="chart-canvas-wrap compact">
+          <canvas id="vaSexAgePyramidChart" data-component="va-sex-age-pyramid-chart"></canvas>
+        </div>
+      </div>
+      <p id="vaSexAgePyramidEmpty" class="po-empty-state" hidden>No age-sex VA data available for the selected filters.</p>
     </div>
   </section>
 
@@ -134,22 +155,21 @@
 
   <section class="sectionContainer dashboard-card demographicsView mb-4" id="vaRegionalComparisonSection" data-component="regional-comparison">
     <div class="dashboard-section-head">
-      <h2>Regional Cause of Death Comparison</h2>
+      <h2>Cause of Death Comparison</h2>
       <small class="text-muted">Top 5 COD + Other</small>
     </div>
     <div class="dashboard-card-body">
       <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
         <div class="mainFiltersContainer">
           <label for="vaCompareBy">Compare by:</label>
-          <select id="vaCompareBy" class="select" v-model="regionalCompareBy">
+          <select id="vaCompareBy" class="select" v-model="regionalCompareBy" @change="runRegionalComparison">
             <option value="province">Province</option>
             <option value="age">Age</option>
             <option value="source">VA Source</option>
           </select>
-          <button type="button" class="button" @click="runRegionalComparison">Compare</button>
         </div>
       </div>
-      <div class="chartsContainer" ref="regionalComparison">
+      <div ref="regionalComparison">
         <div class="chart-canvas-wrap">
           <canvas id="vaRegionalCauseComparisonChart" data-component="regional-cod-chart"></canvas>
         </div>

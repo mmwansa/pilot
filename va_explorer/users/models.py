@@ -2,7 +2,6 @@ import os
 import platform
 import uuid
 from datetime import datetime
-from functools import reduce
 from pathlib import Path
 
 from django.conf import settings
@@ -22,6 +21,9 @@ from django.dispatch import receiver
 # from allauth.account.signals import email_confirmed
 # from django.dispatch import receiver
 from va_explorer.va_data_management.models import Location, VerbalAutopsy
+from va_explorer.va_data_management.utils.location_access import (
+    restrict_va_queryset_to_user_locations,
+)
 from .constants import FEEDBACK_MODULE_FEATURES
 
 
@@ -122,21 +124,7 @@ class User(AbstractUser):
             Id10023__gte=date_cutoff, Id10023__lte=end_date
         )
 
-        if self.location_restrictions.count() > 0:
-            # Get the query set of all locations at or below the parent nodes
-            # the user can access by joining the query sets of all the location
-            # trees; using the | operator leads to an efficient query
-            location_sets = [
-                Location.get_tree(location)
-                for location in self.location_restrictions.all()
-            ]
-            locations = reduce((lambda set1, set2: set1 | set2), location_sets)
-            # Return the list of all verbal autopsies associated with that
-            # query set of locations
-            return va_objects.filter(location__in=locations)
-        else:
-            # No location restrictions, which implies access to all data
-            return va_objects
+        return restrict_va_queryset_to_user_locations(va_objects, self)
 
     def is_fieldworker(self):
         return self.groups.filter(name="Field Workers").exists()

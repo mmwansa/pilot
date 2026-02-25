@@ -4,7 +4,7 @@ from .cluster_locations import ClusterLocationCodes
 from .odk_reference import ODKFormChoice
 from .odk_state import ODKPullLock, ODKPullState
 from .pregnancy import Pregnancy
-from .pregnancy_outcome import PregnancyOutcome
+from .pregnancy_outcome import PregnancyOutcome, PregnancyOutcomeBaby
 from .csa_daily_tracker import CSADailyTracker
 from .verbal_autopsy import (
     CauseCodingIssue,
@@ -22,6 +22,7 @@ __all__ = [ "SRSClusterLocation",
     "ClusterLocationCodes",
     "Pregnancy",
     "PregnancyOutcome",
+    "PregnancyOutcomeBaby",
     "Death",
     "VerbalAutopsy",
     "Location",

@@ -22,8 +22,31 @@ class Command(BaseCommand):
         num_created = len(results["created"])
         num_ignored = len(results["ignored"])
         num_outdated = len(results["outdated"])
+        created_community = sum(
+            1 for va in results["created"] if va.community_va_normalized == "yes"
+        )
+        created_facility = sum(
+            1 for va in results["created"] if va.community_va_normalized == "no"
+        )
+        created_unknown = num_created - created_community - created_facility
+        created_with_cluster = sum(
+            1
+            for va in results["created"]
+            if va.community_va_normalized == "yes" and va.cluster_id is not None
+        )
+        created_with_location = sum(
+            1
+            for va in results["created"]
+            if va.community_va_normalized != "yes" and va.location_id is not None
+        )
 
         self.stdout.write(
             f"Loaded {num_created} verbal autopsies from CSV "
             f"({num_ignored} ignored, {num_outdated} removed as outdated)"
+        )
+        self.stdout.write(
+            "Created mix: "
+            f"community={created_community} (with cluster={created_with_cluster}), "
+            f"facility={created_facility} (with location={created_with_location}), "
+            f"unknown={created_unknown}"
         )

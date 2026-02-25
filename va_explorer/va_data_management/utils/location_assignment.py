@@ -4,7 +4,29 @@ from fuzzywuzzy import fuzz
 from va_explorer.va_data_management.models import Location
 
 
-def assign_va_location(va, location_mapper=None, location_fields=None):
+def assign_va_location(va, location_mapper=None, location_fields=None, srs_maps=None):
+    # Community VAs are geographically located via SRS cluster, not hospital/facility.
+    if getattr(va, "community_va_normalized", None) == "yes":
+        if not getattr(va, "cluster", None):
+            from va_explorer.va_data_management.utils.loading import (
+                build_srs_location_maps,
+                resolve_srs_cluster_from_row,
+            )
+
+            srs_maps = srs_maps or build_srs_location_maps()
+            va.cluster = resolve_srs_cluster_from_row(
+                {
+                    "province": getattr(va, "province", None),
+                    "district": getattr(va, "district", None),
+                    "constituency": getattr(va, "constituency", None),
+                    "ward": getattr(va, "ward", None),
+                    "ea": getattr(va, "ea", None),
+                    "area": getattr(va, "area", None),
+                },
+                srs_maps,
+            )
+        return va
+
     # check if the hospital or place of death fields are known locations
     location_fields = (
         location_fields if location_fields else ["hospital", "hospital_other"]

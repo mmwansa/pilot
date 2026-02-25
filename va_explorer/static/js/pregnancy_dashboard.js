@@ -102,6 +102,7 @@
             };
             refreshDataOnly().catch((err) => console.error(err));
           },
+          includeSelectionInRequest: false,
           styleVariant: "va",
           noDataMessage: "No mapped pregnancy events in current filter range.",
         })
@@ -191,7 +192,7 @@
         plugins: {
           legend: { display: true, position: "top" },
           tooltip: { enabled: true },
-          title: { display: true, text: "National Pregnancy Event Trend" },
+          title: { display: false },
         },
         scales: {
           x: { title: { display: true, text: "Month" }, grid: { display: true, color: "rgba(148, 163, 184, 0.35)" } },

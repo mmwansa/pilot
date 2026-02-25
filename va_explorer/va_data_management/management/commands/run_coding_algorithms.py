@@ -34,9 +34,36 @@ class Command(BaseCommand):
             num_coded = len(stats["causes"])
             num_total = len(stats["verbal_autopsies"])
             num_issues = len(stats["issues"])
+            community_total = sum(
+                1
+                for va in stats["verbal_autopsies"]
+                if va.community_va_normalized == "yes"
+            )
+            facility_total = sum(
+                1
+                for va in stats["verbal_autopsies"]
+                if va.community_va_normalized == "no"
+            )
+            unknown_total = num_total - community_total - facility_total
+            community_with_cluster = sum(
+                1
+                for va in stats["verbal_autopsies"]
+                if va.community_va_normalized == "yes" and va.cluster_id is not None
+            )
+            facility_with_location = sum(
+                1
+                for va in stats["verbal_autopsies"]
+                if va.community_va_normalized != "yes" and va.location_id is not None
+            )
             self.stdout.write(f"DONE. Total time: {time.time() - ti} secs")
             self.stdout.write(
                 f"Coded {num_coded} verbal autopsies (out of {num_total}) [{num_issues} issues]"
+            )
+            self.stdout.write(
+                "Input mix: "
+                f"community={community_total} (with cluster={community_with_cluster}), "
+                f"facility={facility_total} (with location={facility_with_location}), "
+                f"unknown={unknown_total}"
             )
         else:
             print(

@@ -11,6 +11,9 @@
     <a class="nav-link active" id="record-tab" data-toggle="tab" href="#record" role="tab" aria-controls="record" aria-selected="true">Record</a>
   </li>
   <li class="nav-item">
+    <a class="nav-link" id="baby-details-tab" data-toggle="tab" href="#baby-details" role="tab" aria-controls="baby-details" aria-selected="false">Baby Details</a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link" id="issues-tab" data-toggle="tab" href="#issues" role="tab" aria-controls="issues" aria-selected="false">Issues</a>
   </li>
   {% if diffs and not user.is_fieldworker %}
@@ -72,6 +75,40 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="baby-details" role="tabpanel" aria-labelledby="baby-details-tab">
+    <div class="row mt-4">
+      {% if object.babies.all %}
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Identification</th>
+              <th>Full Name</th>
+              <th>Sex</th>
+              <th>Birth Weight (Kg)</th>
+              <th>Birth Registered</th>
+              <th>Knows Registration Procedure</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for baby in object.babies.all %}
+              <tr>
+                <td>{{ baby.id }}</td>
+                <td>{{ baby.PO_49A|default:"-" }}</td>
+                <td>{{ baby.PO_49B|default:"-" }}</td>
+                <td>{{ baby.PO_49C|default:"-" }}</td>
+                <td>{{ baby.PO_49D|default:"-" }}</td>
+                <td>{{ baby.PO_49E|default:"-" }}</td>
+                <td>{{ baby.PO_50|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mx-3">There are no baby details listed for this pregnancy outcome.</p>
+      {% endif %}
     </div>
   </div>
   <div class="tab-pane fade" id="issues" role="tabpanel" aria-labelledby="issues-tab">

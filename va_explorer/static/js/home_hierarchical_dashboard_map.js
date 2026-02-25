@@ -120,6 +120,20 @@
         ? normalizeGeoName
         : (value) => (value || "").toString().toLowerCase().replace(/\s+/g, " ").trim();
 
+    const canonicalEaToken = (value) => {
+      const raw = (value || "").toString().trim();
+      if (!raw) return "";
+      const digitsOnly = raw.replace(/\D+/g, "");
+      if (!digitsOnly) return "";
+      const withoutLeadingZeros = digitsOnly.replace(/^0+/, "");
+      return withoutLeadingZeros || "0";
+    };
+
+    const eaLookupKey = (value) => {
+      const token = canonicalEaToken(value);
+      return token ? `__ea__${token}` : "";
+    };
+
     const resolveStartLevel = (view) => {
       const normalized = (view || "").toString().trim().toLowerCase();
       if (normalized === "district") return 2;
@@ -301,16 +315,32 @@
       (rows || []).forEach((row) => {
         const raw = rowNameForLevel(row, level);
         const key = normalize(raw);
-        if (!key) return;
-        map.set(key, {
+        const rowPayload = {
           count: toSafeInt(row?.count),
           pregnancies_count: toSafeInt(row?.pregnancies_count),
           pregnancy_outcomes_count: toSafeInt(row?.pregnancy_outcomes_count),
           deaths_count: toSafeInt(row?.deaths_count),
           verbal_autopsies_count: toSafeInt(row?.verbal_autopsies_count),
-        });
+        };
+        if (key) map.set(key, rowPayload);
+        if (level === 5) {
+          const canonicalKey = eaLookupKey(raw);
+          if (canonicalKey) map.set(canonicalKey, rowPayload);
+        }
       });
       return map;
+    };
+
+    const lookupRowData = (lookup, level, feature) => {
+      const directName = normalize(feature?.properties?.area_name || "");
+      if (directName && lookup.has(directName)) return lookup.get(directName);
+      if (level === 5) {
+        const byId = eaLookupKey(feature?.properties?.area_id);
+        if (byId && lookup.has(byId)) return lookup.get(byId);
+        const byName = eaLookupKey(feature?.properties?.area_name);
+        if (byName && lookup.has(byName)) return lookup.get(byName);
+      }
+      return null;
     };
 
     const renderTooltipHtml = (areaName, levelLabel, entry, canDrill) => {
@@ -364,7 +394,7 @@
       filtered.features = filtered.features.filter((feature) => {
         if (state.path.length === 1 && level > 1) return true;
         if (level === 1) return feature?.properties?.parent_id == null;
-        return feature?.properties?.parent_id === parent.id;
+        return String(feature?.properties?.parent_id) === String(parent.id);
       });
 
       const rows = rowsForLevel(state.payload, level);
@@ -375,8 +405,7 @@
 
       state.layer = L.geoJson(filtered, {
         style: (feature) => {
-          const name = normalize(feature?.properties?.area_name || "");
-          const count = toSafeInt(lookup.get(name)?.count);
+          const count = toSafeInt(lookupRowData(lookup, level, feature)?.count);
           const color = getColorForCount(count, bins);
           const isVAStyle = styleVariant === "va";
           return {
@@ -390,8 +419,7 @@
         },
         onEachFeature: (feature, layer) => {
           const areaName = feature?.properties?.area_name || "";
-          const name = normalize(areaName);
-          const rowData = lookup.get(name) || { count: 0 };
+          const rowData = lookupRowData(lookup, level, feature) || { count: 0 };
           const levelLabel = toTitleCase(feature?.properties?.area_level_label || LEVEL_CONFIG[level]?.label || "");
           const canDrill = level < 5;
           layer.bindTooltip(renderTooltipHtml(areaName, levelLabel, rowData, canDrill));
@@ -428,11 +456,6 @@
 
     const fetchPayload = async (filters) => {
       const params = buildParams(filters || {});
-      const last = state.path[state.path.length - 1];
-      if (last && last.levelIndex > 0 && last.name) {
-        params.set("geography_level", (last.levelLabel || "").toLowerCase());
-        params.set("geography_value", last.name);
-      }
       const requestUrl = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
       const response = await fetch(requestUrl, {
         method: "GET",

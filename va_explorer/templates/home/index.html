@@ -126,7 +126,7 @@
                       data-component="overview-map"
                       data-map-endpoint="{% url 'home:home_overview_map_data' %}"
                     >
-                      <h5 class="mb-2">Pregnancy Geographic Distribution</h5>
+                      <h5 class="mb-2">Geographic Distribution</h5>
                       <div id="homeOverviewMapBreadcrumb" class="home-map-breadcrumbs"></div>
                       <div id="homeOverviewMapContainer">
                         <div id="homeOverviewMapLegend" class="legend"></div>
@@ -203,9 +203,6 @@
         </div>
       </div>      
       <div class="tab-pane dashboard-tab-panel fade home-trends-tab {% if home_active_tab == 'trends' %}show active{% endif %}" id="tab-4" data-tab-panel="trends" role="tabpanel" aria-labelledby="tab-4-tab">
-        <div class="d-flex justify-content-end mb-3">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-component" data-target="#homeTrendsComponentSlot">Refresh Trends</button>
-        </div>
         <div id="homeTrendsComponentSlot" data-component-slot data-component="trends" data-scope="trends,trends-data" data-endpoint="{% url 'home:home_trends_component' %}" data-cache-key="home:trends">
           <div class="home-panel home-panel-placeholder">Loading trends...</div>
         </div>

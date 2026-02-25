@@ -3,6 +3,11 @@ from va_explorer.va_data_management.utils.date_parsing import parse_date
 from va_explorer.va_data_management.utils.location_assignment import assign_va_location
 
 
+def _has_meaningful_text(value):
+    normalized = ("" if value is None else str(value)).strip().lower()
+    return normalized not in {"", "nan", "none", "null"}
+
+
 def validate_vas_for_dashboard(verbal_autopsies):
     # This validator is used to determine whether there is sufficient data to include
     # the record in the dashboard. Any errors or warnings are collected and reported
@@ -93,15 +98,30 @@ def validate_vas_for_dashboard(verbal_autopsies):
             )
             issues.append(issue)
 
-        # Validate: location
-        # location is used to display the record on the map
-        if not va.location:
-            # try re-assigning location using location logic described in loading.py
-            va = assign_va_location(va)
-
-            # if still no location, record an error
-            if not va.location:
-                issue_text = "ERROR: no location provided (or none detected)"
+        community_mode = va.community_va_normalized
+        if community_mode is None:
+            issue_text = (
+                "Warning: unable to determine whether VA is community or facility "
+                "(community_va unresolved)."
+            )
+            issue = CauseCodingIssue(
+                verbalautopsy_id=va.id,
+                text=issue_text,
+                severity="warning",
+                algorithm="",
+                settings="",
+            )
+            issues.append(issue)
+        elif community_mode == "yes":
+            # Validate: community geography.
+            # Cluster is preferred. If absent, allow persisted admin markers so
+            # community records are not incorrectly failed as facility records.
+            has_admin_marker = any(
+                _has_meaningful_text(candidate)
+                for candidate in (va.district, va.ward, va.ea)
+            )
+            if not va.cluster and not has_admin_marker:
+                issue_text = "ERROR: unmatched EA/cluster for community VA"
                 issue = CauseCodingIssue(
                     verbalautopsy_id=va.id,
                     text=issue_text,
@@ -110,6 +130,24 @@ def validate_vas_for_dashboard(verbal_autopsies):
                     settings="",
                 )
                 issues.append(issue)
+        else:
+            # Validate: facility location
+            # location is used to display the record on the map
+            if not va.location:
+                # try re-assigning location using location logic described in loading.py
+                va = assign_va_location(va)
+
+                # if still no location, record an error
+                if not va.location:
+                    issue_text = "ERROR: no location provided (or none detected)"
+                    issue = CauseCodingIssue(
+                        verbalautopsy_id=va.id,
+                        text=issue_text,
+                        severity="error",
+                        algorithm="",
+                        settings="",
+                    )
+                    issues.append(issue)
 
         # if location is valid but inactive record a warning
         if (
@@ -117,6 +155,7 @@ def validate_vas_for_dashboard(verbal_autopsies):
             and not va.location.is_active
             and va.location.name.casefold() != "unknown"
             and va.hospital.casefold() != "other"
+            and va.community_va_normalized != "yes"
         ):
             issue_text = "Warning: VA location was matched to facility known \
                 to be inactive. Consider updating the location to an active \
@@ -136,6 +175,7 @@ def validate_vas_for_dashboard(verbal_autopsies):
             va.location
             and va.location.name.casefold() == "unknown"
             and va.hospital.casefold() == "other"
+            and va.community_va_normalized != "yes"
         ):
             issue_text = "Warning: location field (parsed from hospital) \
                 was parsed as 'Other Facility'. May not fully show on \
@@ -155,6 +195,7 @@ def validate_vas_for_dashboard(verbal_autopsies):
             va.location
             and va.location.name.casefold() == "unknown"
             and va.hospital.casefold() != "other"
+            and va.community_va_normalized != "yes"
         ):
             issue_text = "ERROR: location field (parsed from hospital) did not \
                 match any known facilities in the facility list. VA Explorer set \

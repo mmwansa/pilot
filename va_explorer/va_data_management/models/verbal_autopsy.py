@@ -1773,21 +1773,35 @@ class VerbalAutopsy(SoftDeletionModel):
     @property
     def community_va_normalized(self):
         """
-        community_va semantics:
-        - completed hospital => "no"
-        - completed ward (or area fallback) => "yes"
-        - explicit community_va "no" => "no"
-        - otherwise => "yes"
+        ODK-first community/facility tagging:
+        - explicit community_va values win (yes/no variants)
+        - otherwise infer community from district/constituency/ward/ea
+        - otherwise infer facility when both area and hospital are present
+        - otherwise unresolved (None)
         """
-        if self._has_meaningful_value(self.hospital):
+        value = (self.community_va or "").strip().lower()
+        if value in {"yes", "y", "true", "1"}:
+            return "yes"
+        if value in {"no", "n", "false", "0"}:
             return "no"
 
-        ward_value = getattr(self, "ward", None) or self.area
-        if self._has_meaningful_value(ward_value):
+        if any(
+            self._has_meaningful_value(candidate)
+            for candidate in (
+                self.district,
+                self.constituency,
+                self.ward,
+                self.ea,
+            )
+        ):
             return "yes"
 
-        value = (self.community_va or "").strip().lower()
-        return "no" if value == "no" else "yes"
+        if self._has_meaningful_value(self.area) and self._has_meaningful_value(
+            self.hospital
+        ):
+            return "no"
+
+        return None
 
     @property
     def is_community_va(self):
