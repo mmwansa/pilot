@@ -30,6 +30,9 @@ from va_explorer.va_data_management.utils.location_access import (
 
 from .utils.loading import get_filtered_va_queryset, load_va_data
 
+DEATHS_TREND_HARD_START_DATE = date(2024, 1, 1)
+PREGNANCY_TREND_HARD_START_DATE = date(2024, 9, 1)
+
 
 def get_pregnancy_outcomes_filter_state(request):
     time_preset = (request.GET.get("time_preset") or "all_time").strip()
@@ -843,6 +846,7 @@ def _build_deaths_trend_series(filtered_qs):
     # DE_06 is stored as text; normalize to YYYY-MM-DD then group with TruncMonth.
     month_rows = (
         _with_valid_death_date(filtered_qs, source_field="DE_06", alias="death_date")
+        .filter(death_date__gte=DEATHS_TREND_HARD_START_DATE)
         .annotate(month=TruncMonth("death_date"))
         .values("month")
         .annotate(count=Count("pk"))
@@ -904,6 +908,7 @@ def _build_pregnancy_trend_series(filtered_qs):
     month_rows = (
         filtered_qs.exclude(PE_09A__isnull=True)
         .exclude(PE_09A="")
+        .filter(PE_09A__gte=PREGNANCY_TREND_HARD_START_DATE.strftime("%Y-%m-%d"))
         .annotate(month_key=Substr("PE_09A", 1, 7))
         .values("month_key")
         .annotate(count=Count("pk"))

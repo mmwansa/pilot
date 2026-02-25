@@ -6,6 +6,7 @@ from django.urls import reverse
 from va_explorer.va_analytics.views import (
     _build_pregnancy_ga_anc_points,
     _build_pregnancy_ga_detection_distribution,
+    _build_pregnancy_trend_series,
     build_pregnancy_qs,
 )
 from va_explorer.tests.factories import LocationFactory
@@ -89,6 +90,16 @@ class PregnancyDashboardDataTests(TestCase):
         self.assertIn({"x": 4, "y": 5}, payload["points"])
         self.assertEqual(payload["x_min"], 1)
         self.assertEqual(payload["x_max"], 40)
+
+    def test_pregnancy_trend_hard_starts_at_september_2024(self):
+        self._create_pregnancy("preg-legacy", PE_09A="2024-08-20")
+        self._create_pregnancy("preg-start", PE_09A="2024-09-05")
+
+        labels, counts = _build_pregnancy_trend_series(Pregnancy.objects.all())
+
+        self.assertIn("Sep 2024", labels)
+        self.assertNotIn("Aug 2024", labels)
+        self.assertEqual(sum(counts), 1)
 
 
 class PregnancyDashboardEndpointSchemaTests(TestCase):

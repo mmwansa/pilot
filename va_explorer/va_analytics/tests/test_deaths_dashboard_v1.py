@@ -194,6 +194,37 @@ class DeathsApiSchemaTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_mortality_trend_hard_starts_at_january_2024(self):
+        Death.objects.create(
+            key="death-trend-legacy",
+            DE_04="2020-01-01",
+            DE_05="Female",
+            DE_06="2023-12-15",
+            DE_07="home",
+            province="Lusaka",
+            district="Lusaka",
+            submissiondate="2023-12-16",
+            today="2023-12-16",
+            start="2023-12-16",
+        )
+        Death.objects.create(
+            key="death-trend-2024",
+            DE_04="2020-01-01",
+            DE_05="Male",
+            DE_06="2024-01-10",
+            DE_07="home",
+            province="Lusaka",
+            district="Lusaka",
+            submissiondate="2024-01-11",
+            today="2024-01-11",
+            start="2024-01-11",
+        )
+
+        trend = self.client.get(reverse("va_analytics:outcomes-deaths-trend-api")).json()
+
+        self.assertIn("Jan 2024", trend["labels"])
+        self.assertNotIn("Dec 2023", trend["labels"])
+
 
 class OutcomesTabsIsolationTests(TestCase):
     def setUp(self):
