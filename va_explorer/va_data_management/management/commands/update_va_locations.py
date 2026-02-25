@@ -126,14 +126,19 @@ class Command(BaseCommand):
             normalized_community_va = normalize_community_va_value(
                 va.community_va,
                 hospital=va.hospital,
+                area=va.area,
+                district=va.district,
+                constituency=va.constituency,
                 ward=va.ward,
+                ea=va.ea,
             )
             if va.community_va != normalized_community_va:
                 va.community_va = normalized_community_va
                 has_changes = True
 
             # Resolve cluster for community VAs; clear for facility VAs.
-            if va.community_va_normalized == "yes":
+            community_mode = va.community_va_normalized
+            if community_mode == "yes":
                 cluster_candidate = resolve_srs_cluster_from_row(
                     {
                         "province": va.province,
@@ -147,7 +152,7 @@ class Command(BaseCommand):
                 if va.cluster != cluster_candidate:
                     va.cluster = cluster_candidate
                     has_changes = True
-            else:
+            elif community_mode == "no":
                 if va.cluster_id is not None:
                     va.cluster = None
                     has_changes = True

@@ -59,27 +59,41 @@ def _has_meaningful_value(value):
     return normalized not in {"", "nan", "none", "null"}
 
 
-def normalize_community_va_value(value, *, hospital=None, ward=None):
+def normalize_community_va_value(
+    value,
+    *,
+    hospital=None,
+    area=None,
+    district=None,
+    constituency=None,
+    ward=None,
+    ea=None,
+):
     """
-    community_va rules:
-    - completed hospital => "no"
-    - completed ward => "yes"
-    - explicit community_va "no" variants => "no"
-    - otherwise => "yes"
+    ODK-first community/facility tagging rules:
+    1) If community_va is explicitly provided, use it.
+    2) Else if any community admin markers exist, infer community ("yes").
+    3) Else if both area and hospital/facility markers exist, infer facility ("no").
+    4) Else unknown (None).
     """
-    if _has_meaningful_value(hospital):
-        return "no"
-    if _has_meaningful_value(ward):
+    if not pd.isnull(value):
+        normalized = normalize_string(value).lower()
+        if normalized not in {"", "nan", "none", "null"}:
+            if normalized in {"yes", "y", "true", "1"}:
+                return "yes"
+            if normalized in {"no", "n", "false", "0"}:
+                return "no"
+
+    if any(
+        _has_meaningful_value(v)
+        for v in (district, constituency, ward, ea)
+    ):
         return "yes"
 
-    if pd.isnull(value):
-        return "yes"
-    normalized = normalize_string(value).lower()
-    if normalized in {"", "nan", "none", "null"}:
-        return "yes"
-    if normalized in {"no", "n", "false", "0"}:
+    if _has_meaningful_value(area) and _has_meaningful_value(hospital):
         return "no"
-    return "yes"
+
+    return None
 
 
 def _normalized_geo_token(value):
@@ -97,6 +111,10 @@ def build_srs_location_maps():
         "constituency": {},
         "district": {},
         "province": {},
+        "all_by_name": {},
+        "all_by_code": {},
+        "all_by_id": {},
+        "lineage_cache": {},
     }
     for loc in SRSClusterLocation.objects.only("id", "name", "code", "location_type").iterator():
         level = _normalized_geo_token(loc.location_type)
@@ -104,14 +122,125 @@ def build_srs_location_maps():
             continue
         name_token = _normalized_geo_token(loc.name)
         if name_token:
-            maps[level][name_token] = loc
+            maps[level].setdefault(name_token, []).append(loc)
+            maps["all_by_name"].setdefault(name_token, []).append(loc)
         code_token = _normalized_geo_token(loc.code)
         if code_token:
-            maps[level][code_token] = loc
+            maps[level].setdefault(code_token, []).append(loc)
+            maps["all_by_code"].setdefault(code_token, []).append(loc)
+        maps["all_by_id"][str(loc.id)] = loc
     return maps
 
 
+def _get_row_tokens_by_level(row):
+    tokens = {}
+    field_to_level = (
+        ("province", "province"),
+        ("district", "district"),
+        ("constituency", "constituency"),
+        ("ward", "ward"),
+        # Historical VA payloads can carry ward-like names in "area".
+        ("area", "ward"),
+        ("ea", "ea"),
+    )
+    for field_name, level in field_to_level:
+        token = _normalized_geo_token(row.get(field_name))
+        if token:
+            tokens.setdefault(level, set()).add(token)
+    return tokens
+
+
+def _get_location_lineage_tokens(location, lineage_cache):
+    cached = lineage_cache.get(location.id)
+    if cached is not None:
+        return cached
+
+    lineage = {}
+    nodes = list(location.get_ancestors()) + [location]
+    for node in nodes:
+        level = _normalized_geo_token(node.location_type)
+        if not level:
+            continue
+        lineage[level] = {
+            "name": _normalized_geo_token(node.name),
+            "code": _normalized_geo_token(node.code),
+        }
+    lineage_cache[location.id] = lineage
+    return lineage
+
+
+def _select_best_cluster_candidate(candidates, row_tokens, lineage_cache):
+    if not candidates:
+        return None
+    if len(candidates) == 1:
+        return candidates[0]
+
+    valid = []
+    for candidate in candidates:
+        lineage = _get_location_lineage_tokens(candidate, lineage_cache)
+        contradiction = False
+        score = 0
+        for level, provided_tokens in row_tokens.items():
+            level_tokens = lineage.get(level)
+            if not level_tokens:
+                continue
+            matches_level = (
+                level_tokens.get("name") in provided_tokens
+                or level_tokens.get("code") in provided_tokens
+            )
+            if matches_level:
+                score += 1
+            else:
+                contradiction = True
+                break
+        if not contradiction:
+            valid.append((score, candidate))
+
+    if not valid:
+        return None
+
+    valid.sort(key=lambda item: item[0], reverse=True)
+    best_score = valid[0][0]
+    best = [candidate for score, candidate in valid if score == best_score]
+    return best[0] if len(best) == 1 else None
+
+
 def resolve_srs_cluster_from_row(row, srs_maps):
+    row_tokens = _get_row_tokens_by_level(row)
+    lineage_cache = srs_maps.get("lineage_cache", {})
+
+    # Preferred direct cluster hints.
+    direct_cluster_fields = (
+        "cluster_id",
+        "cluster_code",
+        "cluster_identifier",
+        "clusterid",
+        "clustercode",
+        "cluster",
+    )
+    for field_name in direct_cluster_fields:
+        token = _normalized_geo_token(row.get(field_name))
+        if not token:
+            continue
+
+        direct_id_match = srs_maps.get("all_by_id", {}).get(token)
+        if direct_id_match:
+            return direct_id_match
+
+        direct_code_candidates = srs_maps.get("all_by_code", {}).get(token, [])
+        direct_match = _select_best_cluster_candidate(
+            direct_code_candidates, row_tokens, lineage_cache
+        )
+        if direct_match:
+            return direct_match
+
+        direct_name_candidates = srs_maps.get("all_by_name", {}).get(token, [])
+        direct_match = _select_best_cluster_candidate(
+            direct_name_candidates, row_tokens, lineage_cache
+        )
+        if direct_match:
+            return direct_match
+
     # deepest-to-broadest precedence
     for field_name, level in (
         ("ea", "ea"),
@@ -123,7 +252,11 @@ def resolve_srs_cluster_from_row(row, srs_maps):
         token = _normalized_geo_token(row.get(field_name))
         if not token:
             continue
-        match = srs_maps.get(level, {}).get(token)
+        match = _select_best_cluster_candidate(
+            srs_maps.get(level, {}).get(token, []),
+            row_tokens,
+            lineage_cache,
+        )
         if match:
             return match
     return None
@@ -337,12 +470,17 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
         lambda row: normalize_community_va_value(
             row.get("community_va"),
             hospital=row.get("hospital"),
+            area=row.get("area"),
+            district=row.get("district"),
+            constituency=row.get("constituency"),
             ward=row.get("ward"),
+            ea=row.get("ea"),
         ),
         axis=1,
     )
 
-    csv_field_names = record_df.columns
+    full_record_df = record_df.copy()
+    csv_field_names = full_record_df.columns
     common_field_names = csv_field_names.intersection(model_field_names)
 
     # Only keep fields in CSV that we have columns for in our VerbalAutopsy model
@@ -351,7 +489,7 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
         logger.debug("Missing fields: %s", missing_field_names)
         extra_field_names = csv_field_names.difference(common_field_names)
         logger.debug("Extra fields: %s", extra_field_names)
-    record_df = record_df[common_field_names]
+    record_df = full_record_df[common_field_names]
 
     # For each row, check to see if there is an instanceid.
     # If there is instanceid, try to find existing VA with that instanceid.
@@ -399,7 +537,10 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
         )
 
     print("creating new VAs...")
-    for i, row in enumerate(record_df.to_dict(orient="records")):
+    model_rows = record_df.to_dict(orient="records")
+    raw_rows = full_record_df.to_dict(orient="records")
+    for i, row in enumerate(model_rows):
+        raw_row = raw_rows[i]
         format_multi_select_fields(row)
 
         va = VerbalAutopsy(**row)
@@ -457,9 +598,10 @@ def load_records_from_dataframe(record_df, random_locations=False, debug=False):
             user = random.choice(field_workers)
             va.location = user.location_restrictions.first()
         else:
-            if va.community_va_normalized == "yes":
-                va.cluster = resolve_srs_cluster_from_row(row, srs_maps)
-            else:
+            community_mode = va.community_va_normalized
+            if community_mode == "yes":
+                va.cluster = resolve_srs_cluster_from_row(raw_row, srs_maps)
+            elif community_mode == "no":
                 assign_va_location(va, location_map)
             if "hospital" in row and logger:
                 logger.info(
@@ -549,7 +691,16 @@ def get_va_summary_stats(vas, filter_fields=False, cache_key="va_summary_stats")
 
     # if filter_fields=True, filter down to only relevant fields
     if filter_fields:
-        vas = vas.only("created", "id", "location", "Id10023", "submissiondate", "Id10012")
+        vas = vas.only(
+            "created",
+            "id",
+            "location",
+            "cluster",
+            "community_va",
+            "Id10023",
+            "submissiondate",
+            "Id10012",
+        )
 
     def _max_parsed_date(values):
         latest = None
@@ -582,8 +733,19 @@ def get_va_summary_stats(vas, filter_fields=False, cache_key="va_summary_stats")
         if cache_key:
             cache.set(cache_key, stats, timeout=60 * 60)
 
+    # Facility VAs are expected to resolve a facility Location; community VAs
+    # are expected to resolve an SRS cluster.
     stats["ineligible_vas"] = vas.filter(
-        Q(Id10023__in=["DK", "dk"]) | Q(Id10023__isnull=True) | Q(location__isnull=True)
+        Q(Id10023__in=["DK", "dk"])
+        | Q(Id10023__isnull=True)
+        | (
+            Q(community_va__iexact="yes")
+            & Q(cluster__isnull=True)
+        )
+        | (
+            ~Q(community_va__iexact="yes")
+            & Q(location__isnull=True)
+        )
     ).count()
 
     # clean up dates if non-null

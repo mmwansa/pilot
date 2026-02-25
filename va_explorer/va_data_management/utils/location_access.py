@@ -105,3 +105,45 @@ def restrict_queryset_to_user_locations(queryset, user, field_mapping=None):
         return queryset
 
     return queryset.filter(combined_q)
+
+
+def restrict_va_queryset_to_user_locations(queryset, user):
+    """
+    VerbalAutopsy-specific restriction that supports both:
+    - facility VA access via Location tree relation (location FK), and
+    - community VA access via persisted admin text fields.
+    """
+    allowed = _allowed_location_names(user)
+    if not allowed:
+        return queryset
+
+    locations = getattr(user, "location_restrictions", None)
+    if not locations:
+        return queryset
+
+    locations_qs = locations.all()
+    if not locations_qs.exists():
+        return queryset
+
+    # Facility path scoping using location tree nodes.
+    location_nodes = set()
+    for location in locations_qs:
+        for node in _collect_related_nodes(location):
+            location_nodes.add(node.pk)
+    facility_q = Q(location__in=location_nodes)
+
+    # Community/admin path scoping using text geography fields.
+    text_q = Q()
+    for loc_type, names in allowed.items():
+        if not names:
+            continue
+        field_q = Q()
+        for name in names:
+            field_q |= Q(**{f"{loc_type}__iexact": name})
+        text_q |= field_q
+
+    combined_q = facility_q
+    if text_q.children:
+        combined_q |= text_q
+
+    return queryset.filter(combined_q).distinct()

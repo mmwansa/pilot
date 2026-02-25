@@ -708,10 +708,12 @@ def _get_national_operational_view_data(
         va_qs = request.user.verbal_autopsies().filter(deleted_at__isnull=True, duplicate=False)
     else:
         va_qs = VerbalAutopsy.objects.filter(deleted_at__isnull=True, duplicate=False)
-    if location_value and location_level != "national":
-        # Inference: VA location references a location node name, so direct
-        # name matching is used when text geography fields are unavailable.
-        va_qs = va_qs.filter(location__name__iexact=location_value)
+    va_qs = _apply_text_geography_filter(
+        va_qs,
+        VerbalAutopsy,
+        location_level,
+        location_value,
+    )
 
     with timed_block("home.nov.latest_timestamps.households", request=request):
         households_by_key, eas_by_key = _latest_household_timestamps(households_qs)
