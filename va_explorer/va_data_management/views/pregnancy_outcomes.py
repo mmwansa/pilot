@@ -56,7 +56,7 @@ class PregnancyOutcomeAccessMixin(SingleObjectMixin):
         return restrict_queryset_to_user_locations(
             PregnancyOutcome.objects.all(),
             self.request.user,
-        )
+        ).prefetch_related("babies")
 
 class PregnancyOutcomeDetail(
     CustomAuthMixin, PregnancyOutcomeAccessMixin, PermissionRequiredMixin, DetailView
