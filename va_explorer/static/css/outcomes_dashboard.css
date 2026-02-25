@@ -199,7 +199,46 @@
   max-width: 100%;
 }
 #pregnancyDashboardApp {
-  grid-template-columns: minmax(0, 4fr) minmax(0, 4fr) minmax(0, 4fr) minmax(0, 2.8fr) minmax(0, 2.8fr) minmax(0, 2.8fr);
+  display: block;
+}
+#pregnancyDashboardApp #pePanelSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--od-gap);
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--od-gap);
+  align-items: stretch;
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--od-gap);
+  min-width: 0;
+  min-height: 0;
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-column .sectionContainer {
+  margin-bottom: 0 !important;
+}
+#pregnancyDashboardApp #pePanelSection #peMapSection,
+#pregnancyDashboardApp #pePanelSection #peTrendSection,
+#pregnancyDashboardApp #pePanelSection #peGestationalAgeSection,
+#pregnancyDashboardApp #pePanelSection #peAncVisitsSection {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+#pregnancyDashboardApp #pePanelSection #peMapContainer {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-column--left #peMapSection {
+  flex: 1 1 0;
+  min-height: 0;
 }
 .outcomes-dashboard-root .sectionContainer {
   background: var(--od-card);
@@ -1020,6 +1059,9 @@
 @media (max-width: 992px) {
   #deathsCauseSection .po-split-row {
     flex-direction: column;
+  }
+  #pregnancyDashboardApp #pePanelSection .pe-panel-columns {
+    grid-template-columns: minmax(0, 1fr);
   }
   #dashboardApp .va-dashboard-columns {
     grid-template-columns: minmax(0, 1fr);
