@@ -110,8 +110,6 @@
 #vaRegionalComparisonSection {
   grid-column: 4/7;
   grid-row: 7/9;
-  width: 50%;
-  max-width: 50%;
   justify-self: start;
 }
 #pregnancyDashboardApp {

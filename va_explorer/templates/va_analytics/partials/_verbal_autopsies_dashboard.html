@@ -76,6 +76,20 @@
     </div>
   </section>
 
+  <section class="sectionContainer dashboard-card mb-4" id="vaDemographicSection" data-component="demographic-distribution">
+    <div class="dashboard-section-head">
+      <h2>Demographic Distribution</h2>
+    </div>
+    <div class="dashboard-card-body">
+      <div class="chartsContainer">
+        <div class="chart-canvas-wrap compact">
+          <canvas id="vaSexAgePyramidChart" data-component="va-sex-age-pyramid-chart"></canvas>
+        </div>
+      </div>
+      <p id="vaSexAgePyramidEmpty" class="po-empty-state" hidden>No age-sex VA data available for the selected filters.</p>
+    </div>
+  </section>
+
   <section class="sectionContainer dashboard-card mapView mb-4" id="vaMapSection" data-component="map">
     <h2>Geographic Distribution</h2>
     <div class="dashboard-card-body">
@@ -139,20 +153,6 @@
     </div>
   </section>
 
-  <section class="sectionContainer dashboard-card mb-4" id="vaDemographicSection" data-component="demographic-distribution">
-    <div class="dashboard-section-head">
-      <h2>Demographic Distribution</h2>
-    </div>
-    <div class="dashboard-card-body">
-      <div class="chartsContainer">
-        <div class="chart-canvas-wrap compact">
-          <canvas id="vaSexAgePyramidChart" data-component="va-sex-age-pyramid-chart"></canvas>
-        </div>
-      </div>
-      <p id="vaSexAgePyramidEmpty" class="po-empty-state" hidden>No age-sex VA data available for the selected filters.</p>
-    </div>
-  </section>
-
   <section class="sectionContainer dashboard-card demographicsView mb-4" id="vaRegionalComparisonSection" data-component="regional-comparison">
     <div class="dashboard-section-head">
       <h2>Cause of Death Comparison</h2>
@@ -169,7 +169,7 @@
           </select>
         </div>
       </div>
-      <div class="chartsContainer" ref="regionalComparison">
+      <div ref="regionalComparison">
         <div class="chart-canvas-wrap">
           <canvas id="vaRegionalCauseComparisonChart" data-component="regional-cod-chart"></canvas>
         </div>

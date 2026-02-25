@@ -1447,15 +1447,19 @@ const dashboard = new Vue({
 
             const palette = ["#d73027", "#4575b4", "#4CAF50", "#f46d43", "#8e44ad"];
             this.vaCauseTrendChart.data.labels = periods;
-            this.vaCauseTrendChart.data.datasets = seriesRows.map((series, idx) => ({
-                label: series.name,
-                data: series.values || [],
-                borderColor: palette[idx % palette.length],
-                backgroundColor: palette[idx % palette.length],
-                pointRadius: 2,
-                tension: 0.25,
-                fill: false,
-            }));
+            this.vaCauseTrendChart.data.datasets = seriesRows.map((series, idx) => {
+                const name = String(series?.name || "").trim().toLowerCase();
+                const color = name === "other" ? "#facc15" : palette[idx % palette.length];
+                return {
+                    label: series.name,
+                    data: series.values || [],
+                    borderColor: color,
+                    backgroundColor: color,
+                    pointRadius: 2,
+                    tension: 0.25,
+                    fill: false,
+                };
+            });
             this.vaCauseTrendChart.update();
 
             const hasCoded = !!payload.has_coded;
@@ -1488,12 +1492,30 @@ const dashboard = new Vue({
                     type: "bar",
                     data: { labels: [], datasets: [] },
                     options: {
-                        indexAxis: "y",
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: true, position: "top" } },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: "right",
+                                align: "start",
+                                labels: {
+                                    boxWidth: 12,
+                                    boxHeight: 12,
+                                    padding: 10,
+                                },
+                            },
+                        },
                         scales: {
                             x: {
+                                stacked: true,
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: "Compare by",
+                                },
+                            },
+                            y: {
                                 stacked: true,
                                 beginAtZero: true,
                                 max: 100,
@@ -1505,14 +1527,13 @@ const dashboard = new Vue({
                                     callback: (value) => `${value}%`,
                                 },
                             },
-                            y: { stacked: true },
                         },
                     },
                 });
             }
 
-            this.vaRegionalCauseChart.options.scales.x.max = 100;
-            this.vaRegionalCauseChart.options.scales.x.title.text = "Percent";
+            this.vaRegionalCauseChart.options.scales.y.max = 100;
+            this.vaRegionalCauseChart.options.scales.y.title.text = "Percent";
             this.vaRegionalCauseChart.data.labels = labels;
             this.vaRegionalCauseChart.data.datasets = datasets;
             this.vaRegionalCauseChart.update();
