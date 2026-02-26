@@ -92,8 +92,111 @@
   grid-template-rows: max-content auto auto auto auto auto;
 }
 #dashboardApp {
-  /* Keep VA panel proportions aligned with other outcomes dashboards. */
-  grid-template-rows: max-content auto auto auto auto auto;
+  display: block;
+}
+#dashboardApp .va-dashboard-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--od-gap);
+  align-items: start;
+}
+#dashboardApp .va-dashboard-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--od-gap);
+  min-width: 0;
+}
+#dashboardApp .va-dashboard-column .sectionContainer {
+  margin-bottom: 0 !important;
+}
+#dashboardApp .va-right-top-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--od-gap);
+  align-items: stretch;
+}
+#dashboardApp .va-right-top-row > .sectionContainer {
+  width: 100%;
+  max-width: 100%;
+}
+#dashboardApp .va-right-top-row > #vaCodSection {
+  height: 100%;
+}
+#dashboardApp .va-dashboard-column #vaPanelSection,
+#dashboardApp .va-dashboard-column #vaMapSection,
+#dashboardApp .va-dashboard-column #vaDemographicSection,
+#dashboardApp .va-dashboard-column #vaTrendSection,
+#dashboardApp .va-dashboard-column #vaCodSection,
+#dashboardApp .va-dashboard-column #vaRegionalComparisonSection {
+  grid-column: auto;
+  grid-row: auto;
+  width: 100%;
+  max-width: 100%;
+  justify-self: auto;
+}
+#outcomesDashboardApp {
+  display: block;
+}
+#outcomesDashboardApp .po-dashboard-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--od-gap);
+  align-items: stretch;
+}
+#outcomesDashboardApp .po-dashboard-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--od-gap);
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+  height: 100%;
+}
+#outcomesDashboardApp .po-dashboard-column--left {
+  min-height: 0;
+}
+#outcomesDashboardApp .po-dashboard-column .sectionContainer {
+  margin-bottom: 0 !important;
+}
+#outcomesDashboardApp .po-dashboard-column #poPanelSection,
+#outcomesDashboardApp .po-dashboard-column #poMapSection,
+#outcomesDashboardApp .po-dashboard-column #poTrendSection,
+#outcomesDashboardApp .po-dashboard-column #poBirthOutcomesSection,
+#outcomesDashboardApp .po-dashboard-column #poPlaceOfBirthSection,
+#outcomesDashboardApp .po-dashboard-column #poGestationalAgeSection,
+#outcomesDashboardApp .po-dashboard-column #poAncVisitsSection {
+  grid-column: auto;
+  grid-row: auto;
+  width: 100%;
+  max-width: 100%;
+  justify-self: auto;
+}
+#outcomesDashboardApp .po-dashboard-column #poMapSection {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+#outcomesDashboardApp .po-dashboard-column #poMapContainer {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+#outcomesDashboardApp .po-dashboard-column--left #poPanelSection {
+  height: auto;
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+#outcomesDashboardApp .po-right-middle-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--od-gap);
+  align-items: start;
+}
+#outcomesDashboardApp .po-right-middle-row > .sectionContainer {
+  width: 100%;
+  max-width: 100%;
 }
 #vaTrendSection {
   grid-column: 4/7;
@@ -113,7 +216,46 @@
   justify-self: start;
 }
 #pregnancyDashboardApp {
-  grid-template-columns: minmax(0, 4fr) minmax(0, 4fr) minmax(0, 4fr) minmax(0, 2.8fr) minmax(0, 2.8fr) minmax(0, 2.8fr);
+  display: block;
+}
+#pregnancyDashboardApp #pePanelSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--od-gap);
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--od-gap);
+  align-items: stretch;
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--od-gap);
+  min-width: 0;
+  min-height: 0;
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-column .sectionContainer {
+  margin-bottom: 0 !important;
+}
+#pregnancyDashboardApp #pePanelSection #peMapSection,
+#pregnancyDashboardApp #pePanelSection #peTrendSection,
+#pregnancyDashboardApp #pePanelSection #peGestationalAgeSection,
+#pregnancyDashboardApp #pePanelSection #peAncVisitsSection {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+#pregnancyDashboardApp #pePanelSection #peMapContainer {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+#pregnancyDashboardApp #pePanelSection .pe-panel-column--left #peMapSection {
+  flex: 1 1 0;
+  min-height: 0;
 }
 .outcomes-dashboard-root .sectionContainer {
   background: var(--od-card);
@@ -463,6 +605,8 @@
   margin-top: 10px;
 }
 #vaDemographicSection .chart-canvas-wrap {
+  width: 90%;
+  margin: 0 auto;
   height: 260px;
 }
 #poMapContainer {
@@ -932,6 +1076,21 @@
 @media (max-width: 992px) {
   #deathsCauseSection .po-split-row {
     flex-direction: column;
+  }
+  #pregnancyDashboardApp #pePanelSection .pe-panel-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #dashboardApp .va-dashboard-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #dashboardApp .va-right-top-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #outcomesDashboardApp .po-dashboard-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #outcomesDashboardApp .po-right-middle-row {
+    grid-template-columns: minmax(0, 1fr);
   }
   #pregnancies-pane,
   #pregnancy-outcomes-pane,

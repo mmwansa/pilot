@@ -18,6 +18,33 @@
   let mapSelection = { geography_level: "", geography_value: "" };
 
   const getEl = (id) => document.getElementById(id);
+  const syncPeMapSectionHeight = () => {
+    const mapSection = getEl("peMapSection");
+    if (!mapSection) return;
+
+    if (window.matchMedia("(max-width: 992px)").matches) {
+      mapSection.style.removeProperty("height");
+      return;
+    }
+
+    const columns = app.querySelector("#pePanelSection .pe-panel-columns");
+    const leftCol = app.querySelector("#pePanelSection .pe-panel-column--left");
+    const rightCol = app.querySelector("#pePanelSection .pe-panel-column--right");
+    const filters = getEl("peFiltersForm");
+    if (!columns || !leftCol || !rightCol || !filters) return;
+
+    const rightHeight = rightCol.getBoundingClientRect().height;
+    const filtersHeight = filters.getBoundingClientRect().height;
+    const computedLeft = window.getComputedStyle(leftCol);
+    const gap = parseFloat(computedLeft.rowGap || computedLeft.gap || "0") || 0;
+    const available = Math.floor(rightHeight - filtersHeight - gap);
+
+    if (available > 0) {
+      mapSection.style.height = `${available}px`;
+    } else {
+      mapSection.style.removeProperty("height");
+    }
+  };
 
   const filterElements = {
     form: getEl("peFiltersForm"),
@@ -310,6 +337,8 @@
     syncUrl(filters);
     if (mapController) {
       await mapController.refresh(filters);
+      syncPeMapSectionHeight();
+      mapController.resize();
       return;
     }
     const mapData = await fetchJSON(endpoints.map, filters);
@@ -337,6 +366,8 @@
   const refreshAll = async () => {
     await refreshDataOnly();
     await refreshMapOnly();
+    syncPeMapSectionHeight();
+    if (mapController) mapController.resize();
   };
 
   const bindEvents = () => {
@@ -385,9 +416,14 @@
     setupDateInputs([filterElements.start, filterElements.end]);
     bindEvents();
     await refreshAll();
+    requestAnimationFrame(() => {
+      syncPeMapSectionHeight();
+      if (mapController) mapController.resize();
+    });
   };
 
   const resizeVisuals = () => {
+    syncPeMapSectionHeight();
     if (chartState.trend) chartState.trend.resize();
     if (chartState.gestationalAge) chartState.gestationalAge.resize();
     if (chartState.ancVisits) chartState.ancVisits.resize();
