@@ -927,6 +927,7 @@ def _build_pregnancy_trend_series(filtered_qs):
 
 
 def _build_pregnancy_ga_anc_points(filtered_qs):
+    max_anc_visits = 15
     points = []
     for row in filtered_qs.values("PE_09A", "submissiondate", "today", "start", "PE_22").iterator():
         lmp_dt = _parse_outcome_datetime(row.get("PE_09A"))
@@ -941,6 +942,8 @@ def _build_pregnancy_ga_anc_points(filtered_qs):
             continue
         if anc_visits < 0:
             continue
+        if anc_visits > max_anc_visits:
+            anc_visits = max_anc_visits
 
         ga_weeks = int((detection_dt - lmp_dt).days / 7)
         if ga_weeks < 1:

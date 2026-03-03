@@ -63,8 +63,6 @@ class Command(BaseCommand):
             )
 
         valid_va_ids = set(VerbalAutopsy.objects.values_list("id", flat=True))
-        existing_cod_va_ids = set(CauseOfDeath.objects.values_list("verbalautopsy_id", flat=True))
-
         created_count = 0
         skipped_count = 0
         timestamp_updates = 0
@@ -99,11 +97,6 @@ class Command(BaseCommand):
                     skipped_count += 1
                     continue
 
-                # Only upload rows where no CauseOfDeath currently exists for this VA.
-                if verbalautopsy_id in existing_cod_va_ids:
-                    skipped_count += 1
-                    continue
-
                 try:
                     settings = json.loads(settings_raw) if settings_raw else {}
                 except json.JSONDecodeError:
@@ -120,7 +113,6 @@ class Command(BaseCommand):
                     verbalautopsy_id=verbalautopsy_id,
                 )
                 created_count += 1
-                existing_cod_va_ids.add(verbalautopsy_id)
 
                 if created_dt is not None or updated_dt is not None:
                     CauseOfDeath.objects.filter(pk=cod.pk).update(

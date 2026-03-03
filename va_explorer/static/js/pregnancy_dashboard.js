@@ -307,6 +307,7 @@
           },
           y: {
             beginAtZero: true,
+            max: 15,
             ticks: { precision: 0 },
             title: { display: true, text: "ANC visit count" },
             grid: { display: true, color: "rgba(148,163,184,0.35)" },
